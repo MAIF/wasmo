@@ -1,4 +1,6 @@
 use clap::{Parser, Subcommand};
+use hyper::Request;
+use core::panic;
 use std::{fs, path::PathBuf, collections::HashMap};
 
 const WASMO_SERVER: &str = "WASMO_SERVER";
@@ -47,6 +49,7 @@ enum Commands {
 
 #[derive(Debug, Subcommand)]
 enum ConfigCommands {
+    Reset {},
     Set {
         /// The path to the configuration folder
         #[arg(value_name = "PATH")]
@@ -140,13 +143,16 @@ fn format(str: Option<String>) -> std::collections::HashMap<String, String> {
 fn configuration_file_to_env(configuration_path: String) -> HashMap<String, String> {
     let complete_path = if configuration_path.ends_with(".wasmo") { configuration_path } else { format!("{}/.wasmo", &configuration_path) };
 
-    format(Some(match fs::read_to_string(&complete_path) {
-        Ok(content) => content,
-        Err(e) => panic!(
-            "Should have been able to read the wasmo configuration, {:#?}",
-            e
-        ),
-    }))
+    match std::path::Path::new(&complete_path).exists() {
+        false => HashMap::new(),
+        true => format(Some(match fs::read_to_string(&complete_path) {
+            Ok(content) => content,
+            Err(e) => panic!(
+                "Should have been able to read the wasmo configuration, {:#?}, {:#?}",
+                e, complete_path
+            ),
+        })),
+    }
 }
 
 fn read_configuration() -> HashMap<String, String> {
@@ -175,6 +181,39 @@ fn read_configuration() -> HashMap<String, String> {
     };
 
     envs
+}
+
+fn build(path: Option<String>, server: Option<String>) {
+    println!("Build {:#?} {:#?}", path, server);
+
+    let mut configuration = read_configuration();
+
+    if server.is_some() {
+        configuration.insert(WASMO_SERVER.to_string(), server.unwrap());
+    }
+    
+    if !configuration.contains_key(WASMO_SERVER) {
+        panic!("Should be able to reach a wasmo server but WASMO_SERVER is not defined");
+    }
+
+    let request = Request::builder()
+        .uri(configuration.get(WASMO_SERVER).unwrap())
+        .header("wasmo-token", configuration.get(WASMO_TOKEN))
+        .body(r#"{
+
+        }"#)
+        .send();
+}
+
+fn reset_configuration() {
+    let home_path = get_home();
+
+    let complete_path = format!("{}/.wasmo", &home_path);
+
+    match fs::remove_file(complete_path) {
+        Err(err) => panic!("{:#?}", err),
+        Ok(()) => println!("wasmo configuration has been reset")
+    }
 }
 
 fn get_option_home() -> String {
@@ -267,9 +306,7 @@ fn main() {
             name,
             path,
         } => initialize(template, name, path),
-        Commands::Build { server, path } => {
-            println!("Build {:#?} {:#?}", path, server);
-        }
+        Commands::Build { server, path } => build(path, server),
         Commands::Config { command } => match command {
             ConfigCommands::Set {
                 token,
@@ -281,6 +318,7 @@ fn main() {
 
                 println!("{:#?}", configuration);
             },
+            ConfigCommands::Reset { } => reset_configuration()
         },
     }
 }

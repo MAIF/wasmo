@@ -9,3 +9,4 @@ edition = "2021"
 clap = { version = "4.4.6", features = ["derive"] }
 home = "0.5.5"
 zip-extensions = "0.6.2"
+hyper = { version = "1.0.0-rc.4", features = ["full"] }
