@@ -32,6 +32,14 @@ if (ENV.AUTH_MODE === "NO_AUTH") {
   console.log("###############################################################")
 }
 
+if (!ENV.CLI_AUTHORIZATION) {
+  console.log("###########################################")
+  console.log("#                                           #")
+  console.log('# ⚠CLI Token is missing⚠                    #')
+  console.log("#                                           #")
+  console.log("###########################################")
+}
+
 function initializeStorage() {
   if (ENV.STORAGE === STORAGE.S3)
     return S3.initializeS3Connection()
@@ -53,6 +61,7 @@ function createServer(appVersion) {
   app.use(bodyParser.text());
 
   app.use('/', Security.extractUserFromQuery);
+  app.use('/', Security.checkCLIToken);
   app.use('/api/plugins', pluginsRouter);
   app.use('/api/templates', templatesRouter);
   app.use('/api/wasm', wasmRouter);
