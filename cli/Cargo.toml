@@ -8,5 +8,15 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.4.6", features = ["derive"] }
 home = "0.5.5"
+paris = {version = "1.5", features = ["timestamps", "macros"]}
 zip-extensions = "0.6.2"
-hyper = { version = "1.0.0-rc.4", features = ["full"] }
+hyper = { version = "0.14", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+serde_json = "1.0.107"
+lazy_static = "1.4.0"
+serde = { version = "1.0.189", features = ["derive"] }
+toml = "0.8.2"
+rust_socketio = { version = "0.4.3", features = ["async"] }
+futures-util = "0.3.28"
+http-body-util = "0.1.0-rc.3"
+bytes = "1.5.0"

@@ -1,11 +1,28 @@
+mod plugin;
+mod websocket;
+mod docker;
+
 use clap::{Parser, Subcommand};
-use hyper::Request;
 use core::panic;
-use std::{fs, path::PathBuf, collections::HashMap};
+use hyper::{Body, Client, Method, Request};
+use paris::info;
+use serde::Deserialize;
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::Write,
+    path::PathBuf,
+};
 
 const WASMO_SERVER: &str = "WASMO_SERVER";
 const WASMO_PATH: &str = "WASMO_PATH";
 const WASMO_TOKEN: &str = "WASMO_TOKEN";
+const WASMO_AUTHORIZATION_HEADER: &str = "WASMO_AUTHORIZATION_HEADER";
+
+#[derive(Debug, Deserialize)]
+struct WasmoBuildResponse {
+    queue_id: String,
+}
 
 /// A fictional versioning CLI
 #[derive(Debug, Parser)] // requires `derive` feature
@@ -28,18 +45,21 @@ enum Commands {
         #[arg(value_name = "NAME")]
         name: String,
         /// The path where initialize the plugin
-        #[arg(value_name = "PATH")]
+        #[arg(value_name = "PATH", required = false)]
         path: Option<String>,
     },
     /// Build a plugin on current folder or at specific path
-    #[command(arg_required_else_help = true)]
+    #[command()]
     Build {
         /// The remote to target
-        #[arg(value_name = "PATH")]
+        #[arg(value_name = "PATH", required = false)]
         path: Option<String>,
         /// The server to build
-        #[arg(value_name = "SERVER")]
+        #[arg(value_name = "SERVER", required = false)]
         server: Option<String>,
+        /// using docker
+        #[arg(value_name = "PROVIDER", default_value = "REMOTE")]
+        provider: String,
     },
     Config {
         #[command(subcommand)]
@@ -52,13 +72,13 @@ enum ConfigCommands {
     Reset {},
     Set {
         /// The path to the configuration folder
-        #[arg(value_name = "PATH")]
+        #[arg(value_name = "PATH", required = false)]
         path: Option<String>,
         /// The token access, used to authenticate the calls to the server
-        #[arg(value_name = "TOKEN")]
+        #[arg(value_name = "TOKEN", required = false)]
         token: Option<String>,
         /// The remote server to build your plugins
-        #[arg(value_name = "SERVER")]
+        #[arg(value_name = "SERVER", required = false)]
         server: Option<String>,
     },
     Get {},
@@ -76,7 +96,7 @@ fn rename_plugin(template: String, name: String, path: Option<String>) {
     };
 
     match std::fs::rename(format!("./{}", template), complete_path) {
-        Ok(()) => println!("plugin created"),
+        Ok(()) => info!("Plugin created"),
         Err(e) => panic!("Can't create new plugin: {:#?}", e),
     }
 }
@@ -91,7 +111,7 @@ fn initialize(template: String, name: String, path: Option<String>) {
     ];
 
     if !plugin_types.contains(&template) {
-        println!("Oh noes: plugin type must be {:#?}", plugin_types);
+        info!("Oh noes: plugin type must be {:#?}", plugin_types);
         std::process::exit(1);
     }
 
@@ -111,12 +131,12 @@ fn extract_variable_or_default(
     key: &str,
     default_value: Option<String>,
 ) -> String {
-    let default = default_value.unwrap_or("".to_string());
+    let default = default_value.clone().unwrap_or("".to_string());
 
     match contents.get(key) {
         Some(v) => match v.is_empty() {
             true => default,
-            false => v.to_string(),
+            false => default_value.unwrap_or(v.to_string()),
         },
         None => default,
     }
@@ -139,9 +159,12 @@ fn format(str: Option<String>) -> std::collections::HashMap<String, String> {
     }
 }
 
-
 fn configuration_file_to_env(configuration_path: String) -> HashMap<String, String> {
-    let complete_path = if configuration_path.ends_with(".wasmo") { configuration_path } else { format!("{}/.wasmo", &configuration_path) };
+    let complete_path = if configuration_path.ends_with(".wasmo") {
+        configuration_path
+    } else {
+        format!("{}/.wasmo", &configuration_path)
+    };
 
     match std::path::Path::new(&complete_path).exists() {
         false => HashMap::new(),
@@ -156,21 +179,20 @@ fn configuration_file_to_env(configuration_path: String) -> HashMap<String, Stri
 }
 
 fn read_configuration() -> HashMap<String, String> {
-
     let wasmo_token = option_env!("WASMO_TOKEN");
     let wasmo_server = option_env!("WASMO_SERVER");
 
     let envs: HashMap<String, String> = if wasmo_server.is_none() || wasmo_server.is_none() {
         let configuration_path = match option_env!("WASMO_PATH") {
             Some(path) => path.to_owned(),
-            None => get_home()
+            None => get_home(),
         };
 
         let envs = configuration_file_to_env(format!("{}/.wasmo", configuration_path));
 
         match envs.get("WASMO_PATH") {
             Some(p) if !p.is_empty() => configuration_file_to_env(format!("{}/.wasmo", p)),
-            _ => envs
+            _ => envs,
         }
     } else {
         let mut envs: HashMap<String, String> = HashMap::new();
@@ -183,26 +205,126 @@ fn read_configuration() -> HashMap<String, String> {
     envs
 }
 
-fn build(path: Option<String>, server: Option<String>) {
-    println!("Build {:#?} {:#?}", path, server);
 
+async fn build(path: Option<String>, server: Option<String>, using_docker: bool) {
     let mut configuration = read_configuration();
+
+    if using_docker {
+        docker::docker_create();
+    }
 
     if server.is_some() {
         configuration.insert(WASMO_SERVER.to_string(), server.unwrap());
     }
-    
+
     if !configuration.contains_key(WASMO_SERVER) {
         panic!("Should be able to reach a wasmo server but WASMO_SERVER is not defined");
     }
 
-    let request = Request::builder()
-        .uri(configuration.get(WASMO_SERVER).unwrap())
-        .header("wasmo-token", configuration.get(WASMO_TOKEN))
-        .body(r#"{
+    if !configuration.contains_key(WASMO_TOKEN) {
+        panic!("Should be able to build until WASMO_TOKEN is not defined");
+    }
 
-        }"#)
-        .send();
+    info!(
+        "Build plugin at path: {:#?}, with wasmo server: {:#?} ",
+        path.clone().unwrap_or("<current-dir>".to_string()),
+        &configuration.get(WASMO_SERVER).unwrap()
+    );
+
+    let complete_path = path.unwrap_or_else(get_current_working_dir);
+
+    let plugin = plugin::read_plugin(&complete_path);
+
+    let request = Request::builder()
+        .method(Method::POST)
+        .uri(format!(
+            "{}/api/plugins/build",
+            configuration.get(WASMO_SERVER).unwrap()
+        ))
+        .header("Content-Type", "application/json")
+        .header(
+            configuration
+                .get(WASMO_AUTHORIZATION_HEADER)
+                .unwrap_or(&"Authorization".to_string()),
+            configuration.get(WASMO_TOKEN).unwrap(),
+        )
+        .body(Body::from(serde_json::to_string(&plugin).unwrap()))
+        .unwrap();
+
+    let client = Client::new();
+
+    let resp = client.request(request).await;
+
+    match resp {
+        Err(e) => panic!("{:#?}", e),
+        Ok(k) => {
+            let body_bytes = hyper::body::to_bytes(k.into_body()).await;
+            let result: WasmoBuildResponse = serde_json::from_str(
+                String::from_utf8(body_bytes.unwrap().to_vec())
+                    .unwrap()
+                    .as_str(),
+            )
+            .unwrap();
+
+            let build_result =
+                websocket::ws_listen(&configuration.get(WASMO_SERVER).unwrap(), &result.queue_id)
+                    .await;
+
+            match build_result {
+                websocket::BuildResult::Success => {
+                    get_wasm(&configuration, &result.queue_id, &complete_path, &plugin).await;
+                    info!("Successfull build")
+                }
+                _ => info!("Build failed"),
+            }
+        }
+    }
+}
+
+async fn get_wasm(configuration: &HashMap<String, String>, id: &str, output_path: &str, plugin: &plugin::Plugin) {
+    let url = format!(
+        "{}/local/wasm/{}",
+        &configuration.get(WASMO_SERVER).unwrap(),
+        id
+    );
+
+    info!("Fetch wasm file from {}", url);
+
+    let request = Request::get(url)
+        .header("Content-Type", "application/json")
+        .header(
+            configuration
+                .get(WASMO_AUTHORIZATION_HEADER)
+                .unwrap_or(&"Authorization".to_string()),
+            configuration.get(WASMO_TOKEN).unwrap(),
+        )
+        .body(Body::empty())
+        .unwrap();
+
+    let client = Client::new();
+
+    let resp = client.request(request).await;
+
+    match resp {
+        Err(e) => panic!("{:#?}", e),
+        Ok(res) => {
+            let filename = format!("{}/{}-{}.wasm", output_path, &plugin.metadata.name, &plugin.metadata.version);
+            let mut file = File::create(&filename).unwrap();
+
+            info!("Writing file to {}", &filename);
+
+            let content = hyper::body::to_bytes(res.into_body()).await;
+
+            let _ = file.write(content.unwrap().to_vec().as_mut());
+        }
+    }
+}
+
+fn get_current_working_dir() -> String {
+    match std::env::current_dir() {
+        Ok(x) => x.into_os_string().into_string().unwrap(),
+        Err(e) => panic!("Should be able to read the current directory, {}", e),
+    }
 }
 
 fn reset_configuration() {
@@ -212,7 +334,7 @@ fn reset_configuration() {
 
     match fs::remove_file(complete_path) {
         Err(err) => panic!("{:#?}", err),
-        Ok(()) => println!("wasmo configuration has been reset")
+        Ok(()) => info!("wasmo configuration has been reset"),
     }
 }
 
@@ -264,7 +386,7 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
         let new_content = format!("WASMO_TOKEN={}\nWASMO_SERVER={}", wasmo_token, wasmo_server);
 
         match fs::write(format!("{}/.wasmo", &home_path), new_content) {
-            Ok(()) => println!("wasmo configuration patched"),
+            Ok(()) => info!("wasmo configuration patched"),
             Err(e) => panic!(
                 "Should have been able to write the wasmo configuration, {:#?}",
                 e
@@ -293,11 +415,12 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
             ),
         }
 
-        println!("wasmo configuration patched")
+        info!("wasmo configuration patched")
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Cli::parse();
 
     match args.command {
@@ -306,7 +429,9 @@ fn main() {
             name,
             path,
         } => initialize(template, name, path),
-        Commands::Build { server, path } => build(path, server),
+        Commands::Build { server, path, provider } => {
+            build(path, server, provider == "DOCKER").await
+        },
         Commands::Config { command } => match command {
             ConfigCommands::Set {
                 token,
@@ -316,9 +441,9 @@ fn main() {
             ConfigCommands::Get {} => {
                 let configuration = read_configuration();
 
-                println!("{:#?}", configuration);
-            },
-            ConfigCommands::Reset { } => reset_configuration()
+                info!("{:#?}", configuration);
+            }
+            ConfigCommands::Reset {} => reset_configuration(),
         },
     }
 }
