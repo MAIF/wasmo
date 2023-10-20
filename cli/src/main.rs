@@ -1,6 +1,6 @@
+mod docker;
 mod plugin;
 mod websocket;
-mod docker;
 
 use clap::{Parser, Subcommand};
 use core::panic;
@@ -205,12 +205,13 @@ fn read_configuration() -> HashMap<String, String> {
     envs
 }
 
-
-async fn build(path: Option<String>, server: Option<String>, using_docker: bool) {
+async fn build(path: Option<String>, mut server: Option<String>, using_docker: bool) {
     let mut configuration = read_configuration();
 
     if using_docker {
-        docker::docker_create();
+        docker::docker_create().await;
+
+        server = Some("http://localhost:5001".to_string())
     }
 
     if server.is_some() {
@@ -258,6 +259,8 @@ async fn build(path: Option<String>, server: Option<String>, using_docker: bool)
     match resp {
         Err(e) => panic!("{:#?}", e),
         Ok(k) => {
+            info!("{}", k.status());
+            
             let body_bytes = hyper::body::to_bytes(k.into_body()).await;
             let result: WasmoBuildResponse = serde_json::from_str(
                 String::from_utf8(body_bytes.unwrap().to_vec())
@@ -281,7 +284,12 @@ async fn build(path: Option<String>, server: Option<String>, using_docker: bool)
     }
 }
 
-async fn get_wasm(configuration: &HashMap<String, String>, id: &str, output_path: &str, plugin: &plugin::Plugin) {
+async fn get_wasm(
+    configuration: &HashMap<String, String>,
+    id: &str,
+    output_path: &str,
+    plugin: &plugin::Plugin,
+) {
     let url = format!(
         "{}/local/wasm/{}",
         &configuration.get(WASMO_SERVER).unwrap(),
@@ -308,7 +316,10 @@ async fn get_wasm(configuration: &HashMap<String, String>, id: &str, output_path
     match resp {
         Err(e) => panic!("{:#?}", e),
         Ok(res) => {
-            let filename = format!("{}/{}-{}.wasm", output_path, &plugin.metadata.name, &plugin.metadata.version);
+            let filename = format!(
+                "{}/{}-{}.wasm",
+                output_path, &plugin.metadata.name, &plugin.metadata.version
+            );
             let mut file = File::create(&filename).unwrap();
 
             info!("Writing file to {}", &filename);
@@ -429,9 +440,11 @@ async fn main() {
             name,
             path,
         } => initialize(template, name, path),
-        Commands::Build { server, path, provider } => {
-            build(path, server, provider == "DOCKER").await
-        },
+        Commands::Build {
+            server,
+            path,
+            provider,
+        } => build(path, server, provider == "DOCKER").await,
         Commands::Config { command } => match command {
             ConfigCommands::Set {
                 token,
