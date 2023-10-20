@@ -53,7 +53,7 @@ const extractUserFromQuery = (req, res, next) => {
 
 const checkCLIToken = (req, res, next) => {
   if (req.path === '/api/plugins/build') {
-    if (ENV.CLI_AUTHORIZATION !== undefined && req.headers[ENV.CLI_AUTHORIZATION_HEADER] === ENV.CLI_AUTHORIZATION) {
+    if (ENV.CLI_AUTHORIZATION !== undefined && req.headers[ENV.CLI_AUTHORIZATION_HEADER.toLocaleLowerCase()] === ENV.CLI_AUTHORIZATION) {
       return next()
     } else {
       return res.status(403).json({

@@ -61,6 +61,7 @@ const loop = () => {
       })
       .catch(err => {
         log.error(err)
+        WebSocket.emitError(nextBuild.plugin, "JOB", err)
         running -= 1;
         loop()
       })

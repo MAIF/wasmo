@@ -69,13 +69,30 @@ enum Commands {
     #[command()]
     Build {
         /// The remote to target
-        #[arg(value_name = "PATH", required = false)]
+        #[arg(
+            value_name = "PATH", 
+            short = 'p',
+            long = "path",
+            required = false
+        )]
         path: Option<String>,
         /// The server to build
-        #[arg(value_name = "SERVER", required = false)]
+        #[arg(
+            value_name = "SERVER", 
+            short = 's',
+            long = "server",
+            required = false
+        )]
         server: Option<String>,
         /// using docker
-        #[arg(value_name = "PROVIDER", default_value = "REMOTE")]
+        #[arg(
+            value_name = "PROVIDER", 
+            short = 't',
+            long = "template",
+            value_parser = ["REMOTE", "DOCKER"], 
+            require_equals = true,
+            required = false
+        )]
         provider: String,
     },
     Config {
@@ -89,13 +106,28 @@ enum ConfigCommands {
     Reset {},
     Set {
         /// The path to the configuration folder
-        #[arg(value_name = "PATH", required = false)]
+        #[arg(
+            value_name = "PATH", 
+            short = 'p',
+            long = "path",
+            required = false
+        )]
         path: Option<String>,
         /// The token access, used to authenticate the calls to the server
-        #[arg(value_name = "TOKEN", required = false)]
+        #[arg(
+            value_name = "TOKEN", 
+            short = 't',
+            long = "token",
+            required = false
+        )]
         token: Option<String>,
         /// The remote server to build your plugins
-        #[arg(value_name = "SERVER", required = false)]
+        #[arg(
+            value_name = "SERVER", 
+            short = 's',
+            long = "server",
+            required = false
+        )]
         server: Option<String>,
     },
     Get {},
@@ -352,13 +384,10 @@ fn reset_configuration() -> Result<(), WasmoError> {
 
     let complete_path = format!("{}/.wasmo", &home_path);
 
-    match fs::remove_file(complete_path) {
-        Err(err) => Err(WasmoError::MissingConfigurationFile(err.to_string())),
-        Ok(()) => {
-            info!("wasmo configuration has been reset");
-            Ok(())
-        },
-    }
+    let _ = fs::remove_file(complete_path);
+
+    info!("wasmo configuration has been reset");
+    Ok(())
 }
 
 fn get_option_home() -> String {

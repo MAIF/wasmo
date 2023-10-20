@@ -35,7 +35,7 @@ module.exports = {
         OTOROSHI_USER_HEADER: process.env.OTOROSHI_USER_HEADER,
 
         EXTISM_RUNTIME_ENVIRONMENT: process.env.EXTISM_RUNTIME_ENVIRONMENT || false,
-        CLI_AUTHORIZATION: process.env.CLI_TOKEN,
+        CLI_AUTHORIZATION: process.env.CLI_AUTHORIZATION,
         CLI_AUTHORIZATION_HEADER: process.env.AUTHORIZATION_HEADER || 'Authorization',
 
         LOCAL_WASM_JOB_CLEANING: process.envLOCAL_WASM_JOB_CLEANING || (60 * 60 * 1000) // 1 hour

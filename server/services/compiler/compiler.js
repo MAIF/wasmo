@@ -112,6 +112,7 @@ class Compiler {
     });
 
     child.on('error', (error) => {
+      console.log(error)
       this.#websocketEmitMessage(buildOptions, error, true);
       stderrStream.write(`${error.stack}\n`);
     });
@@ -185,7 +186,7 @@ class Compiler {
 
           this.#websocketEmitMessage(buildOptions, 'Starting build ...');
 
-          this.commands
+          return this.commands
             .reduce((promise, fn, index) => promise.then(() => new Promise(justToNext => {
               const { executable, args } = fn;
 

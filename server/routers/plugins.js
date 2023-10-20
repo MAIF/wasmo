@@ -326,7 +326,7 @@ router.post('/build', async (req, res) => {
 
   const { metadata, files } = req.body;
 
-  if (!metadata.type) {
+  if (!metadata || !(metadata.type || req.body.kind)) {
     return res
       .status(400)
       .json({ error: "unknown plugin type" });
@@ -338,13 +338,15 @@ router.post('/build', async (req, res) => {
       .json({ error: "missing files" });
   }
 
-  const isRustBuild = metadata.type === 'rust';
+  const kind = metadata.type || req.body.kind;
 
-  const zip = await fetch(`http://localhost:${ENV.PORT}/api/templates?type=${metadata.type}`)
+  const isRustBuild = kind === 'rust';
+
+  const zip = await fetch(`http://localhost:${ENV.PORT}/api/templates?type=${kind}`)
     .then(res => res.blob())
     .then(res => res.arrayBuffer())
 
-  FileSystem.createBuildFolder(metadata.type, pluginId)
+  FileSystem.createBuildFolder(kind, pluginId)
     .then(folder => {
       unzip(isRustBuild,
         Buffer.from(zip),
@@ -361,7 +363,7 @@ router.post('/build', async (req, res) => {
                 folder,
                 {
                   filename: metadata.name,
-                  type: metadata.type,
+                  type: kind,
                   pluginId,
                   last_hash: " ",
                   versions: []
