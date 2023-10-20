@@ -1,14 +1,16 @@
 [package]
-name = "cli"
+name = "wasmo-cli"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "wasmo"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.4.6", features = ["derive"] }
 home = "0.5.5"
-paris = {version = "1.5", features = ["timestamps", "macros"]}
+paris = {version = "1.5", features = ["macros"]}
 zip-extensions = "0.6.2"
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
@@ -20,3 +22,8 @@ rust_socketio = { version = "0.4.3", features = ["async"] }
 futures-util = "0.3.28"
 http-body-util = "0.1.0-rc.3"
 bytes = "1.5.0"
+
+[dev-dependencies]
+assert_cmd = "2.0.12"
+predicates = "3.0.4"
+assert_fs = "1.0.13"

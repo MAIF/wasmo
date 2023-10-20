@@ -1,8 +1,10 @@
 mod docker;
 mod plugin;
 mod websocket;
+mod error;
 
 use clap::{Parser, Subcommand};
+use error::WasmoError;
 use core::panic;
 use hyper::{Body, Client, Method, Request};
 use paris::info;
@@ -36,16 +38,31 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Commands {
     /// Create and initialize a new plugin
-    #[command(arg_required_else_help = true)]
+    #[command()]
     Init {
         /// The template to clone
-        #[arg(value_name = "TEMPLATE")]
+        #[arg(
+            value_name = "TEMPLATE", 
+            short = 't',
+            long = "template",
+            value_parser = ["js", "go", "rust", "opa", "ts"], 
+            require_equals = true, 
+        )]
         template: String,
         /// The plugin name
-        #[arg(value_name = "NAME")]
+        #[arg(
+            value_name = "NAME", 
+            short = 'n',
+            long = "name"
+        )]
         name: String,
         /// The path where initialize the plugin
-        #[arg(value_name = "PATH", required = false)]
+        #[arg(
+            value_name = "PATH", 
+            short = 'p',
+            long = "path",
+            required = false
+        )]
         path: Option<String>,
     },
     /// Build a plugin on current folder or at specific path
@@ -84,7 +101,7 @@ enum ConfigCommands {
     Get {},
 }
 
-fn rename_plugin(template: String, name: String, path: Option<String>) {
+fn rename_plugin(template: String, name: String, path: Option<String>) -> error::WasmoResult<()> {
     let complete_path = match &path {
         Some(p) => format!("{}/{}", p, name),
         None => format!("./{}", name),
@@ -95,26 +112,16 @@ fn rename_plugin(template: String, name: String, path: Option<String>) {
         None => Result::Ok(()),
     };
 
-    match std::fs::rename(format!("./{}", template), complete_path) {
-        Ok(()) => info!("Plugin created"),
-        Err(e) => panic!("Can't create new plugin: {:#?}", e),
+    match std::fs::rename(format!("./{}", template), &complete_path) {
+        Ok(()) => {
+            info!("Plugin created: {}", &complete_path);
+            Ok(())
+        },
+        Err(e) => Err(WasmoError::PluginCreationFailed(e.to_string())),
     }
 }
 
-fn initialize(template: String, name: String, path: Option<String>) {
-    let plugin_types: Vec<String> = vec![
-        "ts".to_string(),
-        "js".to_string(),
-        "go".to_string(),
-        "opa".to_string(),
-        "rust".to_string(),
-    ];
-
-    if !plugin_types.contains(&template) {
-        info!("Oh noes: plugin type must be {:#?}", plugin_types);
-        std::process::exit(1);
-    }
-
+fn initialize(template: String, name: String, path: Option<String>) -> error::WasmoResult<()> {
     let zip_action = zip_extensions::read::zip_extract(
         &PathBuf::from(format!("../server/templates/{}.zip", template)),
         &PathBuf::from("./".to_string()),
@@ -122,7 +129,7 @@ fn initialize(template: String, name: String, path: Option<String>) {
 
     match zip_action {
         Ok(()) => rename_plugin(template, name, path),
-        Err(er) => panic!("Can't create new plugin: {:#?}", er),
+        Err(er) => Err(WasmoError::PluginAlreadyExists(er.to_string())),
     }
 }
 
@@ -205,7 +212,7 @@ fn read_configuration() -> HashMap<String, String> {
     envs
 }
 
-async fn build(path: Option<String>, mut server: Option<String>, using_docker: bool) {
+async fn build(path: Option<String>, mut server: Option<String>, using_docker: bool) -> Result<(), WasmoError> {
     let mut configuration = read_configuration();
 
     if using_docker {
@@ -260,7 +267,7 @@ async fn build(path: Option<String>, mut server: Option<String>, using_docker: b
         Err(e) => panic!("{:#?}", e),
         Ok(k) => {
             info!("{}", k.status());
-            
+
             let body_bytes = hyper::body::to_bytes(k.into_body()).await;
             let result: WasmoBuildResponse = serde_json::from_str(
                 String::from_utf8(body_bytes.unwrap().to_vec())
@@ -282,6 +289,8 @@ async fn build(path: Option<String>, mut server: Option<String>, using_docker: b
             }
         }
     }
+
+    Ok(())
 }
 
 async fn get_wasm(
@@ -338,14 +347,17 @@ fn get_current_working_dir() -> String {
     }
 }
 
-fn reset_configuration() {
+fn reset_configuration() -> Result<(), WasmoError> {
     let home_path = get_home();
 
     let complete_path = format!("{}/.wasmo", &home_path);
 
     match fs::remove_file(complete_path) {
-        Err(err) => panic!("{:#?}", err),
-        Ok(()) => info!("wasmo configuration has been reset"),
+        Err(err) => Err(WasmoError::MissingConfigurationFile(err.to_string())),
+        Ok(()) => {
+            info!("wasmo configuration has been reset");
+            Ok(())
+        },
     }
 }
 
@@ -363,7 +375,7 @@ fn get_home() -> String {
     }
 }
 
-fn set_configuration(token: Option<String>, server: Option<String>, path: Option<String>) {
+fn set_configuration(token: Option<String>, server: Option<String>, path: Option<String>) -> Result<(), WasmoError> {
     let home_path = get_home();
 
     let complete_path = match &path {
@@ -428,10 +440,12 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
 
         info!("wasmo configuration patched")
     }
+
+    Ok(())
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), WasmoError> {
     let args = Cli::parse();
 
     match args.command {
@@ -455,6 +469,8 @@ async fn main() {
                 let configuration = read_configuration();
 
                 info!("{:#?}", configuration);
+
+                Ok(())
             }
             ConfigCommands::Reset {} => reset_configuration(),
         },
