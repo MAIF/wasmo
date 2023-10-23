@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use predicates::prelude::predicate;
 use serial_test::serial;
 use std::{
-    env, fs,
+    fs,
     process::Command,
     sync::{Arc, Mutex},
 };

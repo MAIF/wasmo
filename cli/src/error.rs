@@ -6,6 +6,7 @@ pub type WasmoResult<T> = std::result::Result<T, WasmoError>;
 pub enum WasmoError {
     PluginAlreadyExists(String),
     PluginCreationFailed(String),
+    FileSystem(String),
     NoDockerRunning(String),
     DockerContainer(String)
 }
@@ -21,6 +22,7 @@ impl fmt::Display for WasmoError {
             }
             WasmoError::NoDockerRunning(err) => write!(f, "docker daemon can't be reach, {}", &err),
             WasmoError::DockerContainer(err) => write!(f, "docker command failed, {}", &err),
+            WasmoError::FileSystem(err) => write!(f, "something happened using file system, {}", &err),
         }
     }
 }

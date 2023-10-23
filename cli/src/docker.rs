@@ -46,7 +46,7 @@ pub async fn docker_create() -> WasmoResult<()> {
     }
 }
 
-fn remove_docker_container() -> bool {
+pub fn remove_docker_container() -> bool {
     info!("Remove old docker container");
     let mut child = Command::new("docker")
         .args(["rm", "-f", WASMO_RUNNER])

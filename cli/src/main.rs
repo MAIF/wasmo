@@ -4,7 +4,7 @@ mod websocket;
 mod error;
 
 use clap::{Parser, Subcommand};
-use error::WasmoError;
+use error::{WasmoError, WasmoResult};
 use core::panic;
 use hyper::{Body, Client, Method, Request};
 use paris::info;
@@ -140,17 +140,38 @@ fn rename_plugin(template: String, name: String, path: Option<String>) -> error:
         None => format!("./{}", name),
     };
 
-    let _ = match path {
+    let _ = match &path {
         Some(p) => fs::create_dir_all(p),
         None => Result::Ok(()),
     };
 
     match std::fs::rename(format!("./{}", template), &complete_path) {
         Ok(()) => {
+            update_metadata_file(&complete_path.to_string(), &name, &template)?;
             info!("Plugin created: {}", &complete_path);
             Ok(())
         },
         Err(e) => Err(WasmoError::PluginCreationFailed(e.to_string())),
+    }
+}
+
+fn update_metadata_file(path: &String, name: &String, template: &String) -> WasmoResult<()> {
+    let metadata_file = match template.as_str() {
+        "go" => "go.mod",
+        "rust" => "cargo.toml",
+        _ => "package.json"
+    };
+
+    let complete_path = format!("{}/{}", path, metadata_file);
+
+    let content = match fs::read_to_string(&complete_path) {
+        Err(err) => return Err(WasmoError::FileSystem(err.to_string())),
+        Ok(v) => v
+    };
+
+    match fs::write(&complete_path, content.replace("@@PLUGIN_NAME@@", name).replace("@@PLUGIN_VERSION@@", "1.0.0")) {
+        Err(err) => Err(WasmoError::FileSystem(err.to_string())),
+        Ok(()) => Ok(())
     }
 }
 
@@ -321,6 +342,10 @@ async fn build(path: Option<String>, mut server: Option<String>, using_docker: b
                 _ => info!("Build failed"),
             }
         }
+    }
+
+    if using_docker {
+        docker::remove_docker_container();
     }
 
     Ok(())
