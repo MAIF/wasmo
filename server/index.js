@@ -41,9 +41,10 @@ if (!ENV.CLI_AUTHORIZATION) {
 }
 
 function initializeStorage() {
-  if (ENV.STORAGE === STORAGE.S3)
+  if (ENV.STORAGE !== STORAGE.GITHUB)
     return S3.initializeS3Connection()
       .then(() => S3.createBucketIfMissing())
+      .catch(err => console.log(err))
   else
     return Promise.resolve()
 }

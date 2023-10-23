@@ -3,7 +3,7 @@ const { S3Client, HeadBucketCommand, CreateBucketCommand, DeleteObjectCommand, L
 const dns = require('dns');
 const url = require('url');
 const manager = require('./logger');
-const { ENV } = require('./configuration');
+const { ENV, STORAGE } = require('./configuration');
 const log = manager.createLogger('wasm-manager');
 
 let state = {
@@ -14,15 +14,16 @@ let state = {
 const configured = () => ENV.S3_BUCKET;
 
 const initializeS3Connection = () => {
-  if (ENV.DOCKER_USAGE) {
+  log.info("Initialize s3 client");
+  if (ENV.STORAGE === STORAGE.DOCKER_S3) {
     const URL = url.parse(ENV.S3_ENDPOINT)
     return new Promise(resolve => dns.lookup(URL.hostname, function (err, ip) {
       log.debug(`${URL.protocol}//${ip}:${URL.port}${URL.pathname}`)
       state = {
         s3: new S3Client({
-          region: ENV.S3_REGION,
+          region: ENV.AWS_DEFAULT_REGION,
           endpoint: `${URL.protocol}//${ip}:${URL.port}${URL.pathname}`,
-          s3ForcePathStyle: ENV.S3_FORCE_PATH_STYLE
+          forcePathStyle: ENV.S3_FORCE_PATH_STYLE
         }),
         Bucket: ENV.S3_BUCKET
       }
@@ -31,9 +32,9 @@ const initializeS3Connection = () => {
   } else {
     state = {
       s3: new S3Client({
-        region: ENV.S3_REGION,
+        region: ENV.AWS_DEFAULT_REGION,
         endpoint: ENV.S3_ENDPOINT,
-        s3ForcePathStyle: ENV.S3_FORCE_PATH_STYLE,
+        forcePathStyle: ENV.S3_FORCE_PATH_STYLE,
       }),
       Bucket: ENV.S3_BUCKET
     }
@@ -49,7 +50,7 @@ const createBucketIfMissing = () => {
   return state.s3.send(new HeadBucketCommand(params))
     .then(() => log.info("Using existing bucket"))
     .catch(res => {
-      if (res.httpStatusCode === 404) {
+      if (res.$metadata.httpStatusCode === 404) {
         log.error(`Bucket ${state.Bucket} is missing.`)
         return new Promise(resolve => {
           state.s3.send(new CreateBucketCommand(params), err => {

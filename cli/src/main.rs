@@ -87,9 +87,10 @@ enum Commands {
         /// using docker
         #[arg(
             value_name = "PROVIDER", 
-            short = 't',
-            long = "template",
+            short = 'o',
+            long = "provider",
             value_parser = ["REMOTE", "DOCKER"], 
+            default_value = "DOCKER",
             require_equals = true,
             required = false
         )]
@@ -248,7 +249,7 @@ async fn build(path: Option<String>, mut server: Option<String>, using_docker: b
     let mut configuration = read_configuration();
 
     if using_docker {
-        docker::docker_create().await;
+        docker::docker_create().await?;
 
         server = Some("http://localhost:5001".to_string())
     }

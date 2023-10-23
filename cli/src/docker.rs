@@ -7,13 +7,15 @@ use tokio::io::AsyncBufReadExt;
 
 use paris::{error, info};
 
+use crate::error::{WasmoError, WasmoResult};
+
 const WASMO_RUNNER: &str = "wasmo_runner";
 
-pub async fn docker_create() {
+pub async fn docker_create() -> WasmoResult<()> {
     info!("Check docker info");
 
     let mut child = Command::new("docker")
-        .args(["stats", "--no-stream"])
+        .args(["ps"])
         .stdout(Stdio::piped())
         .spawn()
         .unwrap();
@@ -28,21 +30,24 @@ pub async fn docker_create() {
                 for line in lines {
                     error!("{}", line.unwrap());
                 }
-                panic!("Should be able to discuss with docker")
+                Err(WasmoError::NoDockerRunning(
+                    "Should be able to discuss with docker".to_string(),
+                ))
             } else {
                 if check_if_docker_container_exists() {
                     if !remove_docker_container() {
-                        panic!("Should be able to remove the existing wasmo container")
+                        return Err(WasmoError::DockerContainer("Should be able to remove the existing wasmo container".to_string()))
                     }
                 }
-                run_docker_container().await;
+                run_docker_container().await
             }
         }
-        Err(err) => panic!("Should be able to discuss with docker, {}", err),
+        Err(err) => Err(WasmoError::DockerContainer(format!("Should be able to discuss with docker, {}", err))),
     }
 }
 
 fn remove_docker_container() -> bool {
+    info!("Remove old docker container");
     let mut child = Command::new("docker")
         .args(["rm", "-f", WASMO_RUNNER])
         .stdout(Stdio::piped())
@@ -91,7 +96,7 @@ fn check_if_docker_container_exists() -> bool {
     }
 }
 
-async fn run_docker_container() {
+async fn run_docker_container() -> WasmoResult<()> {
     info!("Start wasmo container");
 
     let mut child = Command::new("docker")
@@ -107,15 +112,18 @@ async fn run_docker_container() {
             "-e",
             "AUTH_MODE=NO_AUTH",
             "-e",
-            "S3_ACCESS_KEY_ID=J11Q131JBRSOXFEOIHR8",
+            "AWS_ACCESS_KEY_ID=J11Q131JBRSOXFEOIHR8",
             "-e",
-            "S3_SECRET_ACCESS_KEY=JYIcOAYq3CGAUDx4cup5yxljEtEvMYWHbTJggDDF",
+            "AWS_SECRET_ACCESS_KEY=JYIcOAYq3CGAUDx4cup5yxljEtEvMYWHbTJggDDF",
             "-e",
             "S3_ENDPOINT=https://cellar-c2.services.clever-cloud.com",
             "-e",
+            "AWS_DEFAULT_REGION=us-east-1",
+            "-e",
             "S3_BUCKET=wasm-manager",
-            // "maif/otoroshi-wasm-manager:16.9.2",
-            "wasmo"
+            "-e",
+            "CLI_AUTHORIZATION=foobar",
+            "wasmo",
         ])
         .spawn()
         .expect("failed to spawn container");
@@ -123,12 +131,12 @@ async fn run_docker_container() {
     let status = child.wait();
 
     match status {
-        Err(err) => panic!("Should be able to run wasmo, {}", err),
+        Err(err) => Err(WasmoError::DockerContainer(format!("Should be able to run wasmo, {}", err))),
         Ok(_) => check_if_container_has_started().await,
     }
 }
 
-async fn check_if_container_has_started() {
+async fn check_if_container_has_started() -> WasmoResult<()> {
     let mut child = tokio::process::Command::new("docker")
         .args(["logs", "-f", WASMO_RUNNER])
         .stdout(Stdio::piped())
@@ -152,4 +160,6 @@ async fn check_if_container_has_started() {
             break;
         }
     }
+
+    Ok(())
 }

@@ -1,6 +1,7 @@
 const STORAGE = {
     S3: "S3",
-    GITHUB: "GITHUB"
+    DOCKER_S3: 'DOCKER_S3',
+    GITHUB: "GITHUB",
 };
 
 module.exports = {
@@ -15,13 +16,10 @@ module.exports = {
         S3_ENDPOINT: process.env.S3_ENDPOINT,
         S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE,
         S3_BUCKET: process.env.S3_BUCKET,
-        S3_REGION: process.env.S3_REGION || 'US_WEST_1',
-
-        DOCKER_USAGE: process.env.DOCKER_USAGE,
+        AWS_DEFAULT_REGION: process.env.AWS_DEFAULT_REGION || 'us-east-1',
 
         GITHUB_PERSONAL_TOKEN: process.env.GITHUB_PERSONAL_TOKEN,
         GITHUB_MAX_REPO_SIZE: process.env.GITHUB_MAX_REPO_SIZE,
-
 
         // TODO - migrate to the new wasmer https://docs.wasmer.io/registry/get-started
         WAPM_REGISTRY_TOKEN: false, // process.env.WAPM_REGISTRY_TOKEN,

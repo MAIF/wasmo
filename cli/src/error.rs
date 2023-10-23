@@ -6,7 +6,8 @@ pub type WasmoResult<T> = std::result::Result<T, WasmoError>;
 pub enum WasmoError {
     PluginAlreadyExists(String),
     PluginCreationFailed(String),
-    MissingConfigurationFile(String),
+    NoDockerRunning(String),
+    DockerContainer(String)
 }
 
 impl fmt::Display for WasmoError {
@@ -18,13 +19,8 @@ impl fmt::Display for WasmoError {
             WasmoError::PluginCreationFailed(err) => {
                 write!(f, "plugin failed to be create, {}", &err)
             }
-            WasmoError::MissingConfigurationFile(err) => {
-                write!(
-                    f,
-                    "failed to find and remove the configuration file, {}",
-                    &err
-                )
-            }
+            WasmoError::NoDockerRunning(err) => write!(f, "docker daemon can't be reach, {}", &err),
+            WasmoError::DockerContainer(err) => write!(f, "docker command failed, {}", &err),
         }
     }
 }
