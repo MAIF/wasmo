@@ -7,19 +7,48 @@ use clap::{Parser, Subcommand};
 use error::{WasmoError, WasmoResult};
 use core::panic;
 use hyper::{Body, Client, Method, Request};
-use paris::info;
+use paris::{info, error};
 use serde::Deserialize;
 use std::{
     collections::HashMap,
     fs::{self, File},
     io::Write,
-    path::PathBuf,
+    path::{PathBuf, Path}, str::FromStr,
 };
 
 const WASMO_SERVER: &str = "WASMO_SERVER";
 const WASMO_PATH: &str = "WASMO_PATH";
 const WASMO_TOKEN: &str = "WASMO_TOKEN";
 const WASMO_AUTHORIZATION_HEADER: &str = "WASMO_AUTHORIZATION_HEADER";
+
+#[derive(Debug, PartialEq)]
+enum Provider {
+    Docker,
+    OneShotDocker,
+    Remote
+}
+
+impl ToString for Provider {
+    fn to_string(&self) -> String {
+        match &self {
+            Provider::Docker => String::from("Docker"),
+            Provider::OneShotDocker => String::from("OneShotDocker"),
+            Provider::Remote => String::from("Remote"),
+        }
+    }
+}
+
+impl FromStr for Provider {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<Provider, Self::Err> {
+        match input {
+            "Docker"         => Ok(Provider::Docker),
+            "OneShotDocker"  => Ok(Provider::OneShotDocker),
+            _                => Ok(Provider::Remote),
+        }
+    }
+}
 
 #[derive(Debug, Deserialize)]
 struct WasmoBuildResponse {
@@ -89,8 +118,8 @@ enum Commands {
             value_name = "PROVIDER", 
             short = 'o',
             long = "provider",
-            value_parser = ["REMOTE", "DOCKER"], 
-            default_value = "DOCKER",
+            value_parser = ["docker", "one_shot_docker", "remote"], 
+            default_value = "docker",
             require_equals = true,
             required = false
         )]
@@ -266,11 +295,23 @@ fn read_configuration() -> HashMap<String, String> {
     envs
 }
 
-async fn build(path: Option<String>, mut server: Option<String>, using_docker: bool) -> Result<(), WasmoError> {
+async fn build(path: Option<String>, mut server: Option<String>, provider: Provider) -> Result<(), WasmoError> {
     let mut configuration = read_configuration();
 
-    if using_docker {
-        docker::docker_create().await?;
+    let complete_path = path.unwrap_or_else(get_current_working_dir);
+
+    info!(
+        "Build plugin at path: {:#?}, with wasmo server: {:#?} ",
+        &complete_path,
+        &configuration.get(WASMO_SERVER).unwrap()
+    );
+    
+    if !Path::new(&complete_path).exists() {
+        return Err(WasmoError::PluginNotExists())
+    }
+
+    if provider != Provider::Remote  {
+        docker::docker_create(provider == Provider::OneShotDocker).await?;
 
         server = Some("http://localhost:5001".to_string())
     }
@@ -286,14 +327,6 @@ async fn build(path: Option<String>, mut server: Option<String>, using_docker: b
     if !configuration.contains_key(WASMO_TOKEN) {
         panic!("Should be able to build until WASMO_TOKEN is not defined");
     }
-
-    info!(
-        "Build plugin at path: {:#?}, with wasmo server: {:#?} ",
-        path.clone().unwrap_or("<current-dir>".to_string()),
-        &configuration.get(WASMO_SERVER).unwrap()
-    );
-
-    let complete_path = path.unwrap_or_else(get_current_working_dir);
 
     let plugin = plugin::read_plugin(&complete_path);
 
@@ -344,7 +377,7 @@ async fn build(path: Option<String>, mut server: Option<String>, using_docker: b
         }
     }
 
-    if using_docker {
+    if provider == Provider::OneShotDocker {
         docker::remove_docker_container();
     }
 
@@ -500,10 +533,10 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
 }
 
 #[tokio::main]
-async fn main() -> Result<(), WasmoError> {
+async fn main() {
     let args = Cli::parse();
 
-    match args.command {
+    let out = match args.command {
         Commands::Init {
             template,
             name,
@@ -513,7 +546,7 @@ async fn main() -> Result<(), WasmoError> {
             server,
             path,
             provider,
-        } => build(path, server, provider == "DOCKER").await,
+        } => build(path, server, Provider::from_str(&provider).unwrap()).await,
         Commands::Config { command } => match command {
             ConfigCommands::Set {
                 token,
@@ -529,5 +562,10 @@ async fn main() -> Result<(), WasmoError> {
             }
             ConfigCommands::Reset {} => reset_configuration(),
         },
-    }
+    };
+
+    if let Err(e) = out {
+        error!("{}", e);
+        std::process::exit(1);
+     }
 }

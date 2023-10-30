@@ -1,7 +1,15 @@
 [package]
-name = "wasmo-cli"
+name = "wasmo"
 version = "0.1.0"
 edition = "2021"
+authors = ["Zwiterrion <etienne.anne@icloud.com>"]
+license = "MIT OR Apache-2.0"
+description = "A CLI to create and build WASM binaries"
+# readme = "README.md"
+homepage = "https://github.com/MAIF/wasmo"
+repository = "https://github.com/MAIF/wasmo"
+keywords = ["cli", "wasm", "build", "CI/CD"]
+categories = ["command-line-utilities"]
 
 [[bin]]
 name = "wasmo"
@@ -22,6 +30,7 @@ rust_socketio = { version = "0.4.3", features = ["async"] }
 futures-util = "0.3.28"
 http-body-util = "0.1.0-rc.3"
 bytes = "1.5.0"
+error-stack = "0.4.1"
 
 [dev-dependencies]
 serial_test = "2.0.0"

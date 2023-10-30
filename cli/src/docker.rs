@@ -11,7 +11,7 @@ use crate::error::{WasmoError, WasmoResult};
 
 const WASMO_RUNNER: &str = "wasmo_runner";
 
-pub async fn docker_create() -> WasmoResult<()> {
+pub async fn docker_create(one_shot_container: bool) -> WasmoResult<()> {
     info!("Check docker info");
 
     let mut child = Command::new("docker")
@@ -34,15 +34,28 @@ pub async fn docker_create() -> WasmoResult<()> {
                     "Should be able to discuss with docker".to_string(),
                 ))
             } else {
-                if check_if_docker_container_exists() {
-                    if !remove_docker_container() {
-                        return Err(WasmoError::DockerContainer("Should be able to remove the existing wasmo container".to_string()))
+                let container_exists = check_if_docker_container_exists();
+                if container_exists {
+                    if !one_shot_container {
+                        if !remove_docker_container() {
+                            return Err(WasmoError::DockerContainer(
+                                "Should be able to remove the existing wasmo container".to_string(),
+                            ));
+                        }
                     }
                 }
-                run_docker_container().await
+
+                if !one_shot_container || container_exists {
+                    run_docker_container().await
+                } else {
+                    Ok(())
+                }
             }
         }
-        Err(err) => Err(WasmoError::DockerContainer(format!("Should be able to discuss with docker, {}", err))),
+        Err(err) => Err(WasmoError::DockerContainer(format!(
+            "Should be able to discuss with docker, {}",
+            err
+        ))),
     }
 }
 
@@ -131,7 +144,10 @@ async fn run_docker_container() -> WasmoResult<()> {
     let status = child.wait();
 
     match status {
-        Err(err) => Err(WasmoError::DockerContainer(format!("Should be able to run wasmo, {}", err))),
+        Err(err) => Err(WasmoError::DockerContainer(format!(
+            "Should be able to run wasmo, {}",
+            err
+        ))),
         Ok(_) => check_if_container_has_started().await,
     }
 }
