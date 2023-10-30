@@ -5,6 +5,9 @@ on:
     tags: 
       - '**'
 
+env:
+  VERSION: ${{ github.ref_name }}
+
 jobs:
   push_to_registry:
     name: Push Docker image to Docker Hub
@@ -22,8 +25,8 @@ jobs:
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
-        # with:
-        #   images: MAIF/wasmo:${{github.ref_name}}
+        with:
+          images: MAIF/wasmo:${{ env.VERSION }}
       
       - name: Build and push Docker image
         uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
