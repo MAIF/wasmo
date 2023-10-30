@@ -140,7 +140,10 @@ enum ConfigCommands {
             value_name = "PATH", 
             short = 'p',
             long = "path",
+            help = "The path to the configuration folder",
+            group = "configuration",
             required = false
+
         )]
         path: Option<String>,
         /// The token access, used to authenticate the calls to the server
@@ -148,6 +151,8 @@ enum ConfigCommands {
             value_name = "TOKEN", 
             short = 't',
             long = "token",
+            help = "The token access, used to authenticate the calls to the server",
+            group = "configuration",
             required = false
         )]
         token: Option<String>,
@@ -156,14 +161,17 @@ enum ConfigCommands {
             value_name = "SERVER", 
             short = 's',
             long = "server",
+            help = "The remote server to build your plugins",
+            group = "configuration",
             required = false
         )]
         server: Option<String>,
+
     },
     Get {},
 }
 
-fn rename_plugin(template: String, name: String, path: Option<String>) -> error::WasmoResult<()> {
+fn rename_plugin(template: String, name: String, path: Option<String>) -> WasmoResult<()> {
     let complete_path = match &path {
         Some(p) => format!("{}/{}", p, name),
         None => format!("./{}", name),
@@ -204,9 +212,11 @@ fn update_metadata_file(path: &String, name: &String, template: &String) -> Wasm
     }
 }
 
-fn initialize(template: String, name: String, path: Option<String>) -> error::WasmoResult<()> {
+fn initialize(template: String, name: String, path: Option<String>) -> WasmoResult<()> {
+    let path_to_crate= env!("CARGO_MANIFEST_DIR");
+
     let zip_action = zip_extensions::read::zip_extract(
-        &PathBuf::from(format!("../server/templates/{}.zip", template)),
+        &PathBuf::from(format!("{}/templates/{}.zip", path_to_crate, template)),
         &PathBuf::from("./".to_string()),
     );
 
@@ -268,14 +278,14 @@ fn configuration_file_to_env(configuration_path: String) -> HashMap<String, Stri
     }
 }
 
-fn read_configuration() -> HashMap<String, String> {
+fn read_configuration() -> WasmoResult<HashMap<String, String>> {
     let wasmo_token = option_env!("WASMO_TOKEN");
     let wasmo_server = option_env!("WASMO_SERVER");
 
     let envs: HashMap<String, String> = if wasmo_server.is_none() || wasmo_server.is_none() {
         let configuration_path = match option_env!("WASMO_PATH") {
             Some(path) => path.to_owned(),
-            None => get_home(),
+            None => get_home()?,
         };
 
         let envs = configuration_file_to_env(format!("{}/.wasmo", configuration_path));
@@ -292,13 +302,24 @@ fn read_configuration() -> HashMap<String, String> {
         envs
     };
 
-    envs
+    Ok(envs)
 }
 
-async fn build(path: Option<String>, mut server: Option<String>, provider: Provider) -> Result<(), WasmoError> {
-    let mut configuration = read_configuration();
+async fn build(path: Option<String>, mut server: Option<String>, provider: Provider) -> WasmoResult<()> {
+    let mut configuration = read_configuration()?;
 
-    let complete_path = path.unwrap_or_else(get_current_working_dir);
+    let complete_path = match path {
+        Some(p) => p,
+        None => get_current_working_dir()?
+    };
+
+    if !configuration.contains_key(WASMO_SERVER) {
+        return Err(WasmoError::BuildInterrupt("Should be able to reach a wasmo server but WASMO_SERVER is not defined".to_string()));
+    }
+
+    if !configuration.contains_key(WASMO_TOKEN) {
+        return Err(WasmoError::BuildInterrupt("Should be able to build until WASMO_TOKEN is not defined".to_string()));
+    }
 
     info!(
         "Build plugin at path: {:#?}, with wasmo server: {:#?} ",
@@ -318,14 +339,6 @@ async fn build(path: Option<String>, mut server: Option<String>, provider: Provi
 
     if server.is_some() {
         configuration.insert(WASMO_SERVER.to_string(), server.unwrap());
-    }
-
-    if !configuration.contains_key(WASMO_SERVER) {
-        panic!("Should be able to reach a wasmo server but WASMO_SERVER is not defined");
-    }
-
-    if !configuration.contains_key(WASMO_TOKEN) {
-        panic!("Should be able to build until WASMO_TOKEN is not defined");
     }
 
     let plugin = plugin::read_plugin(&complete_path);
@@ -431,15 +444,15 @@ async fn get_wasm(
     }
 }
 
-fn get_current_working_dir() -> String {
+fn get_current_working_dir() -> WasmoResult<String> {
     match std::env::current_dir() {
-        Ok(x) => x.into_os_string().into_string().unwrap(),
-        Err(e) => panic!("Should be able to read the current directory, {}", e),
+        Ok(x) => Ok(x.into_os_string().into_string().unwrap()),
+        Err(e) => Err(WasmoError::FileSystem(format!("Should be able to read the current directory, {}", e))),
     }
 }
 
-fn reset_configuration() -> Result<(), WasmoError> {
-    let home_path = get_home();
+fn reset_configuration() -> WasmoResult<()> {
+    let home_path = get_home()?;
 
     let complete_path = format!("{}/.wasmo", &home_path);
 
@@ -456,15 +469,20 @@ fn get_option_home() -> String {
     }
 }
 
-fn get_home() -> String {
+fn get_home() -> WasmoResult<String> {
     match home::home_dir() {
-        Some(p) => p.into_os_string().into_string().unwrap(),
-        None => panic!("Impossible to get your home dir!"),
+        Some(p) => Ok(p.into_os_string().into_string().unwrap()),
+        None => Err(WasmoError::FileSystem(format!("Impossible to get your home dir!"))),
     }
 }
 
-fn set_configuration(token: Option<String>, server: Option<String>, path: Option<String>) -> Result<(), WasmoError> {
-    let home_path = get_home();
+fn set_configuration(token: Option<String>, server: Option<String>, path: Option<String>) -> WasmoResult<()> {
+
+    if token.is_none() && server.is_none() && path.is_none() {
+        return Err(WasmoError::Configuration("missing token, server or path keys".to_string()));
+    }
+
+    let home_path = get_home()?;
 
     let complete_path = match &path {
         Some(p) => format!("{}/.wasmo", p),
@@ -490,7 +508,6 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
 
     let wasmo_token = extract_variable_or_default(&contents, WASMO_TOKEN, token);
     let wasmo_server = extract_variable_or_default(&contents, WASMO_SERVER, server);
-
     let wasmo_path = extract_variable_or_default(&contents, "WASMO_PATH", path);
 
     if wasmo_path.eq("") {

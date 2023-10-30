@@ -7,9 +7,11 @@ pub enum WasmoError {
     PluginAlreadyExists(String),
     PluginNotExists(),
     PluginCreationFailed(String),
+    BuildInterrupt(String),
     FileSystem(String),
     NoDockerRunning(String),
     DockerContainer(String),
+    Configuration(String)
 }
 
 impl fmt::Display for WasmoError {
@@ -31,6 +33,12 @@ impl fmt::Display for WasmoError {
             WasmoError::DockerContainer(err) => write!(f,"docker command failed, {}", &err),
             WasmoError::FileSystem(err) => {
                 write!(f,"something happened using file system, {}", &err)
+            },
+            WasmoError::BuildInterrupt(err) => {
+                write!(f,"something happened when building, {}", &err)
+            },
+            WasmoError::Configuration(err) => {
+                write!(f,"something happened with the configuration, {}", &err)
             }
         }
     }
