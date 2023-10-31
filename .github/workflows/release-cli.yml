@@ -9,19 +9,6 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  cratesio:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./cli
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose --release
-    - name: Run tests
-      run: cargo test --verbose
-    - name: Publish to crates.io
-      run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
   build-and-upload:
     name: Build and upload
     runs-on: ${{ matrix.os }}
@@ -90,3 +77,16 @@ jobs:
           working-directory: cli
           files: |
             ${{ env.ASSET }}
+  cratesio:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./cli
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: cargo build --verbose --release
+    - name: Run tests
+      run: cargo test --verbose
+    - name: Publish to crates.io
+      run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}        
