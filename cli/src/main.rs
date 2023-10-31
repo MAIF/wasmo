@@ -16,6 +16,8 @@ use std::{
     path::{PathBuf, Path}, str::FromStr,
 };
 
+use dirs;
+
 const WASMO_SERVER: &str = "WASMO_SERVER";
 const WASMO_PATH: &str = "WASMO_PATH";
 const WASMO_TOKEN: &str = "WASMO_TOKEN";
@@ -463,14 +465,14 @@ fn reset_configuration() -> WasmoResult<()> {
 }
 
 fn get_option_home() -> String {
-    match home::home_dir() {
+    match dirs::home_dir() {
         Some(p) => p.into_os_string().into_string().unwrap(),
         None => "".to_owned(),
     }
 }
 
 fn get_home() -> WasmoResult<String> {
-    match home::home_dir() {
+    match dirs::home_dir() {
         Some(p) => Ok(p.into_os_string().into_string().unwrap()),
         None => Err(WasmoError::FileSystem(format!("Impossible to get your home dir!"))),
     }
