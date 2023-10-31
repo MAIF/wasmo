@@ -48,15 +48,15 @@ jobs:
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
       - name: Install Rust
-        working-directory: cli
         uses: dtolnay/rust-toolchain@stable
         with:
+          working-directory: cli
           targets: ${{ matrix.target }}
 
       - name: Build
         uses: actions-rs/cargo@v1
-        working-directory: cli
         with:
+          working-directory: cli
           use-cross: true
           command: build
           args: --verbose --release --target ${{ matrix.target }}
@@ -85,8 +85,8 @@ jobs:
           fi
 
       - name: Release
-        working-directory: cli
         uses: softprops/action-gh-release@v1
         with:
+          working-directory: cli
           files: |
             ${{ env.ASSET }}
