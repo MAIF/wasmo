@@ -19,10 +19,10 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - os_name: Linux-aarch64
-            os: ubuntu-20.04
-            target: aarch64-unknown-linux-musl
-            bin: figctl-linux-arm64
+          # - os_name: Linux-aarch64
+          #   os: ubuntu-20.04
+          #   target: aarch64-unknown-linux-musl
+          #   bin: figctl-linux-arm64
           - os_name: Linux-x86_64
             os: ubuntu-20.04
             target: x86_64-unknown-linux-gnu
@@ -53,19 +53,19 @@ jobs:
           args: "--release"
           strip: true
       - name: Rename binary (linux and macos)
-        run: mv target/${{ matrix.platform.target }}/release/figctl target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+        run: mv ./cli/target/${{ matrix.platform.target }}/release/figctl ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
         if: matrix.platform.os_name != 'Windows-x86_64'
       - name: Rename binary (windows)
-        run: mv target/${{ matrix.platform.target }}/release/figctl.exe target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+        run: mv ./cli/target/${{ matrix.platform.target }}/release/figctl.exe ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
         if: matrix.platform.os_name == 'Windows-x86_64'
       - name: Generate SHA-256
-        run: shasum -a 256 target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} | cut -d ' ' -f 1 > target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256
+        run: shasum -a 256 ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} | cut -d ' ' -f 1 > ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256
       - name: Release binary and SHA-256 checksum to GitHub
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
-            target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256
+            ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+            ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256
 
   cratesio:
     runs-on: ubuntu-latest
