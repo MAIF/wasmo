@@ -358,7 +358,7 @@ router.post('/build', async (req, res) => {
         .then(() => {
           FileSystem.writeFiles(files, folder, isRustBuild)
             .then(() => {
-              const saveInLocal = true;
+              const saveInLocal = metadata.local || true;
               addPluginToBuildQueue(
                 folder,
                 {

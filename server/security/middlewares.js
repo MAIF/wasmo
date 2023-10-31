@@ -52,7 +52,7 @@ const extractUserFromQuery = (req, res, next) => {
 }
 
 const checkCLIToken = (req, res, next) => {
-  if (req.path === '/api/plugins/build') {
+  if (req.path === '/api/plugins/build' || req.path === '/local/wasm') {
     if (ENV.CLI_AUTHORIZATION !== undefined && req.headers[ENV.CLI_AUTHORIZATION_HEADER.toLocaleLowerCase()] === ENV.CLI_AUTHORIZATION) {
       return next()
     } else {

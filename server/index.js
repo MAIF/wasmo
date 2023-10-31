@@ -68,7 +68,6 @@ function createServer(appVersion) {
   app.use('/api/wasm', wasmRouter);
   app.use('/api/version', (_, res) => res.json(appVersion));
 
-
   app.use('/health', (_, res) => res.json({ status: true }))
 
   app.use('/', publicRouter);

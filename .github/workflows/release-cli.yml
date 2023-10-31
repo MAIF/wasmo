@@ -22,23 +22,23 @@ jobs:
           # - os_name: Linux-aarch64
           #   os: ubuntu-20.04
           #   target: aarch64-unknown-linux-musl
-          #   bin: figctl-linux-arm64
+          #   bin: wasmo-linux-arm64
           - os_name: Linux-x86_64
             os: ubuntu-20.04
             target: x86_64-unknown-linux-gnu
-            bin: figctl-linux-amd64
+            bin: wasmo-linux-amd64
           - os_name: Windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            bin: figctl-amd64.exe
+            bin: wasmo-amd64.exe
           - os_name: macOS-x86_64
             os: macOS-latest
             target: x86_64-apple-darwin
-            bin: figctl-darwin-amd64
+            bin: wasmo-darwin-amd64
           - os_name: macOS-aarch64
             os: macOS-latest
             target: aarch64-apple-darwin
-            bin: figctl-darwin-arm64
+            bin: wasmo-darwin-arm64
         toolchain:
           - stable
     steps:
@@ -53,11 +53,11 @@ jobs:
           args: "--release"
           strip: true
       - name: Rename binary (linux and macos)
-        run: mv /target/${{ matrix.platform.target }}/release/figctl /target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+        run: mv /target/${{ matrix.platform.target }}/release/wasmo /target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
         working-directory: "./cli"
         if: matrix.platform.os_name != 'Windows-x86_64'
       - name: Rename binary (windows)
-        run: mv /target/${{ matrix.platform.target }}/release/figctl.exe /target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+        run: mv /target/${{ matrix.platform.target }}/release/wasmo.exe /target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
         working-directory: "./cli"
         if: matrix.platform.os_name == 'Windows-x86_64'
       - name: Generate SHA-256
