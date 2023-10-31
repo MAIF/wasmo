@@ -15,6 +15,10 @@ jobs:
   build-and-upload:
     name: ${{ matrix.platform.os_name }} with rust ${{ matrix.toolchain }}
     runs-on: ${{ matrix.platform.os }}
+    defaults:
+        run:
+            working-directory: ./cli
+
     strategy:
       fail-fast: false
       matrix:
