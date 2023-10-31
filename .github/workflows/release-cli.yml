@@ -56,19 +56,14 @@ jobs:
 
       - name: Build
         uses: actions-rs/cargo@v1
-        defaults:
-          run:
-            working-directory: ./cli
         with:
           use-cross: true
           command: build
+          working-directory: ./cli
           args: --verbose --release --target ${{ matrix.target }}
 
       - name: Build archive
         shell: bash
-        defaults:
-          run:
-            working-directory: ./cli
         run: |
           # Replace with the name of your binary
           binary_name="<BINARY_NAME>"
