@@ -1,14 +1,14 @@
 const STORAGE = {
     S3: "S3",
     DOCKER_S3: 'DOCKER_S3',
-    GITHUB: "GITHUB",
+    LOCAL: "LOCAL",
 };
 
 module.exports = {
     STORAGE,
     ENV: {
         PORT: process.env.MANAGER_PORT || 5001,
-        STORAGE: process.env.STORAGE || STORAGE.S3,
+        STORAGE: process.env.STORAGE || STORAGE.LOCAL,
 
         // process.env.AWS_ACCESS_KEY_ID,
         // process.env.AWS_SECRET_ACCESS_KEY,
