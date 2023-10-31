@@ -25,6 +25,9 @@ jobs:
   build-and-upload:
     name: Build and upload
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: ./cli
 
     strategy:
       matrix:
