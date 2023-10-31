@@ -53,9 +53,9 @@ ADD server $HOME/server
 
 # install ui
 WORKDIR $HOME/ui
-#RUN npm install
-#RUN npm run build
-#RUN rm -rf node_modules
+RUN npm install
+RUN npm run build
+RUN rm -rf node_modules
 
 WORKDIR $HOME/server
 RUN npm install pm2@latest -g

@@ -69,7 +69,7 @@ fn _2_should_failed_initialize_plugin_in_non_empty_directory(
     cmd.assert().success();
 
     cmd.assert()
-        .stderr(predicate::str::contains("PluginCreationFailed"));
+        .stderr(predicate::str::contains("plugin failed to be create"));
 
     setup.clean();
     Ok(())

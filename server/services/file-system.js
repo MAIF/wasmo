@@ -77,7 +77,7 @@ const pathsToPath = (...paths) => path.join(process.cwd(), ...paths);
 
 const writeFiles = (files, folder, isRustBuild) => {
   return Promise.all(files.map(({ name, content }) => {
-    const filePath = isRustBuild ? (filePath = name === 'Cargo.toml' ? '' : 'src') : '';
+    const filePath = isRustBuild ? (name === 'Cargo.toml' ? '' : 'src') : '';
 
     return fs.writeFile(
       path.join(process.cwd(), 'build', folder, filePath, name),

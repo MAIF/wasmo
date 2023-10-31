@@ -77,6 +77,6 @@ jobs:
     - name: Build
       run: cargo build --verbose --release
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test --verbose -- --test-threads=1
     - name: Publish to crates.io
       run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}        
