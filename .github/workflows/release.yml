@@ -3,7 +3,7 @@ name: Release Wasmo
 on:
   push:
     tags: 
-      - '**'
+      - 'wasmo**'
 
 jobs:
   push_to_registry:
