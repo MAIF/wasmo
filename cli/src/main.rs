@@ -46,7 +46,9 @@ impl FromStr for Provider {
     fn from_str(input: &str) -> Result<Provider, Self::Err> {
         match input {
             "Docker"         => Ok(Provider::Docker),
+            "docker"         => Ok(Provider::Docker),
             "OneShotDocker"  => Ok(Provider::OneShotDocker),
+            "one_shot_docker"  => Ok(Provider::OneShotDocker),
             _                => Ok(Provider::Remote),
         }
     }
@@ -60,7 +62,7 @@ struct WasmoBuildResponse {
 /// A fictional versioning CLI
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "wasmo")]
-#[command(about = "Wasmo builder CLI", long_about = None)]
+#[command(about = "Wasmo builder CLI", long_about = None, version = "mathieu idea")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -315,19 +317,21 @@ async fn build(path: Option<String>, mut server: Option<String>, provider: Provi
         None => get_current_working_dir()?
     };
 
-    if !configuration.contains_key(WASMO_SERVER) {
-        return Err(WasmoError::BuildInterrupt("Should be able to reach a wasmo server but WASMO_SERVER is not defined".to_string()));
-    }
+    info!("{:#?}", provider);
 
-    if !configuration.contains_key(WASMO_TOKEN) {
-        return Err(WasmoError::BuildInterrupt("Should be able to build until WASMO_TOKEN is not defined".to_string()));
-    }
+    // if !configuration.contains_key(WASMO_SERVER) {
+    //     return Err(WasmoError::BuildInterrupt("Should be able to reach a wasmo server but WASMO_SERVER is not defined".to_string()));
+    // }
 
-    info!(
-        "Build plugin at path: {:#?}, with wasmo server: {:#?} ",
-        &complete_path,
-        &configuration.get(WASMO_SERVER).unwrap()
-    );
+    // if !configuration.contains_key(WASMO_TOKEN) {
+    //     return Err(WasmoError::BuildInterrupt("Should be able to build until WASMO_TOKEN is not defined".to_string()));
+    // }
+
+    // info!(
+    //     "Build plugin at path: {:#?}, with wasmo server: {:#?} ",
+    //     &complete_path,
+    //     &configuration.get(WASMO_SERVER).unwrap()
+    // );
     
     if !Path::new(&complete_path).exists() {
         return Err(WasmoError::PluginNotExists())
@@ -565,7 +569,9 @@ async fn main() {
             server,
             path,
             provider,
-        } => build(path, server, Provider::from_str(&provider).unwrap()).await,
+        } => {
+            build(path, server, Provider::from_str(&provider).unwrap()).await
+        },
         Commands::Config { command } => match command {
             ConfigCommands::Set {
                 token,

@@ -121,10 +121,20 @@ async fn run_docker_container() -> WasmoResult<()> {
             "-p",
             "5001:5001",
             "-e",
+            "MANAGER_PORT=5001",
+            "-e",
+            "AUTH_MODE=NO_AUTH",
+            "-e",
+            "AWS_ACCESS_KEY_ID=J11Q131JBRSOXFEOIHR8",
+            "-e",
+            "AWS_SECRET_ACCESS_KEY=NCvEh1xRqZnsgc6y1qjUonr5K3CuLEGDUJxq3gDF",
+            "-e",
+            "S3_ENDPOINT=https://cellar-c2.services.clever-cloud.com",
+            "-e",
             "S3_BUCKET=wasm-manager",
             "-e",
             "CLI_AUTHORIZATION=foobar",
-            "wasmo",
+            "maif/wasmo:0.1.1",
         ])
         .spawn()
         .expect("failed to spawn container");
