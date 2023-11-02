@@ -42,7 +42,18 @@ const addUser = user => {
         }))
           .then(resolve)
       })
-      .catch(err => reject(err))
+      .catch(err => {
+        if (err.Code === "NoSuchKey") {
+          s3.send(new PutObjectCommand({
+            Bucket,
+            Key: 'users.json',
+            Body: JSON.stringify([user])
+          }))
+            .then(resolve)
+        } else {
+          reject(err)
+        }
+      })
   })
 }
 
@@ -58,7 +69,7 @@ const createUserIfNotExists = req => {
     .then(() => resolve(true))
     .catch(err => {
       if (err) {
-        if (err.Code === 'NoSuchKey') {
+        if (err.$metadata.httpStatusCode === 404) {
           addUser(user)
             .then(resolve)
             .catch(reject)
