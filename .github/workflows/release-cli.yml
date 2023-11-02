@@ -75,4 +75,4 @@ jobs:
     - name: Run tests
       run: RUST_TEST_THREADS=1 cargo test --verbose
     - name: Publish to crates.io
-      run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }}        
+      run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }} --allow-dirty
