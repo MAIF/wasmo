@@ -112,10 +112,8 @@ fn _5_can_set_configuration() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "config",
         "set",
-        "--path",
-        "/tmp/.wasmo",
-        "--token",
-        "foobar",
+        "--path=/tmp/wasmo",
+        "--token=foobar",
     ]);
     cmd.assert()
         .stdout(predicate::str::contains("wasmo configuration patched"))
@@ -124,7 +122,7 @@ fn _5_can_set_configuration() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("wasmo")?;
     cmd.args(["config", "get"]);
     cmd.assert()
-        .stdout(predicate::str::contains("/tmp/.wasmo"))
+        .stdout(predicate::str::contains("/tmp/wasmo"))
         .stdout(predicate::str::contains("foobar"))
         .success();
 

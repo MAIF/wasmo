@@ -53,8 +53,11 @@ pub async fn ws_listen(url: &String, channel: &String) -> BuildResult {
         .on(channel.as_str(), callback)
         .on("error", |err, _| {
             async move {
-                error!("Error: {:#?}", err);
                 unsafe {
+                    if COMMUNICATION_ENDED == BuildResult::InProgress {
+                        error!("Error: {:#?}", err);
+                    }
+
                     COMMUNICATION_ENDED = BuildResult::Failed;
                 }
             }
