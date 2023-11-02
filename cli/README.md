@@ -38,13 +38,13 @@ $ wasmo help
 The `wasmo` binary internally contains a number of subcommands for working
 with wasm modules:
 
-| Tool                         | Description                                                   |
-| ---------------------------- | ------------------------------------------------------------- |
-| `wasmo config set --token=<WASMO_TOKEN> --path=<CONFIGURATION_FILEPATH> --server=<SERVER_URL>`             |                                    |
-| `wasmo config get`             |                                    |
-| `wasmo config reset`             |                                    |
-| `wasmo init --template=<js, go, opa, rust, ts> --name=<NAME> --pat=<PATH>`             |                                    |
-| `wasmo build`             |                                    |
+| Tool                        | Arguments | Description                                                   |
+| ---------------------------- | -- | ------------------------------------------------------------- |
+| `wasmo config set`            | `--token=<WASMO_TOKEN> --path=<CONFIGURATION_FILEPATH> --server=<SERVER_URL>` | Globally configure the CLI with the authorization token, the path where the configuration file will be stored and the server to reach during the build. These parameters are optional and can be passed when running the build command.  |
+| `wasmo config get`             | Get the configuration from the configured path file or from `$HOME/.wasmo` |
+| `wasmo config reset`             | Clean configuration and reset to default settings. The default file path configuration will be `$HOME/.wasmo`                                   ||
+| `wasmo init`             | `--template=<js, go, opa, rust, ts> --name=<NAME> --pat=<PATH>` | Initialize a WASM plugin to the specific path. You can choose between many templates, javascript/typescript (js/ts), Open Policy Agent (opa), Rust or Golang (go). |
+| `wasmo build`             | `--path=<PLUGIN_PATH> --provider=<docker|one_shot_docker|remote|Docker|Remote|OneShotDocker> --server=<SERVER> --token=<TOKEN>` ||
 
 
 # License
