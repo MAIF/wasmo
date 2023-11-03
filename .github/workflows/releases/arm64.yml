@@ -1,7 +1,6 @@
 name: Release ARM64 Wasmo
 
-on:
-  workflow_dispatch:
+on: [workflow_dispatch]
 
 jobs:
   push_to_registry:
