@@ -8,7 +8,7 @@
   </p>
 
   <p>
-  Wasmo CLI can be combined with the power of <a href="https://hub.docker.com/r/maif/wasmo">Docker Wasmo server images</a> to build locally and remotly WASM binaries.
+  Wasmo CLI can be combined with the power of <a href="https://hub.docker.com/r/maif/wasmo">Docker Wasmo server images</a> to build locally and remotely WASM binaries.
   </p>
 </div>
 
@@ -20,7 +20,7 @@ This project can be installed and compiled from source with this Cargo command:
 ```
 $ cargo install wasmo
 or
-$ brew install wasmo
+$ brew install wasmo (coming soon)
 ```
 
 Additionally there are [precompiled artifacts built on CI][artifacts] which are
@@ -91,7 +91,7 @@ Let's explain these 3 parameters:
   - the `host` indicates which kind of Wasmo server used. The pratical way is to use `Docker` or `OneShotDocker` because it prevents to install a Wasmo server by deploying, inside your locally Docker, a new Wasmo container. The last possible value is `Remote` and can be used to specify with a URI the remote Wasmo server used.
   - the `token` argument is passed to the Wasmo server to authenticate the CLI. It can also be set up in the [configuration file][#configure-your-configuration-file]
 
-<!-- [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/NdbQR6vQ5Sk/0.jpg)](https://www.youtube.com/watch?v=NdbQR6vQ5Sk) -->
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/NdbQR6vQ5Sk/0.jpg)](https://www.youtube.com/watch?v=NdbQR6vQ5Sk)
 
 ## Configure your configuration file
 
