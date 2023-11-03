@@ -1,10 +1,6 @@
 name: Push on crates.io
 
-on:
-  workflow_dispatch:
-    inputs:
-        version:
-            description: "Version number"
+on: [workflow_dispatch]
 
 env:
   CARGO_TERM_COLOR: always

@@ -41,5 +41,4 @@ jobs:
           platforms: linux/arm64
           file: ./arm64-Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ inputs.version }}
