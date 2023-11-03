@@ -1,6 +1,10 @@
 name: Build Wasmo CLI binaries
 
-on: [workflow_dispatch]
+on: 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number"
 
 jobs:
   build-and-upload:
@@ -50,6 +54,7 @@ jobs:
       - name: Release binary and SHA-256 checksum to GitHub
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ inputs.version }}
           files: |
             ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
             ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256

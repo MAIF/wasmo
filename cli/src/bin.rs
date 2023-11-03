@@ -397,6 +397,10 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, token: 
         Ok(k) => {
             logger::log(format!("Build call status: {}", k.status()));
 
+            if k.status() == 403 {
+                return Err(WasmoError::BuildInterrupt("".to_string()));
+            }
+
             let body_bytes = hyper::body::to_bytes(k.into_body()).await;
             let result: WasmoBuildResponse = serde_json::from_str(
                 String::from_utf8(body_bytes.unwrap().to_vec())
