@@ -17,7 +17,7 @@ pub fn indent_println(str: String) {
     logger.indent(1).info(str.replace("\n", ""));
 }
 
-fn check_loading() {
+pub fn check_loading() {
     unsafe {
         if (*LOADING_MESSAGE).is_some() {
             LOADING_LOGGER

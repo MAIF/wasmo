@@ -1,15 +1,7 @@
-name: Release Wasmo CLI
+name: Build Wasmo CLI binaries
 
 on:
-  push:
-    tags: 
-      - 'cli**'
-
-env:
-  CARGO_TERM_COLOR: always
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
   build-and-upload:
@@ -62,17 +54,3 @@ jobs:
           files: |
             ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
             ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256
-
-  cratesio:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./cli
-    steps:
-    - uses: actions/checkout@v3
-    - name: Build
-      run: cargo build --verbose --release
-    - name: Run tests
-      run: RUST_TEST_THREADS=1 cargo test --verbose
-    - name: Publish to crates.io
-      run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }} --allow-dirty

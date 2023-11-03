@@ -4,11 +4,19 @@ use rust_socketio::{
     Payload,
 };
 
-#[derive(PartialEq, Clone, Copy)]
+use std::fmt;
+
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum BuildResult {
     Success,
     Failed,
     InProgress,
+}
+
+impl fmt::Display for BuildResult {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 static mut COMMUNICATION_ENDED: BuildResult = BuildResult::InProgress;
@@ -20,6 +28,7 @@ fn strip_trailing_newline(input: &str) -> String {
         .replace("\\", "")
         .replace("\"n", "")
         .replace("\"", "")
+        .replace("[BUILD]", "")
 }
 
 pub async fn ws_listen(url: &String, channel: &String) -> BuildResult {
@@ -33,7 +42,8 @@ pub async fn ws_listen(url: &String, channel: &String) -> BuildResult {
             };
 
             crate::logger::indent_println(format!("{}", strip_trailing_newline(&message)));
-            if message.contains("You can now use the generated wasm") {
+
+            if message.contains("RELEASE") {
                 unsafe {
                     COMMUNICATION_ENDED = BuildResult::Success;
                 }
@@ -66,6 +76,8 @@ pub async fn ws_listen(url: &String, channel: &String) -> BuildResult {
         .await
         .expect("Connection failed");
 
+    let delay = std::time::Duration::from_millis(30);
+
     loop {
         unsafe {
             if COMMUNICATION_ENDED != BuildResult::InProgress {
@@ -73,6 +85,7 @@ pub async fn ws_listen(url: &String, channel: &String) -> BuildResult {
                 break;
             }
         }
+        std::thread::sleep(delay);
     }
 
     unsafe { COMMUNICATION_ENDED }

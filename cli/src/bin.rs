@@ -26,34 +26,34 @@ const WASMO_AUTHORIZATION_HEADER: &str = "WASMO_AUTHORIZATION_HEADER";
 
 
 #[derive(Debug, PartialEq)]
-pub enum Provider {
+pub enum Host {
     Docker,
     OneShotDocker,
     Remote
 }
 
-impl ToString for Provider {
+impl ToString for Host {
     fn to_string(&self) -> String {
         match &self {
-            Provider::Docker => String::from("Docker"),
-            Provider::OneShotDocker => String::from("OneShotDocker"),
-            Provider::Remote => String::from("Remote"),
+            Host::Docker => String::from("Docker"),
+            Host::OneShotDocker => String::from("OneShotDocker"),
+            Host::Remote => String::from("Remote"),
         }
     }
 }
 
-impl FromStr for Provider {
+impl FromStr for Host {
     type Err = ();
 
-    fn from_str(input: &str) -> Result<Provider, Self::Err> {
+    fn from_str(input: &str) -> Result<Host, Self::Err> {
         match input {
-            "Docker"            => Ok(Provider::Docker),
-            "docker"            => Ok(Provider::Docker),
-            "OneShotDocker"     => Ok(Provider::OneShotDocker),
-            "one_shot_docker"   => Ok(Provider::OneShotDocker),
-            "remote"            => Ok(Provider::Remote),
-            "Remote"            => Ok(Provider::Remote),
-            _                   => panic!("Bad provider"),
+            "Docker"            => Ok(Host::Docker),
+            "docker"            => Ok(Host::Docker),
+            "OneShotDocker"     => Ok(Host::OneShotDocker),
+            "one_shot_docker"   => Ok(Host::OneShotDocker),
+            "remote"            => Ok(Host::Remote),
+            "Remote"            => Ok(Host::Remote),
+            _                   => panic!("Bad host"),
         }
     }
 }
@@ -74,6 +74,8 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    /// get installed version
+    Version {},
     /// Initialize a WASM plugin to the specific path. You can choose between many templates, javascript/typescript (js/ts), Open Policy Agent (opa), Rust or Golang (go).
     #[command()]
     Init {
@@ -121,17 +123,17 @@ enum Commands {
             required = false
         )]
         server: Option<String>,
-        /// provider
+        /// host
         #[arg(
-            value_name = "PROVIDER", 
-            short = 'o',
-            long = "provider",
+            value_name = "HOST", 
+            short = 'h',
+            long = "host",
             value_parser = ["docker", "one_shot_docker", "remote", "Docker", "Remote", "OneShotDocker"], 
             default_value = "docker",
             require_equals = true,
             required = false
         )]
-        provider: String,
+        host: String,
         /// token
         #[arg(
             value_name = "TOKEN", 
@@ -180,6 +182,15 @@ enum ConfigCommands {
             required = false
         )]
         server: Option<String>,
+        /// The cli authorization send to the remote or local builder
+        #[arg(
+            value_name = "DOCKER_AUTHORIZATION", 
+            short = 'd',
+            long = "docker_authorization",
+            help = "The token expected by the docker wasmo container when building. The default value is foobar",
+            required = false
+        )]
+        docker_authorization: Option<String>,
 
     },
     Get {},
@@ -196,10 +207,11 @@ fn rename_plugin(template: String, name: String, path: Option<String>) -> WasmoR
         None => Result::Ok(()),
     };
 
+    logger::indent_println(format!("<yellow>Write</> plugin to {}", &complete_path));
     match std::fs::rename(format!("./{}", template), &complete_path) {
         Ok(()) => {
             update_metadata_file(&complete_path.to_string(), &name, &template)?;
-            logger::println(format!("Plugin created: {}", &complete_path));
+            logger::println("<green>Plugin created</>".to_string());
             Ok(())
         },
         Err(e) => Err(WasmoError::PluginCreationFailed(e.to_string())),
@@ -227,8 +239,10 @@ fn update_metadata_file(path: &String, name: &String, template: &String) -> Wasm
 }
 
 fn initialize(template: String, name: String, path: Option<String>) -> WasmoResult<()> {
+    logger::loading("<yellow>Creating</> plugin ...".to_string());
     let path_to_crate= env!("CARGO_MANIFEST_DIR");
 
+    logger::indent_println("<yellow>Unzipping</> the template ...".to_string());
     let zip_action = zip_extensions::read::zip_extract(
         &PathBuf::from(format!("{}/templates/{}.zip", path_to_crate, template)),
         &PathBuf::from("./".to_string()),
@@ -316,7 +330,7 @@ fn read_configuration() -> WasmoResult<HashMap<String, String>> {
     Ok(envs)
 }
 
-async fn build(path: Option<String>, server: Option<String>, provider: Provider, token: Option<String>) -> WasmoResult<()> {
+async fn build(path: Option<String>, server: Option<String>, host: Host, token: Option<String>) -> WasmoResult<()> {
     let mut configuration = read_configuration()?;
 
     let complete_path = match path {
@@ -342,8 +356,8 @@ async fn build(path: Option<String>, server: Option<String>, provider: Provider,
 
     let mut container = None;
 
-    if provider != Provider::Remote  {
-        container = Some(docker::docker_create(&provider).await?);
+    if host != Host::Remote  {
+        container = Some(docker::docker_create(&host, &configuration).await?);
 
         configuration.insert(WASMO_SERVER.to_owned(), format!("http://localhost:{}", &container.as_ref().unwrap().port).to_string());
     }
@@ -404,7 +418,7 @@ async fn build(path: Option<String>, server: Option<String>, provider: Provider,
         }
     }
 
-    if provider == Provider::OneShotDocker {
+    if host == Host::OneShotDocker {
         docker::remove_docker_container(&container.unwrap().name).await;
     }
 
@@ -468,13 +482,15 @@ fn get_current_working_dir() -> WasmoResult<String> {
 }
 
 fn reset_configuration() -> WasmoResult<()> {
+    logger::loading("<yellow>Reset</> configuration".to_string());
     let home_path = get_home()?;
 
     let complete_path = format!("{}/.wasmo", &home_path);
 
     let _ = fs::remove_file(complete_path);
 
-    logger::println(format!("wasmo configuration has been reset"));
+    logger::check_loading();
+    logger::success(format!("<green>wasmo configuration has been reset</>"));
     Ok(())
 }
 
@@ -522,10 +538,10 @@ fn expand_tilde<P: AsRef<Path>>(path_user_input: P) -> Option<PathBuf> {
     })
 }
 
-fn set_configuration(token: Option<String>, server: Option<String>, path: Option<String>) -> WasmoResult<()> {
+fn set_configuration(token: Option<String>, server: Option<String>, path: Option<String>, docker_authorization: Option<String>) -> WasmoResult<()> {
 
-    if token.is_none() && server.is_none() && path.is_none() {
-        return Err(WasmoError::Configuration("missing token, server or path keys".to_string()));
+    if token.is_none() && server.is_none() && path.is_none() && docker_authorization.is_none() {
+        return Err(WasmoError::Configuration("missing token, server, path or docker_authorization keys".to_string()));
     }
 
     let home_path = get_home()?;
@@ -548,9 +564,13 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
     let wasmo_token = extract_variable_or_default(&contents, WASMO_TOKEN, token);
     let wasmo_server = extract_variable_or_default(&contents, WASMO_SERVER, server);
     let wasmo_path = extract_variable_or_default(&contents, "WASMO_PATH", path.clone());
+    let wasmo_docker_authorization = extract_variable_or_default(&contents, "DOCKER_AUTHORIZATION", path.clone());
 
     if wasmo_path.eq("") {
-        let new_content = format!("WASMO_TOKEN={}\nWASMO_SERVER={}", wasmo_token, wasmo_server);
+        let new_content = format!("WASMO_TOKEN={}\nWASMO_SERVER={}\nDOCKER_AUTHORIZATION={}", 
+            wasmo_token, 
+            wasmo_server, 
+            wasmo_docker_authorization);
 
         match fs::write(format!("{}/.wasmo", &home_path), new_content) {
             Ok(()) => logger::println(format!("wasmo configuration patched")),
@@ -561,8 +581,8 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
         }
     } else {
         let content_at_path = format!(
-            "WASMO_TOKEN={}\nWASMO_SERVER={}\nWASMO_PATH={}",
-            wasmo_token, wasmo_server, wasmo_path
+            "WASMO_TOKEN={}\nWASMO_SERVER={}\nWASMO_PATH={}\nDOCKER_AUTHORIZATION={}",
+            wasmo_token, wasmo_server, wasmo_path, wasmo_docker_authorization
         );
         let content_at_default_path = format!("WASMO_PATH={}", wasmo_path);
 
@@ -607,6 +627,10 @@ async fn main() {
     let args = Cli::parse();
 
     let out = match args.command {
+        Commands::Version {} => {
+            logger::success(format!("Wasmo version: {}", env!("CARGO_PKG_VERSION")));
+            Ok(())
+        },
         Commands::Init {
             template,
             name,
@@ -615,21 +639,23 @@ async fn main() {
         Commands::Build {
             server,
             path,
-            provider,
+            host,
             token
         } => {
-            build(path.map(absolute_path), server, Provider::from_str(&provider).unwrap(), token).await
+            build(path.map(absolute_path), server, Host::from_str(&host).unwrap(), token).await
         },
         Commands::Config { command } => match command {
             ConfigCommands::Set {
                 token,
                 server,
                 path,
-            } => set_configuration(token, server, path.map(absolute_path)),
+                docker_authorization
+            } => set_configuration(token, server, path.map(absolute_path), docker_authorization),
             ConfigCommands::Get {} => {
+                logger::loading("<yellow>Read</> configuration".to_string());
                 let configuration = read_configuration().unwrap();
 
-                logger::println(format!("{:#?}", configuration));
+                logger::indent_println(format!("{:#?}", configuration));
 
                 Ok(())
             }

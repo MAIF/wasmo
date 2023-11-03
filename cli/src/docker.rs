@@ -8,7 +8,8 @@ use tokio::io::AsyncBufReadExt;
 
 use crate::error::{WasmoError, WasmoResult};
 use crate::port::get_available_port;
-use crate::Provider;
+use crate::Host;
+use std::collections::HashMap;
 
 const WASMO_RUNNER: &str = "wasmo_runner";
 
@@ -17,7 +18,7 @@ pub struct Container {
     pub name: String,
 }
 
-pub async fn docker_create(provider: &Provider) -> WasmoResult<Container> {
+pub async fn docker_create(host: &Host, configuration: &HashMap<String, String>) -> WasmoResult<Container> {
     crate::logger::loading(format!("<yellow>Check</> docker info"));
 
     let mut child = Command::new("docker")
@@ -40,14 +41,14 @@ pub async fn docker_create(provider: &Provider) -> WasmoResult<Container> {
                     "Should be able to discuss with docker".to_string(),
                 ))
             } else {
-                let container_name = if provider == &Provider::Docker {
+                let container_name = if host == &Host::Docker {
                     WASMO_RUNNER.to_string()
                 } else {
                     chrono::offset::Utc::now().timestamp().to_string()
                 };
 
-                if provider == &Provider::OneShotDocker {
-                    match run_docker_container(&container_name).await {
+                if host == &Host::OneShotDocker {
+                    match run_docker_container(&container_name, &configuration).await {
                         Ok(port) => Ok(Container {
                             port,
                             name: container_name,
@@ -58,7 +59,7 @@ pub async fn docker_create(provider: &Provider) -> WasmoResult<Container> {
                     let container_exists = check_if_docker_container_exists();
 
                     if !container_exists {
-                        match run_docker_container(&container_name).await {
+                        match run_docker_container(&container_name, &configuration).await {
                             Ok(port) => Ok(Container {
                                 port,
                                 name: container_name,
@@ -133,10 +134,10 @@ fn check_if_docker_container_exists() -> bool {
     }
 }
 
-async fn run_docker_container(container_name: &String) -> WasmoResult<u16> {
+async fn run_docker_container(container_name: &String, configuration: &HashMap<String, String>) -> WasmoResult<u16> {
     crate::logger::indent_println("<yellow>Start</> wasmo container".to_string());
 
-    crate::logger::indent_println("<yellow>Find</> {} an available TCP port".to_string());
+    crate::logger::indent_println("<yellow>Search</> an available TCP port".to_string());
     let res = match get_available_port() {
         Some(port) => {
             crate::logger::indent_println(format!("<yellow>Assign</> {} port", port));
@@ -155,9 +156,10 @@ async fn run_docker_container(container_name: &String) -> WasmoResult<u16> {
                     "-e",
                     "STORAGE=LOCAL",
                     "-e",
-                    "CLI_AUTHORIZATION=foobar",
+                    format!("CLI_AUTHORIZATION={}", configuration.get("DOCKER_AUTHORIZATION").unwrap_or(&String::from("foobar"))).as_str(),
                     "maif/wasmo",
                 ])
+                .stdout(Stdio::piped())
                 .spawn()
                 .expect("failed to spawn container");
 
@@ -200,7 +202,7 @@ async fn check_if_container_has_started(container_name: &String, port: u16) -> W
     loop {
         let line = reader.next_line().await.unwrap().unwrap();
 
-        // crate::logger::log(format!("{}", line));
+        // crate::logger::println(format!("{}", line));
 
         if line.contains(&stop_condition) {
             let _ = child.kill().await;
