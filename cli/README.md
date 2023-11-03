@@ -4,9 +4,14 @@
 <strong>A <a href="https://github.com/MAIF/">MAIF</a> opensource project</strong>
 
   <p>
-    <strong>Rust CLI to create and build WebAssembly modules</strong>
+    <strong>Wasmo CLI brings WASM to your architecture</strong>
+  </p>
+
+  <p>
+  Wasmo CLI can be combined with the power of <a href="https://hub.docker.com/r/maif/wasmo">Docker Wasmo server images</a> to build locally and remotly WASM binaries.
   </p>
 </div>
+
 
 # Installation
 
@@ -33,19 +38,18 @@ Subcommands can be explored with:
 $ wasmo help
 ```
 
-# Tools included
+# Core commands
 
-The `wasmo` binary internally contains a number of subcommands for working
+The `wasmo` CLI internally contains a number of subcommands for working
 with wasm modules:
 
 | Tool                        | Arguments | Description                                                   |
 | ---------------------------- | -- | ------------------------------------------------------------- |
-| `wasmo config set`            | `--token=<WASMO_TOKEN> --path=<CONFIGURATION_FILEPATH> --server=<SERVER_URL>` | Globally configure the CLI with the authorization token, the path where the configuration file will be stored and the server to reach during the build. These parameters are optional and can be passed when running the build command.  |
-| `wasmo config get`             | Get the configuration from the configured path file or from `$HOME/.wasmo` |
-| `wasmo config reset`             | Clean configuration and reset to default settings. The default file path configuration will be `$HOME/.wasmo`                                   ||
-| `wasmo init`             | `--template=<js, go, opa, rust, ts> --name=<NAME> --pat=<PATH>` | Initialize a WASM plugin to the specific path. You can choose between many templates, javascript/typescript (js/ts), Open Policy Agent (opa), Rust or Golang (go). |
-| `wasmo build`             | `--path=<PLUGIN_PATH> --provider=<docker|one_shot_docker|remote|Docker|Remote|OneShotDocker> --server=<SERVER> --token=<TOKEN>` ||
-
+| `wasmo config set`            | token &#124; path &#124; server | Globally configure the CLI with the authorization token, the path where the configuration file will be stored and the server to reach during the build. These parameters are optional and can be passed when running the build command.  |
+| `wasmo config get`         |    | Get the configuration from the configured path file or from `$HOME/.wasmo` |
+| `wasmo config reset`        |     | Clean configuration and reset to default settings. The default file path configuration will be `$HOME/.wasmo`                                   ||
+| `wasmo init`             | template &#124; name &#124; path | Initialize a WASM plugin to the specific path. You can choose between many templates, javascript/typescript (js/ts), Open Policy Agent (opa), Rust or Golang (go). |
+| `wasmo build`             | path &#124; provider &#124; server &#124; token | Build the plugin  by sending the contents to the remote or local Wasmo server. As soon as the build is complete, the WASM binary is donwloaded and saved in the plugin folder. |
 
 # License
 

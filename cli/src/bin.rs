@@ -3,12 +3,12 @@ mod plugin;
 mod websocket;
 mod error;
 mod port;
+mod logger;
 
 use clap::{Parser, Subcommand};
 use error::{WasmoError, WasmoResult};
 use core::panic;
 use hyper::{Body, Client, Method, Request};
-use paris::{info, error};
 use serde::Deserialize;
 use std::{
     collections::HashMap,
@@ -23,6 +23,7 @@ const WASMO_SERVER: &str = "WASMO_SERVER";
 const WASMO_PATH: &str = "WASMO_PATH";
 const WASMO_TOKEN: &str = "WASMO_TOKEN";
 const WASMO_AUTHORIZATION_HEADER: &str = "WASMO_AUTHORIZATION_HEADER";
+
 
 #[derive(Debug, PartialEq)]
 pub enum Provider {
@@ -65,7 +66,7 @@ struct WasmoBuildResponse {
 /// A fictional versioning CLI
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "wasmo")]
-#[command(about = "Wasmo builder CLI", long_about = None, version = "mathieu idea")]
+#[command(about = "Wasmo builder CLI", long_about = None, version = env!("CARGO_PKG_VERSION"))]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -73,7 +74,7 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Create and initialize a new plugin
+    /// Initialize a WASM plugin to the specific path. You can choose between many templates, javascript/typescript (js/ts), Open Policy Agent (opa), Rust or Golang (go).
     #[command()]
     Init {
         /// The template to clone
@@ -101,7 +102,7 @@ enum Commands {
         )]
         path: Option<String>,
     },
-    /// Build a plugin on current folder or at specific path
+    /// Build a plugin on current folder or to specific path
     #[command()]
     Build {
         /// The remote to target
@@ -140,6 +141,7 @@ enum Commands {
         )]
         token: Option<String>,
     },
+    /// Globally configure the CLI with the authorization token, the path where the configuration file will be stored and the server to reach during the build. These parameters are optional and can be passed when running the build command.
     Config {
         #[command(subcommand)]
         command: ConfigCommands,
@@ -197,7 +199,7 @@ fn rename_plugin(template: String, name: String, path: Option<String>) -> WasmoR
     match std::fs::rename(format!("./{}", template), &complete_path) {
         Ok(()) => {
             update_metadata_file(&complete_path.to_string(), &name, &template)?;
-            info!("Plugin created: {}", &complete_path);
+            logger::println(format!("Plugin created: {}", &complete_path));
             Ok(())
         },
         Err(e) => Err(WasmoError::PluginCreationFailed(e.to_string())),
@@ -350,12 +352,10 @@ async fn build(path: Option<String>, server: Option<String>, provider: Provider,
         return Err(WasmoError::BuildInterrupt("Should be able to reach a wasmo server but WASMO_SERVER is not defined".to_string()));
     }
 
-    info!(
-        "Build plugin at path: {:#?}, with wasmo server: {:#?} ",
-        &complete_path,
-        &configuration.get(WASMO_SERVER).unwrap()
-    );
-
+    logger::success("<yellow>Start</> building plugin".to_string());
+    logger::indent_println(format!("plugin: {}", &complete_path));
+    logger::indent_println(format!("server: {}", &configuration.get(WASMO_SERVER).unwrap()));
+    
     let plugin = plugin::read_plugin(&complete_path);
 
     let request = Request::builder()
@@ -381,7 +381,7 @@ async fn build(path: Option<String>, server: Option<String>, provider: Provider,
     match resp {
         Err(e) => panic!("{:#?}", e),
         Ok(k) => {
-            info!("{}", k.status());
+            logger::log(format!("Build call status: {}", k.status()));
 
             let body_bytes = hyper::body::to_bytes(k.into_body()).await;
             let result: WasmoBuildResponse = serde_json::from_str(
@@ -398,9 +398,8 @@ async fn build(path: Option<String>, server: Option<String>, provider: Provider,
             match build_result {
                 websocket::BuildResult::Success => {
                     get_wasm(&configuration, &result.queue_id, &complete_path, &plugin).await;
-                    info!("Successfull build")
                 }
-                _ => info!("Build failed"),
+                _ => logger::println(format!("Build failed")),
             }
         }
     }
@@ -424,7 +423,8 @@ async fn get_wasm(
         id
     );
 
-    info!("Fetch wasm file from {}", url);
+    logger::loading("<yellow>Fetch</> wasm file".to_string());
+    logger::indent_println(format!("From endpoint {}", url));
 
     let request = Request::get(url)
         .header("Content-Type", "application/json")
@@ -450,7 +450,8 @@ async fn get_wasm(
             );
             let mut file = File::create(&filename).unwrap();
 
-            info!("Writing file to {}", &filename);
+            logger::loading("<yellow>Writing</> file".to_string());
+            logger::indent_println(format!("Saved WASM file to {}", &filename));
 
             let content = hyper::body::to_bytes(res.into_body()).await;
 
@@ -473,7 +474,7 @@ fn reset_configuration() -> WasmoResult<()> {
 
     let _ = fs::remove_file(complete_path);
 
-    info!("wasmo configuration has been reset");
+    logger::println(format!("wasmo configuration has been reset"));
     Ok(())
 }
 
@@ -552,7 +553,7 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
         let new_content = format!("WASMO_TOKEN={}\nWASMO_SERVER={}", wasmo_token, wasmo_server);
 
         match fs::write(format!("{}/.wasmo", &home_path), new_content) {
-            Ok(()) => info!("wasmo configuration patched"),
+            Ok(()) => logger::println(format!("wasmo configuration patched")),
             Err(e) => panic!(
                 "Should have been able to write the wasmo configuration, {:#?}",
                 e
@@ -595,7 +596,7 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
             ),
         }
 
-        info!("wasmo configuration patched")
+        logger::println(format!("wasmo configuration patched"))
     }
 
     Ok(())
@@ -628,7 +629,7 @@ async fn main() {
             ConfigCommands::Get {} => {
                 let configuration = read_configuration().unwrap();
 
-                info!("{:#?}", configuration);
+                logger::println(format!("{:#?}", configuration));
 
                 Ok(())
             }
@@ -637,7 +638,7 @@ async fn main() {
     };
 
     if let Err(e) = out {
-        error!("{}", e);
+        logger::error(format!("{}", e));
         std::process::exit(1);
      }
 }

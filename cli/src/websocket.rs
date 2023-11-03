@@ -1,5 +1,4 @@
 use futures_util::FutureExt;
-use paris::{error, info};
 use rust_socketio::{
     asynchronous::{Client, ClientBuilder},
     Payload,
@@ -24,7 +23,7 @@ fn strip_trailing_newline(input: &str) -> String {
 }
 
 pub async fn ws_listen(url: &String, channel: &String) -> BuildResult {
-    info!("Listening websocket from {}", url);
+    crate::logger::loading(format!("<yellow>Listening</> websocket from {}", url));
 
     let callback = |payload: Payload, _: Client| {
         async move {
@@ -33,7 +32,7 @@ pub async fn ws_listen(url: &String, channel: &String) -> BuildResult {
                 Payload::Binary(bin_data) => String::from_utf8(bin_data.to_vec()).unwrap(),
             };
 
-            info!("{:#?}", strip_trailing_newline(&message));
+            crate::logger::indent_println(format!("{}", strip_trailing_newline(&message)));
             if message.contains("You can now use the generated wasm") {
                 unsafe {
                     COMMUNICATION_ENDED = BuildResult::Success;
@@ -55,7 +54,7 @@ pub async fn ws_listen(url: &String, channel: &String) -> BuildResult {
             async move {
                 unsafe {
                     if COMMUNICATION_ENDED == BuildResult::InProgress {
-                        error!("Error: {:#?}", err);
+                        crate::logger::error(format!("{:#?}", err));
                     }
 
                     COMMUNICATION_ENDED = BuildResult::Failed;

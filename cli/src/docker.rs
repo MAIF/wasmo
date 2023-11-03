@@ -6,8 +6,6 @@ use std::process::Stdio;
 
 use tokio::io::AsyncBufReadExt;
 
-use paris::{error, info};
-
 use crate::error::{WasmoError, WasmoResult};
 use crate::port::get_available_port;
 use crate::Provider;
@@ -20,7 +18,7 @@ pub struct Container {
 }
 
 pub async fn docker_create(provider: &Provider) -> WasmoResult<Container> {
-    info!("Check docker info");
+    crate::logger::loading(format!("<yellow>Check</> docker info"));
 
     let mut child = Command::new("docker")
         .args(["ps"])
@@ -36,7 +34,7 @@ pub async fn docker_create(provider: &Provider) -> WasmoResult<Container> {
                 let stdout = child.stdout.take().unwrap();
                 let lines = BufReader::new(stdout).lines();
                 for line in lines {
-                    error!("{}", line.unwrap());
+                    crate::logger::error(format!("{}", line.unwrap()));
                 }
                 Err(WasmoError::NoDockerRunning(
                     "Should be able to discuss with docker".to_string(),
@@ -84,7 +82,7 @@ pub async fn docker_create(provider: &Provider) -> WasmoResult<Container> {
 }
 
 pub async fn remove_docker_container(container_name: &String) -> bool {
-    info!("Remove old docker container");
+    crate::logger::loading(format!("<yellow>Remove</> old docker container"));
     let mut child = Command::new("docker")
         .args(["rm", "-f", container_name])
         .stdout(Stdio::piped())
@@ -99,7 +97,7 @@ pub async fn remove_docker_container(container_name: &String) -> bool {
             err
         ),
         Ok(v) => {
-            info!("Successfull suppression");
+            crate::logger::success(format!("<green>Successfull cleaning</>"));
             v.success()
         }
     }
@@ -108,7 +106,9 @@ pub async fn remove_docker_container(container_name: &String) -> bool {
 fn check_if_docker_container_exists() -> bool {
     let container_name = format!("name={}", WASMO_RUNNER);
 
-    info!("check the presence of the wasmo container");
+    crate::logger::loading(format!(
+        "<yellow>check</> the presence of the wasmo container"
+    ));
 
     let mut child = Command::new("docker")
         .args(["ps", "-a", "-q", "-f", &container_name.as_str()])
@@ -134,11 +134,12 @@ fn check_if_docker_container_exists() -> bool {
 }
 
 async fn run_docker_container(container_name: &String) -> WasmoResult<u16> {
-    info!("Start wasmo container");
+    crate::logger::indent_println("<yellow>Start</> wasmo container".to_string());
 
-    match get_available_port() {
+    crate::logger::indent_println("<yellow>Find</> {} an available TCP port".to_string());
+    let res = match get_available_port() {
         Some(port) => {
-            info!("Available found port : {}", port);
+            crate::logger::indent_println(format!("<yellow>Assign</> {} port", port));
             let mut child = Command::new("docker")
                 .args([
                     "run",
@@ -155,7 +156,7 @@ async fn run_docker_container(container_name: &String) -> WasmoResult<u16> {
                     "STORAGE=LOCAL",
                     "-e",
                     "CLI_AUTHORIZATION=foobar",
-                    "maif/wasmo:0.1.1",
+                    "maif/wasmo",
                 ])
                 .spawn()
                 .expect("failed to spawn container");
@@ -173,7 +174,11 @@ async fn run_docker_container(container_name: &String) -> WasmoResult<u16> {
         None => Err(WasmoError::DockerContainer(
             "can't get an available port".to_owned(),
         )),
-    }
+    };
+
+    crate::logger::success(format!("<green>Wasmo container started </>"));
+
+    res
 }
 
 async fn check_if_container_has_started(container_name: &String, port: u16) -> WasmoResult<u16> {
@@ -195,7 +200,7 @@ async fn check_if_container_has_started(container_name: &String, port: u16) -> W
     loop {
         let line = reader.next_line().await.unwrap().unwrap();
 
-        info!("{}", line);
+        // crate::logger::log(format!("{}", line));
 
         if line.contains(&stop_condition) {
             let _ = child.kill().await;
