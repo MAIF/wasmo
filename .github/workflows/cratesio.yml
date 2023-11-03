@@ -9,57 +9,6 @@ permissions:
   contents: write
 
 jobs:
-  build-and-upload:
-    name: ${{ matrix.platform.os_name }} with rust ${{ matrix.toolchain }}
-    runs-on: ${{ matrix.platform.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - os_name: Linux-x86_64
-            os: ubuntu-20.04
-            target: x86_64-unknown-linux-gnu
-            bin: wasmo-linux-amd64
-          - os_name: Windows-x86_64
-            os: windows-latest
-            target: x86_64-pc-windows-msvc
-            bin: wasmo-amd64.exe
-          - os_name: macOS-x86_64
-            os: macOS-latest
-            target: x86_64-apple-darwin
-            bin: wasmo-darwin-amd64
-          - os_name: macOS-aarch64
-            os: macOS-latest
-            target: aarch64-apple-darwin
-            bin: wasmo-darwin-arm64
-        toolchain:
-          - stable
-    steps:
-      - uses: actions/checkout@v3
-      - name: Build binary
-        uses: houseabsolute/actions-rust-cross@v0
-        with:
-          command: "build"
-          working-directory: "./cli"
-          target: ${{ matrix.platform.target }}
-          toolchain: ${{ matrix.toolchain }}
-          args: "--release"
-          strip: true
-      - name: Rename binary (linux and macos)
-        run: mv ./cli/target/${{ matrix.platform.target }}/release/wasmo ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
-        if: matrix.platform.os_name != 'Windows-x86_64'
-      - name: Rename binary (windows)
-        run: mv ./cli/target/${{ matrix.platform.target }}/release/wasmo.exe ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
-        if: matrix.platform.os_name == 'Windows-x86_64'
-      - name: Generate SHA-256
-        run: shasum -a 256 ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} | cut -d ' ' -f 1 > ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256
-      - name: Release binary and SHA-256 checksum to GitHub
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
-            ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256
-
   cratesio:
     runs-on: ubuntu-latest
     defaults:
