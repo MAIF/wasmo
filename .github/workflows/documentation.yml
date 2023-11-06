@@ -14,11 +14,13 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+defaults:
+  run:
+    working-directory: ./docs/documentation
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      working-directory: ./docs/documentation
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -60,8 +62,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    env:
-      working-directory: ./docs/documentation
     needs: build
     steps:
       - name: Deploy to GitHub Pages
