@@ -61,5 +61,10 @@ WORKDIR $HOME/server
 RUN npm install pm2@latest -g
 RUN npm install
 
+RUN mkdir /.pm2
+RUN chmod 777 /.pm2
+
+RUN chmod -R a+rwX .
+
 EXPOSE 5001
 CMD ["pm2-runtime", "index.js"]

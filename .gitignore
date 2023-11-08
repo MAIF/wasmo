@@ -1,3 +1,4 @@
+docs/documentation/.next
 .DS_Store
 yarn.lock
 server/node_modules

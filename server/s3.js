@@ -50,11 +50,14 @@ const createBucketIfMissing = () => {
   return state.s3.send(new HeadBucketCommand(params))
     .then(() => log.info("Using existing bucket"))
     .catch(res => {
-      if (res.$metadata.httpStatusCode === 404) {
+      if (res.$metadata.httpStatusCode === 404 ||
+        res.$metadata.httpStatusCode === 403 ||
+        res.$metadata.httpStatusCode === 400) {
         log.error(`Bucket ${state.Bucket} is missing.`)
         return new Promise(resolve => {
           state.s3.send(new CreateBucketCommand(params), err => {
             if (err) {
+              console.log(err)
               throw err;
             } else {
               log.info(`Bucket ${state.Bucket} created.`)
