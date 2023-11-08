@@ -4,7 +4,6 @@ pub type WasmoResult<T> = std::result::Result<T, WasmoError>;
 
 #[derive(Debug, Clone)]
 pub enum WasmoError {
-    PluginAlreadyExists(String),
     PluginNotExists(),
     PluginCreationFailed(String),
     BuildInterrupt(String),
@@ -17,10 +16,6 @@ pub enum WasmoError {
 impl fmt::Display for WasmoError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            WasmoError::PluginAlreadyExists(err) => write!(f,
-                "a plugin with the name named already exists, {}",
-                &err
-            ),
             WasmoError::PluginCreationFailed(err) => {
                 write!(f,"plugin failed to be create, {}", &err)
             }

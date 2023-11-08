@@ -10,7 +10,6 @@ homepage = "https://github.com/MAIF/wasmo"
 repository = "https://github.com/MAIF/wasmo"
 keywords = ["cli", "wasm", "build", "webassembly"]
 categories = ["command-line-utilities"]
-include = ["templates/", "src/"]
 
 [[bin]]
 name = "wasmo"

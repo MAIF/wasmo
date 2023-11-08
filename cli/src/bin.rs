@@ -24,6 +24,12 @@ const WASMO_PATH: &str = "WASMO_PATH";
 const WASMO_TOKEN: &str = "WASMO_TOKEN";
 const WASMO_AUTHORIZATION_HEADER: &str = "WASMO_AUTHORIZATION_HEADER";
 
+const ZIP_GO: &[u8] = include_bytes!("../templates/go.zip");
+const ZIP_JS: &[u8] = include_bytes!("../templates/js.zip");
+const ZIP_OPA: &[u8] = include_bytes!("../templates/opa.zip");
+const ZIP_RUST: &[u8] = include_bytes!("../templates/rust.zip");
+const ZIP_TS: &[u8] = include_bytes!("../templates/ts.zip");
+
 
 #[derive(Debug, PartialEq)]
 pub enum Host {
@@ -240,17 +246,42 @@ fn update_metadata_file(path: &String, name: &String, template: &String) -> Wasm
 
 fn initialize(template: String, name: String, path: Option<String>) -> WasmoResult<()> {
     logger::loading("<yellow>Creating</> plugin ...".to_string());
-    let path_to_crate= env!("CARGO_MANIFEST_DIR");
+
+    let manifest_dir = std::env::temp_dir();
+
+    let zip_bytes = match template.as_str() {
+        "go" => ZIP_GO,
+        "js" => ZIP_JS,
+        "opa" => ZIP_OPA,
+        "rust" => ZIP_RUST,
+        "ts" => ZIP_TS,
+        _ => ZIP_JS
+    };
+    let zip_path = Path::new(&manifest_dir).join(format!("{}.zip", template));
+
+    match std::path::Path::new(&zip_path).exists() {
+        true => (),
+        false => {
+            logger::indent_println(format!("turn template bytes to zip file, {}", &zip_path.to_string_lossy()));
+            match fs::File::create(&zip_path) {
+                Ok(mut file) => match file.write_all(zip_bytes) {
+                    Err(err) => return Err(WasmoError::FileSystem(err.to_string())),
+                    Ok(()) => ()
+                },
+                Err(e) => return Err(WasmoError::FileSystem(e.to_string()))
+            };
+        }
+    }
 
     logger::indent_println("<yellow>Unzipping</> the template ...".to_string());
     let zip_action = zip_extensions::read::zip_extract(
-        &PathBuf::from(format!("{}/templates/{}.zip", path_to_crate, template)),
+        &PathBuf::from(zip_path),
         &PathBuf::from("./".to_string()),
     );
 
     match zip_action {
         Ok(()) => rename_plugin(template, name, path),
-        Err(er) => Err(WasmoError::PluginAlreadyExists(er.to_string())),
+        Err(er) => Err(WasmoError::FileSystem(er.to_string())),
     }
 }
 
