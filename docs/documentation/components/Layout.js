@@ -4,6 +4,8 @@ import { MDXProvider } from '@mdx-js/react';
 import { Heading } from './mdx/Heading';
 import { Link } from './mdx/Link';
 import { Sidebar } from './Sidebar';
+import { List } from './mdx/List';
+import { Misc } from './mdx/Misc';
 
 function Layout({ children, next }) {
   return <>
@@ -34,7 +36,10 @@ function Layout({ children, next }) {
         <MDXProvider components={{
           h1: Heading.H1,
           h2: Heading.H2,
-          a: Link.a
+          a: Link.a,
+          ul: List.ul,
+          code: Misc.code,
+          pre: Misc.pre
         }}>
           {children}
         </MDXProvider>

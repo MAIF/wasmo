@@ -18,6 +18,8 @@ const slugify = str => str.toString()
 
 export function Sidebar() {
 
+  const customWindow = window || { location: "/" }
+
   return <div className="flex h-screen flex-col justify-between border-e bg-white" style={{ minWidth: 250 }}>
     <div className="px-4 py-6 ps-0">
       {/* <span
@@ -30,7 +32,7 @@ export function Sidebar() {
         <li>
           <a
             href="/"
-            className={`block rounded-lg ${color(window.location.pathname === "/")} px-4 py-2 text-sm font-medium text-gray-700`}
+            className={`block rounded-lg ${color(customWindow.location.pathname === "/")} px-4 py-2 text-sm font-medium text-gray-700`}
           >
             Overview
           </a>
@@ -38,7 +40,7 @@ export function Sidebar() {
 
         {Object.entries(LINKS).map(([group, children]) => {
           return <li key={group} >
-            <details className="group [&_summary::-webkit-details-marker]:hidden" open={window.location.pathname.startsWith(`/${slugify(group)}`)}>
+            <details className="group [&_summary::-webkit-details-marker]:hidden" open={customWindow.location.pathname.startsWith(`/${slugify(group)}`)}>
               <summary
                 className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
               >
@@ -68,7 +70,7 @@ export function Sidebar() {
                   return <li key={child}>
                     <a
                       href={href}
-                      className={`block rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 ${color(window.location.pathname === href)}`}
+                      className={`block rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 ${color(customWindow.location.pathname === href)}`}
                     >
                       {child}
                     </a>
