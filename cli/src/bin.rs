@@ -203,8 +203,8 @@ enum ConfigCommands {
 
 fn rename_plugin(template: String, name: String, path: Option<String>) -> WasmoResult<()> {
     let complete_path = match &path {
-        Some(p) => format!("{}/{}", p, name),
-        None => format!("./{}", name),
+        Some(p) => Path::new(p).join(&name),
+        None => Path::new("./").join(&name),
     };
 
     let _ = match &path {
@@ -212,10 +212,15 @@ fn rename_plugin(template: String, name: String, path: Option<String>) -> WasmoR
         None => Result::Ok(()),
     };
 
-    logger::indent_println(format!("<yellow>Write</> plugin to {}", &complete_path));
-    match std::fs::rename(format!("./{}", template), &complete_path) {
+    let manifest_dir = std::env::temp_dir();
+
+    logger::indent_println(format!("<yellow>Write</> plugin from {} to {}", 
+        &Path::new(&manifest_dir).join(format!("{}", template)).to_string_lossy(),
+        &complete_path.to_string_lossy()));
+
+    match std::fs::rename(Path::new(&manifest_dir).join(format!("{}", template)), &complete_path) {
         Ok(()) => {
-            update_metadata_file(&complete_path.to_string(), &name, &template)?;
+            update_metadata_file(&complete_path, &name, &template)?;
             logger::println("<green>Plugin created</>".to_string());
             Ok(())
         },
@@ -223,14 +228,14 @@ fn rename_plugin(template: String, name: String, path: Option<String>) -> WasmoR
     }
 }
 
-fn update_metadata_file(path: &String, name: &String, template: &String) -> WasmoResult<()> {
+fn update_metadata_file(path: &PathBuf, name: &String, template: &String) -> WasmoResult<()> {
     let metadata_file = match template.as_str() {
         "go" => "go.mod",
         "rust" => "cargo.toml",
         _ => "package.json"
     };
 
-    let complete_path = format!("{}/{}", path, metadata_file);
+    let complete_path = path.join(metadata_file);
 
     let content = match fs::read_to_string(&complete_path) {
         Err(err) => return Err(WasmoError::FileSystem(err.to_string())),
@@ -275,7 +280,7 @@ fn initialize(template: String, name: String, path: Option<String>) -> WasmoResu
     logger::indent_println("<yellow>Unzipping</> the template ...".to_string());
     let zip_action = zip_extensions::read::zip_extract(
         &PathBuf::from(zip_path),
-        &PathBuf::from("./".to_string()),
+        &manifest_dir,
     );
 
     match zip_action {
@@ -317,11 +322,11 @@ fn format(str: Option<String>) -> std::collections::HashMap<String, String> {
     }
 }
 
-fn configuration_file_to_hashmap(configuration_path: String) -> HashMap<String, String> {
+fn configuration_file_to_hashmap(configuration_path: &PathBuf) -> HashMap<String, String> {
     let complete_path = if configuration_path.ends_with(".wasmo") {
-        configuration_path
+        configuration_path.clone()
     } else {
-        format!("{}/.wasmo", &configuration_path)
+        Path::new(configuration_path).join(".wasmo")
     };
 
     match std::path::Path::new(&complete_path).exists() {
@@ -338,15 +343,15 @@ fn read_configuration() -> WasmoResult<HashMap<String, String>> {
     let wasmo_server = option_env!("WASMO_SERVER");
 
     let envs: HashMap<String, String> = if wasmo_server.is_none() || wasmo_server.is_none() {
-        let configuration_path = match option_env!("WASMO_PATH") {
-            Some(path) => path.to_owned(),
-            None => get_home()?,
+        let configuration_path: PathBuf = match option_env!("WASMO_PATH") {
+            Some(path) => Path::new(path).to_path_buf(),
+            None => get_home().unwrap(),
         };
 
-        let envs = configuration_file_to_hashmap(format!("{}/.wasmo", configuration_path));
+        let envs = configuration_file_to_hashmap(&configuration_path.join(".wasmo"));
 
         match envs.get("WASMO_PATH") {
-            Some(p) if !p.is_empty() => configuration_file_to_hashmap(format!("{}/.wasmo", p)),
+            Some(p) if !p.is_empty() => configuration_file_to_hashmap(&Path::new(p).join(".wasmo")),
             _ => envs,
         }
     } else {
@@ -523,7 +528,7 @@ fn reset_configuration() -> WasmoResult<()> {
     logger::loading("<yellow>Reset</> configuration".to_string());
     let home_path = get_home()?;
 
-    let complete_path = format!("{}/.wasmo", &home_path);
+    let complete_path = home_path.join(".wasmo");
 
     let _ = fs::remove_file(complete_path);
 
@@ -539,9 +544,9 @@ fn get_option_home() -> String {
     }
 }
 
-fn get_home() -> WasmoResult<String> {
+fn get_home() -> WasmoResult<PathBuf> {
     match dirs::home_dir() {
-        Some(p) => Ok(p.into_os_string().into_string().unwrap()),
+        Some(p) => Ok(p),
         None => Err(WasmoError::FileSystem(format!("Impossible to get your home dir!"))),
     }
 }
@@ -585,8 +590,8 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
     let home_path = get_home()?;
 
     let complete_path = match &path {
-        Some(p) => format!("{}/.wasmo", p),
-        None => format!("{}/.wasmo", &home_path),
+        Some(p) => Path::new(p).join(".wasmo"),
+        None => home_path.join(".wasmo"),
     };
 
     let contents = match std::path::Path::new(&complete_path).exists() {
@@ -596,7 +601,7 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
             } 
             format(None)
         }
-        true => configuration_file_to_hashmap(complete_path.to_string()),
+        true => configuration_file_to_hashmap(&complete_path),
     };
 
     let wasmo_token = extract_variable_or_default(&contents, WASMO_TOKEN, token);
@@ -610,7 +615,7 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
             wasmo_server, 
             wasmo_docker_authorization);
 
-        match fs::write(format!("{}/.wasmo", &home_path), new_content) {
+        match fs::write(home_path.join(".wasmo"), new_content) {
             Ok(()) => logger::println(format!("wasmo configuration patched")),
             Err(e) => panic!(
                 "Should have been able to write the wasmo configuration, {:#?}",
@@ -624,7 +629,7 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
         );
         let content_at_default_path = format!("WASMO_PATH={}", wasmo_path);
 
-        let home_file = format!("{}/.wasmo", &home_path);
+        let home_file = home_path.join(".wasmo");
 
         // println!("Write in home {} - {}", format!("{}/.wasmo", &home_path), content_at_default_path);
         let _ = fs::remove_file(&home_file);
@@ -637,12 +642,15 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
         }
 
         let project_file = match &path {
-            Some(p) => format!("{}/.wasmo", p),
+            Some(p) => Path::new(p).join(".wasmo"),
             None => match wasmo_path.is_empty() {
-                true => format!("{}/.wasmo", &home_path),
-                false => format!("{}/.wasmo", &wasmo_path)
-            }.replace(".wasmo.wasmo", ".wasmo") // guard
-        };
+                true => home_path.join(".wasmo"),
+                false => Path::new(&wasmo_path).join(".wasmo")
+            }
+        }
+            .to_string_lossy()
+            .to_string()
+            .replace(".wasmo.wasmo", ".wasmo"); // guard
 
         // println!("Write inside project, {} - {:#?}", project_file, content_at_path);
         let _ = fs::remove_file(&project_file);
