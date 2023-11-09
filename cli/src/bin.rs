@@ -7,6 +7,7 @@ mod logger;
 
 use clap::{Parser, Subcommand};
 use error::{WasmoError, WasmoResult};
+use hyper_tls::HttpsConnector;
 use core::panic;
 use hyper::{Body, Client, Method, Request};
 use serde::Deserialize;
@@ -132,7 +133,6 @@ enum Commands {
         /// host
         #[arg(
             value_name = "HOST", 
-            short = 'h',
             long = "host",
             value_parser = ["docker", "one_shot_docker", "remote", "Docker", "Remote", "OneShotDocker"], 
             default_value = "docker",
@@ -143,7 +143,6 @@ enum Commands {
         /// token
         #[arg(
             value_name = "TOKEN", 
-            short = 'k',
             long = "token",
             required = false
         )]
@@ -419,7 +418,9 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, token: 
         .body(Body::from(serde_json::to_string(&plugin).unwrap()))
         .unwrap();
 
-    let client = Client::new();
+    let https = HttpsConnector::new();
+    let client = Client::builder()
+        .build::<_, hyper::Body>(https);
 
     let resp = client.request(request).await;
 
@@ -486,7 +487,9 @@ async fn get_wasm(
         .body(Body::empty())
         .unwrap();
 
-    let client = Client::new();
+    let https = HttpsConnector::new();
+    let client = Client::builder()
+        .build::<_, hyper::Body>(https);
 
     let resp = client.request(request).await;
 

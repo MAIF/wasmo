@@ -2223,6 +2223,7 @@ dependencies = [
  "home",
  "http-body-util",
  "hyper",
+ "hyper-tls",
  "lazy_static",
  "once_cell",
  "paris",
