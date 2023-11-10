@@ -21,7 +21,7 @@ export function Sidebar() {
 
   const customWindow = typeof window !== 'undefined' ? window : { location: { pathname: "/" } }
 
-  return <div className="flex h-screen flex-col justify-between border-e bg-white" style={{ minWidth: 250 }}>
+  return <div className="flex h-screen flex-col justify-between" style={{ minWidth: 250 }}>
     <div className="px-4 py-6 ps-0">
       {/* <span
         className="grid h-10 w-32 place-content-center rounded-lg bg-gray-100 text-xs text-gray-600"
