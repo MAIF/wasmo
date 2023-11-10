@@ -12,6 +12,8 @@ const isAString = variable => typeof variable === 'string' || variable instanceo
 const putWasmFileToS3 = (wasmFolder) => {
   const { s3, Bucket } = S3.state()
 
+  const Key = wasmFolder.split('/').slice(-1)[0]
+
   return new Promise((resolve, reject) => {
     fs.readFile(wasmFolder, (err, data) => {
       if (err)
@@ -19,7 +21,7 @@ const putWasmFileToS3 = (wasmFolder) => {
       else
         s3.send(new PutObjectCommand({
           Bucket,
-          Key: wasmFolder.split('/').slice(-1)[0],
+          Key: Key.endsWith(".wasm") ? Key : `${Key}.wasm`,
           Body: data
         }))
           .then(resolve)
