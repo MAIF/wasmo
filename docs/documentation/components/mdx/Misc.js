@@ -17,7 +17,7 @@ export const Misc = {
 
         const codeString = props.children.props.children;
 
-        return <div className='overflow-hidden relative rounded-lg my-3'>
+        return <div className='overflow-hidden relative rounded-lg my-7' style={{ maxWidth: 800 }}>
             <div className='flex items-center bg-purple-900 ps-3' style={{
                 position: 'absolute',
                 top: 0,
