@@ -21,7 +21,6 @@ const auth = (req, res, next) => {
 const forbiddenAccess = (req, res, next) => {
   console.log(ENV.AUTH_MODE === 'AUTH')
   console.log(DOMAINS.includes(req.headers.host))
-  console.log(Security.extractedUserOrApikey(req))
   console.log(req.headers.host)
   console.log(DOMAINS)
   res
@@ -51,7 +50,9 @@ router.get('/plugins', (req, res) => {
 
   if (reg === '*') {
     UserManager.getUsers()
-      .then(users => {
+      .then(r => {
+        const users = [...new Set([...(r || []), "adminotoroshiio"])];
+
         if (users.length > 0) {
           Promise.all(users.map(UserManager.getUserFromString))
             .then(pluginsByUser => {

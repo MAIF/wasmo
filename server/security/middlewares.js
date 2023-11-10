@@ -18,12 +18,12 @@ function extractedUserOrApikey(req) {
       const decodedToken = jwt.verify(jwtUser, secret, { algorithms: ['HS512'] });
       req.user = decodedToken.user
       req.apikey = decodedToken.apikey
-      return decodedToken.user || decodedToken.apikey;
+      return true;
     } catch (_) {
-      return null;
+      return false;
     }
   } else {
-    return null;
+    return false;
   }
 }
 

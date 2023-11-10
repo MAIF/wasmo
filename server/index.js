@@ -61,6 +61,7 @@ function createServer(appVersion) {
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(bodyParser.text());
 
+  app.use('/', publicRouter);
   app.use('/', Security.extractUserFromQuery);
   app.use('/', Security.checkCLIToken);
   app.use('/api/plugins', pluginsRouter);
@@ -70,7 +71,6 @@ function createServer(appVersion) {
 
   app.use('/health', (_, res) => res.json({ status: true }))
 
-  app.use('/', publicRouter);
   app.get('/', (_, res) => res.sendFile(path.join(__dirname, '..', 'ui/build', '/index.html')));
 
   return http.createServer(app);

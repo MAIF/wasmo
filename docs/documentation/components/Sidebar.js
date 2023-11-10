@@ -1,5 +1,5 @@
 const LINKS = {
-  Builder: ["Overview", "Getting started"],
+  Builder: ["Overview", "Getting started", "Your first plugin"],
   CLI: ["Getting started"],
   Integrations: ["Otoroshi"],
 }

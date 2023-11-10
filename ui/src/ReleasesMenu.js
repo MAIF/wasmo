@@ -11,7 +11,7 @@ export default function ReleasesMenu({ files }) {
     if (!releasesFile)
         return <p style={{ marginLeft: 12, color: '#000', fontSize: '.9rem' }}>No releases yet</p>
 
-    let versions = JSON.parse(releasesFile.content).versions;
+    let versions = JSON.parse(releasesFile.content).versions || [];
 
     if (versions.length > 0 && isAString(versions[0])) {
         versions = versions.map(name => ({ name }))

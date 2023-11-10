@@ -4,7 +4,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter'
 import rainbow from 'react-syntax-highlighter/dist/esm/styles/hljs/tomorrow-night-blue'
 
 export const Misc = {
-    code: props => <span className="font-bold">{props.children}</span>,
+    code: props => <span className="bg-gray-100 p-1 rounded">{props.children}</span>,
     pre: props => {
         const [copied, setCopied] = useState()
 

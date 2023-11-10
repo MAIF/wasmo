@@ -26,7 +26,7 @@ module.exports = {
 
         MANAGER_TEMPLATES: process.env.MANAGER_TEMPLATES,
         MANAGER_MAX_PARALLEL_JOBS: process.env.MANAGER_MAX_PARALLEL_JOBS || 2,
-        MANAGER_ALLOWED_DOMAINS: process.env.MANAGER_ALLOWED_DOMAINS,
+        MANAGER_ALLOWED_DOMAINS: process.env.MANAGER_ALLOWED_DOMAINS || 'localhost:5001',
 
         AUTH_MODE: process.env.AUTH_MODE || 'NO_AUTH',
         OTOROSHI_TOKEN_SECRET: process.env.OTOROSHI_TOKEN_SECRET || 'veryverysecret',
