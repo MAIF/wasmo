@@ -1,7 +1,7 @@
 "use client"
 
 import Layout from '@/components/Layout';
-import Page from './page.mdx';
+import Page from './_page.mdx';
 
 export default function Home() {
 

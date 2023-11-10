@@ -5,6 +5,8 @@
 
 - **Docker**: A Docker-enabled system with proper Docker access
 
+## Instantiate a Wasmo Builder
+
 Choose a path to install Wasmo Builder:
 - **With a database**: Use a database to store generated Wasm binaries. Can use the Builder UI for editing plugins.
 - **Without a database (in-memory)**: Store generated Wasm binaries on the file system. In this mode, the Builder UI is unavailable but the CLI keeps running.
@@ -32,7 +34,7 @@ docker run -d --net wasmo-network \
 ```
 
 These commands will first create a custom Docker network, then instantiate a new S3 from the Scality imagte and run a Wasmo Builder connnected to the S3.
-<br />
+
 If all goes well, Wasmo should now be serving your builder on [http://localhost:5001/](http://localhost:5001/).
 
 If you are running Docker on MacOS, you should change `S3_ENDPOINT` to `http://host.docker.internal:8000`.

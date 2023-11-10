@@ -38,8 +38,11 @@ function Layout({ children, next }) {
           h2: Heading.H2,
           a: Link.a,
           ul: List.ul,
+          ol: List.ol,
           code: Misc.code,
-          pre: Misc.pre
+          pre: Misc.pre,
+          p: Misc.p,
+          blockquote: Misc.blockquote
         }}>
           {children}
         </MDXProvider>

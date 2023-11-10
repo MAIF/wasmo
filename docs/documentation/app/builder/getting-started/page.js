@@ -1,12 +1,12 @@
 "use client"
 
 import Layout from '@/components/Layout';
-import Page from './page.mdx';
+import Page from './_page.mdx';
 
 export default function Home() {
 
   return <Layout next={{
-    href: "/cli/overview",
+    href: "/builder/your-first-plugin",
     title: "Wasmo CLI"
   }}>
     <Page />

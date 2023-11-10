@@ -6,8 +6,8 @@ import Page from './_page.mdx';
 export default function Home() {
 
   return <Layout next={{
-    href: "/builder/plugin-structure",
-    title: "Plugin Structure"
+    href: "/builder/ui",
+    title: "User Interface"
   }}>
     <Page />
   </Layout>

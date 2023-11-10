@@ -1,5 +1,6 @@
+"use client"
 const LINKS = {
-  Builder: ["Overview", "Getting started", "Your first plugin"],
+  Builder: ["Overview", "Getting started", "Your first plugin", "Plugin Structure", 'UI'],
   CLI: ["Getting started"],
   Integrations: ["Otoroshi"],
 }
@@ -18,7 +19,7 @@ const slugify = str => str.toString()
 
 export function Sidebar() {
 
-  const customWindow = window || { location: "/" }
+  const customWindow = typeof window !== 'undefined' ? window : { location: { pathname: "/" } }
 
   return <div className="flex h-screen flex-col justify-between border-e bg-white" style={{ minWidth: 250 }}>
     <div className="px-4 py-6 ps-0">

@@ -6,8 +6,8 @@ import Page from './_page.mdx';
 export default function Home() {
 
   return <Layout next={{
-    href: "/builder/plugin-structure",
-    title: "Plugin Structure"
+    href: "/cli/overview",
+    title: "Wasmo CLI"
   }}>
     <Page />
   </Layout>

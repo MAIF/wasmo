@@ -1,0 +1,49 @@
+# Write your first plugin
+
+## Prerequisites
+
+A Wasmo Builder instance running. If not, you should read the [Getting started](/builder/getting-started) section.
+
+## Create your first greeting plugin
+
+1. [Navigate to Wasmo UI](http://localhost:5001)
+2. From the plugins menu at the top left, click the Plus button.
+3. Select `Javascript` language from the list
+4. In the field that just appeared, add a `Name` for your plugin
+5. Click and edit the `index.js` file
+
+```javascript
+function greet() {
+    const name = Host.inputString()
+    Host.outputString(`Hello, ${name}`)
+}
+
+module.exports = {greet}
+```
+
+Click the `hammer` icon at the top right of the screen to start the build process.
+> During the process the logs and errors are displayed in the `terminal` view at the bottom.
+
+Once completed, your plugin should appear in the `Releases` section in the left sidebar. 
+You can click on the item in the list to automatically download the WASM file.
+
+## Testing your first plugin
+
+Wasmo binaries are strongly linked to [Extism](https://extism.org/) and this is why we have to run your WASM with their executable.
+You can download the [Extism CLI](https://github.com/extism/cli/releases) on the releases page or using go with the following command.
+
+```
+go install github.com/extism/cli/extism@latest
+```
+
+Once downloaded, you can run the command by passing the function to call, the parameter to apply and the WASM file to execute.
+
+```
+extism call <your-plugin-file>.wasm greet \
+    --input "Benjamin" \
+    --wasi
+```
+
+If the command succeeds, you will see: `Hello, Benjamin`.
+
+Congratulations, you have just created your first plugin!
