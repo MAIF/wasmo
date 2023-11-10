@@ -33,7 +33,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/arm64
-          file: ./arm64-Dockerfile
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          file: ./Dockerfile
           push: true
           tags: ${{ inputs.version }}
