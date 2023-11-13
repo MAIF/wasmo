@@ -1,4 +1,3 @@
-
 import { MDXProvider } from '@mdx-js/react';
 
 import { Heading } from './mdx/Heading';
@@ -6,8 +5,9 @@ import { Link } from './mdx/Link';
 import { Sidebar } from './Sidebar';
 import { List } from './mdx/List';
 import { Misc } from './mdx/Misc';
+import { Pre } from './mdx/Pre';
 
-function Layout({ children, next }) {
+function Layout({ children, next, metadata }) {
   return <>
     <header className="sticky top-0 z-50 flex items-center justify-between px-3 py-2">
       <div className="flex items-center flex-grow">
@@ -31,7 +31,7 @@ function Layout({ children, next }) {
       height: 'calc(100vh - 58px)',
       overflow: 'hidden'
     }}>
-      <Sidebar />
+      <Sidebar metadata={metadata} />
 
       <div className="flex-auto max-w-2xl min-w-0 px-4 py-10 lg:max-w-none lg:pr-0 lg:pl-8 xl:px-16" style={{
         flex: 1,
@@ -44,7 +44,7 @@ function Layout({ children, next }) {
           ul: List.ul,
           ol: List.ol,
           code: Misc.code,
-          pre: Misc.pre,
+          pre: Pre,
           p: Misc.p,
           blockquote: Misc.blockquote
         }}>

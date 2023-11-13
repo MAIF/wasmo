@@ -5,10 +5,15 @@ import Page from './_page.mdx';
 
 export default function Home() {
 
-  return <Layout next={{
-    href: "/builder/your-first-plugin",
-    title: "Wasmo CLI"
-  }}>
+  return <Layout
+    metadata={{
+      title: 'Wasmo - Getting started',
+      href: '/builder/getting-started'
+    }}
+    next={{
+      href: "/builder/your-first-plugin",
+      title: "Wasmo CLI"
+    }}>
     <Page />
   </Layout>
 
