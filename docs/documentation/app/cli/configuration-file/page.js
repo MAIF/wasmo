@@ -7,15 +7,16 @@ export default function Home() {
 
   return <Layout
     metadata={{
-      href: '/builder/your-first-plugin'
+      title: 'CLI - Configuration file',
+      href: '/cli/configuration-file'
     }}
     previous={{
-      href: "/builder/overview",
-      title: "Builder - Overview"
+      href: "/cli/core-commands",
+      title: "Wasmo - Core commands"
     }}
     next={{
-      href: "/builder/plugin-structure",
-      title: "Plugin Structure"
+      href: "/integrations/otoroshi",
+      title: "Integration - Otoroshi"
     }}>
     <Page />
   </Layout>

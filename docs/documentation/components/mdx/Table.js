@@ -1,0 +1,1 @@
+export const Table = props => <table className="min-w-full divide-y-2 divide-gray-200 bg-white text-sm mt-3">{props.children}</table>

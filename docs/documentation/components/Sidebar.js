@@ -1,7 +1,7 @@
 "use client"
 const LINKS = {
   Builder: ["Overview", "Getting started", "Your first plugin", "Plugin Structure", 'UI'],
-  CLI: ["Getting started"],
+  CLI: ["Getting started", "Core commands", "Configuration file"],
   Integrations: ["Otoroshi"],
 }
 
@@ -39,7 +39,10 @@ export function Sidebar({ metadata }) {
 
         {Object.entries(LINKS).map(([group, children]) => {
           return <li key={group} >
-            <details className="group [&_summary::-webkit-details-marker]:hidden" open={metadata.href.startsWith(`/${slugify(group)}`)}>
+            <details className="group [&_summary::-webkit-details-marker]:hidden"
+              // open={metadata.href.startsWith(`/${slugify(group)}`)}
+              open={true}
+            >
               <summary
                 className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
               >

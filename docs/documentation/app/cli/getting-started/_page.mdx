@@ -1,0 +1,70 @@
+import Badges from '../../../components/Badges'
+
+# Wasmo CLI
+
+# Installation
+
+This project can be installed and compiled from source with this Cargo command:
+
+```
+$ cargo install wasmo
+or
+$ brew install wasmo (coming soon)
+```
+
+Additionally there are [precompiled artifacts built on CI][artifacts] which are
+available for download as well.
+
+[artifacts]: https://github.com/MAIF/wasmo/releases
+
+Installation can be confirmed with:
+
+```
+$ wasmo --version
+```
+
+Subcommands can be explored with:
+
+```
+$ wasmo help
+```
+
+# Quick start
+
+``` 
+wasmo init --name=my-first-plugin --templates=js
+wasmo build --host=OneShotDocker --path=my-first-plugin --token=foobar
+```
+
+Then open the content of your `my-first-plugin` folder. You should find the generated WASM binary named `my-first-plugin-1.0.0.wasm`.
+
+## Selecting a template
+
+You can now optionally start a new plugin from a template by appending `--template=[template-name]` to the creation command.
+
+If you don't pass a template, Wasmo will list the available templates: `js`, `ts`, `opa`, `go` and `rust`.
+
+```
+wasmo init --name=my-first-plugin --templates=[template-name] --path=[output-directory]
+```
+
+Running this command with any of theses templates will create a directory called `my-first-plugin` inside the specified output directory (or the current if omitted). Inside that directory, it will generate the initial project structure with the metadata file pre-filled with the name of your plugin.
+
+## Creating a production WASM binary
+
+`wasmo build` starts the process to build a WASM binary of your plugin. Inside the plugin directory will be your WASM binary and sources.
+
+You have two ways to build your plugin:
+  - locally with Docker
+  - remotely by deploying a [Wasmo server][wasmoserver]
+
+[wasmoserver]: https://github.com/MAIF/wasmo
+
+Assuming we want to build our `my-first-plugin` locally. Enter `wasmo build --host=OneShotDocker --path=my-first-plugin --token=foobar` to start the build. 
+
+Let's explain these 3 parameters:
+  - the `path` parameter is explicitly used to indicate the plugin to build
+  - the `host` indicates which kind of Wasmo server used. The pratical way is to use `Docker` or `OneShotDocker` because it prevents to install a Wasmo server by deploying, inside your locally Docker, a new Wasmo container. The last possible value is `Remote` and can be used to specify with a URI the remote Wasmo server used.
+  - the `token` argument is passed to the Wasmo server to authenticate the CLI. It can also be set up in the [configuration file][#configure-your-configuration-file]
+
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/NdbQR6vQ5Sk/0.jpg)](https://www.youtube.com/watch?v=NdbQR6vQ5Sk)

@@ -7,15 +7,16 @@ export default function Home() {
 
   return <Layout
     metadata={{
-      href: '/builder/your-first-plugin'
+      title: 'CLI - Getting started',
+      href: '/cli/getting-started'
     }}
     previous={{
-      href: "/builder/overview",
-      title: "Builder - Overview"
+      href: "/builder/ui",
+      title: "Builder - UI"
     }}
     next={{
-      href: "/builder/plugin-structure",
-      title: "Plugin Structure"
+      href: "/cli/core-commands",
+      title: "CLI - Core commands"
     }}>
     <Page />
   </Layout>

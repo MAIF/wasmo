@@ -10,6 +10,10 @@ export default function Home() {
       title: 'Wasmo - User Interface',
       href: '/builder/ui'
     }}
+    previous={{
+      href: "/builder/plugin-structure",
+      title: "Plugin Structure"
+    }}
     next={{
       href: "/cli/overview",
       title: "Wasmo CLI"

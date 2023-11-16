@@ -11,7 +11,7 @@ export default function Home() {
       title: "Wasmo - Overview"
     }}
     next={{
-      href: "/builder",
+      href: "/builder/overview",
       title: "Builder"
     }}>
     <Page />

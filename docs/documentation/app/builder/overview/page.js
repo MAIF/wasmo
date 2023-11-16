@@ -10,6 +10,10 @@ export default function Home() {
       title: 'Wasmo - Overview',
       href: '/builder/overview'
     }}
+    previous={{
+      href: "/",
+      title: "Wasmo - Overview"
+    }}
     next={{
       href: "/builder/getting-started",
       title: "Getting started"

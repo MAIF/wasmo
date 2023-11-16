@@ -1,0 +1,55 @@
+# Configure your configuration file
+
+```
+wasmo config get
+wasmo config reset
+wasmo config set <key>=<value>
+```
+Note: This command is unaware of workspaces.
+
+## Description
+
+wasmo gets its config from the command line, environment variables, `.wasmo` files, and in some cases, directly from the build command.
+
+The `wasmo config` command can be used to update and edit the contents of the user and global wasmo files.
+
+## Sub-commands
+
+### set
+
+```
+wasmo config set <key>=<value>
+```
+
+Sets each of the config keys to the value provided.
+
+If value is omitted, then it sets it to an empty string.
+
+The available keys are: 
+  - `path`: configure the path where the wasmo configuration will be stored
+  - `server`: the Wasmo server to build your plugins (an URL format value is expected)
+  - `token`: the token, pass to the Wasmo server, to authenticate the CLI 
+  - `docker_authorization`: the token value accepted by Docker instances 
+
+You can also edit the configuration file manually. In this case, the following values are :
+  - `path` = WASMO_PATH
+  - `server` = WASMO_SERVER
+  - `token` = WASMO_TOKEN
+  - `docker_authorization` = DOCKER_AUTHORIZATION
+
+### get 
+
+```
+wasmo config get
+```
+
+Show all the config settings.
+
+
+### reset
+
+```
+wasmo config get
+```
+
+Reset the configuration file with the default settings. The custom user `.wasmo` files will not be deleted.
