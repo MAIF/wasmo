@@ -3,7 +3,6 @@
 import Layout from '../components/Layout';
 import Page from './_page.mdx';
 
-
 export default function Home() {
 
   return <Layout
@@ -17,5 +16,4 @@ export default function Home() {
     }}>
     <Page />
   </Layout>
-
 }

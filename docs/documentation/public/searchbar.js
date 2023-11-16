@@ -1,0 +1,1 @@
+new PagefindUI({ element: "#search", showSubResults: true });
