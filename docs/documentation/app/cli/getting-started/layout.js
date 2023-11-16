@@ -1,7 +1,7 @@
 import Page from './page';
 
 export const metadata = {
-  title: 'Builder - Your first plugin',
+  title: 'CLI - Getting started',
 }
 
 export default Page;

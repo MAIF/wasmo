@@ -7,15 +7,15 @@ export default function Home() {
 
   return <Layout
     metadata={{
-      href: '/builder/your-first-plugin'
+      href: '/builder/environment-variables'
     }}
     previous={{
-      href: "/builder/overview",
-      title: "Builder - Overview"
+      href: "/builder/your-first-plugin",
+      title: "Your first plugin"
     }}
     next={{
-      href: "/builder/environment-variables",
-      title: "Environment variables"
+      href: "/builder/plugin-structure",
+      title: "Plugin Structure"
     }}>
     <Page />
   </Layout>

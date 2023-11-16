@@ -1,0 +1,62 @@
+import Badges from '../../../components/Badges'
+
+# Environment variables
+
+Wasmo Builder is fully configurable and the only way to configure it is to use the environment variables.
+
+## Storage <Badges values={['STOS3', 'DOCKER_S3', 'LOCAL']} raw />
+
+Wasmo Builder can be run on three differents ways:
+
+- `STORAGE=S3`: Use a remote S3 to store generated Wasm binaries. Can use the Builder UI for editing plugins.
+
+- `STORAGE=DOCKER_S3`: Use a Docker remote S3 to store generated Wasm binaries. Can use the Builder UI for editing plugins.
+
+Both `S3` and `DOCKER_S3` configuration must used the related variables :
+```
+# required
+STORAGE=<S3|DOCKER_S3>
+S3_ENDPOINT=<value should start with scheme>
+S3_BUCKET=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=<DEFAULT 'us-east-1'>
+
+# optional
+S3_FORCE_PATH_STYLE=<DEFAULT false>
+```
+
+- `STORAGE=LOCAL`: Use the filesystem to store generated Wasm binaries. The Builder UI is not available with this storage type. You should use this
+storage if you want to quickly start an instance and only use the Wasmo CLI. The `local` storage 
+involves setting an interval to the cleanup job. The job removes binaries with outdated dates.
+
+```
+# required
+STORAGE=LOCAL
+
+# optional
+LOCAL_WASM_JOB_CLEANING=<DEFAULT 60 * 60 * 1000> # 1 hour
+```
+
+## Pairing with Otoroshi
+
+ 
+
+## Using the CLI
+
+Wasmo Builder can be called by its own UI or by a Wasmo CLI. To secure calls, Wasmo CLI must send some headers.
+These values must be equal between Wasmo Builder and Wasmo CLI and will be used by Wasmo CLI when calling the builder.
+
+``` Query
+POST /build HTTP/1.1
+...
+<CLI_AUTHORIZATION_HEADER>: <CLI_AUTHORIZATION>
+```
+
+```
+# required
+CLI_AUTHORIZATION=
+
+# optional
+CLI_AUTHORIZATION_HEADER=<DEFAULT 'Authorization'>
+```

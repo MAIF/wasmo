@@ -1,7 +1,7 @@
 import Page from './page';
 
 export const metadata = {
-  title: 'Builder - Your first plugin',
+  title: 'Integrations - Otoroshi',
 }
 
 export default Page;
