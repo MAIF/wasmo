@@ -4,6 +4,12 @@ import Badges from '../../../components/Badges'
 
 Wasmo Builder is fully configurable and the only way to configure it is to use the environment variables.
 
+- [Storage](#storage)
+- [Authentications](#authentications)
+- [Pairing with Otoroshi](#pairing-with-otoroshi)
+- [Using the CLI](#using-the-cli)
+- [Miscellaneous](#miscellaneous)
+
 ## Storage <Badges values={['STOS3', 'DOCKER_S3', 'LOCAL']} raw />
 
 Wasmo Builder can be run on three differents ways:
@@ -38,11 +44,41 @@ STORAGE=LOCAL
 LOCAL_WASM_JOB_CLEANING=<DEFAULT 60 * 60 * 1000> # 1 hour
 ```
 
-## Pairing with Otoroshi
+## Authentications <Badges values={['AUTH_MODE']} raw />
 
+Wasmo has one level of authentication. The value can be `AUTH` or `NO_AUTH`. 
+
+`AUTH_MODE=AUTH`
+
+This level of authentication should be used at least in production mode. It ensures that the Wasmo's UI and backend are only accessible with tokens.
+
+`AUTH_MODE=NO_AUTH`
+
+Wasmo is accessible without tokens or secrets. The UI is also available without any restrictions.
+
+## Pairing with Otoroshi <Badges values={['OTOROSHI_TOKEN_SECRET', 'OTOROSHI_USER_HEADER', 'AUTH_MODE']} raw />
+
+[Otoroshi](https://maif.github.io/otoroshi/manual/getting-started.html) is a layer of lightweight api management on top of a modern http reverse proxy written in Scala.
+
+You have two ways to configure Wasmo and Otoroshi : 
+
+- Wasmo is used by Otoroshi to pull compiled Wasm binaries
+
+- Otoroshi exposes Wasmo UI by securing user access
+
+In both cases, you need to configure Wasmo and Otoroshi with same values for the following variables.
+
+```
+# required
+OTOROSHI_TOKEN_SECRET=
+AUTH_MODE=NO_AUTH | AUTH_MODE
+
+# optional
+OTOROSHI_USER_HEADER=<DEFAULT 'otoroshi-user'>
+```
  
 
-## Using the CLI
+## Using the CLI <Badges values={['CLI_AUTHORIZATION_HEADER', 'CLI_AUTHORIZATION']} raw />
 
 Wasmo Builder can be called by its own UI or by a Wasmo CLI. To secure calls, Wasmo CLI must send some headers.
 These values must be equal between Wasmo Builder and Wasmo CLI and will be used by Wasmo CLI when calling the builder.
@@ -59,4 +95,57 @@ CLI_AUTHORIZATION=
 
 # optional
 CLI_AUTHORIZATION_HEADER=<DEFAULT 'Authorization'>
+```
+
+
+## Miscellaneous
+
+```
+# Listening PORT
+PORT=                       <DEFAULT '5001'>            
+# Storage used
+STORAGE=                    <DEFAULT 'LOCAL'>           
+
+# S3
+# Specifies an access key associated with your S3 instance
+AWS_ACCESS_KEY_ID=                                      
+# Specifies an secret key associated with your S3 instance
+AWS_SECRET_ACCESS_KEY=                                  
+# The Default region name identifies the S3 Region whose servers you want to send your requests to by default
+AWS_DEFAULT_REGION=         <DEFAULT 'us-east-1'>   
+# Specifies the endpoint that is used for all service requests    
+S3_ENDPOINT=
+# When set to true, the bucket name is always left in the request URI and never moved to the host as a sub-domain.
+S3_FORCE_PATH_STYLE=
+# Bucket used
+S3_BUCKET=
+
+# GITHUB
+GITHUB_PERSONAL_TOKEN=
+# A repository cannot be pull if it exceeds this limit
+GITHUB_MAX_REPO_SIZE=
+
+# Manager
+
+# The location of the plugin templates. This can be a URL or a file path starting with file://
+MANAGER_TEMPLATES=
+MANAGER_MAX_PARALLEL_JOBS=   <DEFAULT 2>
+# The domains allowed to call the Wasmo backend. This list is used by the CORS policy.
+MANAGER_ALLOWED_DOMAINS=     <DEFAULT 'localhost:5001'>
+# Defines whether Wasmo should be called with a JWT or not
+AUTH_MODE=                   <'AUTH'|'NO_AUTH'>
+# Secret used to verify the signature of the incoming token (only used with AUTH_MODE='AUTH')
+OTOROSHI_TOKEN_SECRET=       <DEFAULT 'veryverysecret'>
+# Header used to communicate the JWT (only used with AUTH_MODE='AUTH')
+OTOROSHI_USER_HEADER=        <DEFAULT 'otoroshi-user'> 
+
+# Enables the Extism environment and the playground zone in UI
+EXTISM_RUNTIME_ENVIRONMENT=  <DEFAULT false>
+# Value expected by Wasmo when the CLI calls endpoints to create and build a plugin
+CLI_AUTHORIZATION=
+# Previous value are expected in this header
+CLI_AUTHORIZATION_HEADER=    <DEFAULT 'Authorization'>
+
+# At each time interval, Wasmo will clear a folder full of locally generated Wasm binaries
+LOCAL_WASM_JOB_CLEANING=     <DEFAULT 60 * 60 * 1000> // 1 hour
 ```
