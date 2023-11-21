@@ -1,1 +1,21 @@
 # Integration with Otoroshi
+
+We can connect Otoroshi with Wasmo. The only step is to navigate to the danger zone of your Otoroshi instance, 
+and add the following values in the Wasmo section:
+
+- `URL`: admin-api-apikey-id
+- `Apikey id`: admin-api-apikey-secret
+- `Apikey secret`: http://localhost:5001
+- `User`: *
+- `Token secret`:
+
+The User property is used by Wasmo to filter the list of returned plugins. For example, 
+if the value of the property is `wasm@otoroshi.io`, Wasmo will return the list of Wasm plugins with the creator at `wasm@otoroshi.io`.
+
+Don’t forget to save the configuration.
+
+To have more informations about Otoroshi and Wasmo, you can follow the two tutorials:
+
+- [Wasm usage](https://maif.github.io/otoroshi/manual/how-to-s/wasm-usage.html)
+
+- [Wasmo and Otoroshi](https://maif.github.io/otoroshi/manual/how-to-s/wasmo-installation.html)

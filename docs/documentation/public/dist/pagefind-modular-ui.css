@@ -1,13 +1,13 @@
 :root {
-    --pagefind-ui-scale: 1;
+    --pagefind-ui-scale: 0.8;
     --pagefind-ui-primary: #034AD8;
     --pagefind-ui-fade: #707070;
     --pagefind-ui-text: #393939;
     --pagefind-ui-background: #ffffff;
     --pagefind-ui-border: #eeeeee;
     --pagefind-ui-tag: #eeeeee;
-    --pagefind-ui-border-width: 1px;
-    --pagefind-ui-border-radius: 4px;
+    --pagefind-ui-border-width: 2px;
+    --pagefind-ui-border-radius: 8px;
     --pagefind-ui-image-border-radius: 8px;
     --pagefind-ui-image-box-ratio: 3 / 2;
     --pagefind-ui-font: system, -apple-system, ".SFNSText-Regular",
