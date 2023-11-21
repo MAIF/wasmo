@@ -5,7 +5,7 @@ import Script from 'next/script';
 export default function Searchbar({ handleOpen, open }) {
   return <div className="w-6/12 ms-auto">
     <Script
-      src="/searchbar.js"
+      src="/wasmo/searchbar.js"
       strategy="lazyOnload"
     />
 
