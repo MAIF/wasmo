@@ -45,7 +45,7 @@ jobs:
       - name: Build with Next.js
         run: yarn run next build
       - name: Build documentation indexation 
-        run: npx pagefind --site "out" --output-path "public/dist"
+        run: npx pagefind --site "out" --output-path "out/dist"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
