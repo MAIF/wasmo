@@ -6,7 +6,7 @@ Wasmo server can be deploy from the Docker using [the built images](https://hub.
 
 It comes with, one one side, the server part to create and build your WASM plugin and, on the second part, the frontend to edit your plugins directly in the integrated UI.
 
-[In-progress documentation](https://maif.github.io/otoroshi/manual/how-to-s/wasm-manager-installation.html)
+[Documentation](https://maif.github.io/wasmo)
 
 # Wasmo CLI
 
