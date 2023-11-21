@@ -1,4 +1,6 @@
-![background](https://github.com/MAIF/wasmo/assets/6641669/7a9dafe6-0d0b-4c60-be09-eecdfe179aa8)
+<p align="center">
+  <img src="https://github.com/MAIF/wasmo/assets/6641669/fe3295dc-0c0b-41dd-a620-777e1108c4f3" alt="wasmo" width="300" style="margin: auto"/>
+</p>
 
 # Wasmo Server
 
