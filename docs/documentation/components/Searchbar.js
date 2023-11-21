@@ -37,6 +37,8 @@ export default function Searchbar({ handleOpen, open }) {
       if (!open) {
         e.stopPropagation()
         handleOpen(true)
+
+        setTimeout(() => document.querySelector("input").focus(), 200);
       }
     }} className='flex'>
 
