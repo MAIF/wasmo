@@ -36,4 +36,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: ./Dockerfile
           push: true
-          tags: maif/wasmo:${{ inputs.version }}
+          tags: maif/wasmo:${{ inputs.version }},maif/wasmo:latest
