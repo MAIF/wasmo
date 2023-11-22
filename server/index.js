@@ -20,7 +20,6 @@ const { FileSystem } = require('./services/file-system');
 const { Security } = require('./security/middlewares');
 
 const manager = require('./logger');
-const { Publisher } = require('./services/publish-job');
 const { Cron } = require('./services/cron-job');
 const log = manager.createLogger('wasm-manager');
 
@@ -95,7 +94,6 @@ Promise.all([initializeStorage(), getAppVersion()])
     }
 
     FileSystem.cleanBuildsAndLogsFolders();
-    Publisher.initialize();
 
     Cron.initialize();
 

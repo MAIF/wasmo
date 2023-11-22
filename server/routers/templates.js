@@ -27,10 +27,6 @@ router.get('/', (req, res) => {
   }
 });
 
-router.get('/wapm', (_, res) => {
-  res.sendFile(path.join(__dirname, '../templates', 'wapm.toml'))
-});
-
 function getTemplatesFromPath(type, res) {
   return res.sendFile(path.join(__dirname, '../templates', `${type}.zip`))
 }

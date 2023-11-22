@@ -11,10 +11,8 @@ const { FileSystem } = require('../services/file-system');
 
 const { InformationsReader } = require('../services/informationsReader');
 const { WebSocket } = require('../services/websocket');
-const { Publisher } = require('../services/publish-job');
 const { ENV, STORAGE } = require('../configuration');
 const { GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const { copySync } = require('fs-extra');
 
 const router = express.Router()
 
@@ -506,52 +504,6 @@ router.post('/:id/build', async (req, res) => {
       }
     })
 })
-
-router.post('/:id/publish', (req, res) => {
-  if (!ENV.WAPM_REGISTRY_TOKEN) {
-    res.status(400)
-      .json({
-        error: 'WAPM registry is not configured!'
-      })
-  } else {
-    const pluginId = req.params.id;
-
-    Publisher.publishIsAlreadyRunning(pluginId)
-      .then(exists => {
-        if (exists) {
-          res.json({
-            queue_id: pluginId,
-            alreadyExists: true
-          });
-        } else {
-          const { s3, Bucket } = S3.state();
-          s3.send(new GetObjectCommand({
-            Bucket,
-            Key: `${pluginId}.zip`
-          }))
-            .then(data => new fetch.Response(data.Body).buffer())
-            .then(data => {
-              Publisher.addPluginToQueue({
-                plugin: pluginId,
-                zipString: data
-              })
-              res.json({
-                queue_id: pluginId
-              })
-            })
-            .catch(err => {
-              console.log(err)
-              res
-                .status(err.$metadata.httpStatusCode)
-                .json({
-                  error: err.Code,
-                  status: err.$metadata.httpStatusCode
-                })
-            })
-        }
-      })
-  }
-});
 
 router.patch('/:id/filename', (req, res) => {
 
