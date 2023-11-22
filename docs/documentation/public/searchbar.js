@@ -1,5 +1,6 @@
 new PagefindUI({
     element: "#search",
+    baseUrl: '/wasmo',
     showSubResults: true,
     highlightParam: "highlight",
     showImages: false,
