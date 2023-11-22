@@ -48,14 +48,15 @@ function Layout({ children, next, metadata, previous }) {
           table: Table,
           th: props => <th className='whitespace-nowrap px-4 py-2 font-medium text-gray-900'>{props.children}</th>,
           thead: props => <thead className="ltr:text-left rtl:text-right">{props.children}</thead>,
-          h3: props => <h3 className='text-xl font-bold my-3'>{props.children }</h3>,
-          h4: props => <h4 className='text-lg my-3'>{props.children }</h4>
+          h3: props => <h3 className='text-xl font-bold my-3'>{props.children}</h3>,
+          h4: props => <h4 className='text-lg my-3'>{props.children}</h4>
         }}>
           {children}
         </MDXProvider>
 
         <div className='flex mt-16 justify-between border-t-2 border-gray-200 border-solid pt-6'>
-          {previous && <a href={previous.href} className="flex p-4 border-t border-slate-100 border-2 w-fit rounded-lg me-auto">
+          {previous && <a href={`/wasmo${previous.href}`}
+            className="flex p-4 border-t border-slate-100 border-2 w-fit rounded-lg me-auto">
             <div className="ml-auto text-right">
               <dt className="text-sm font-normal tracking-tight text-slate-600">
                 Previous
@@ -69,7 +70,8 @@ function Layout({ children, next, metadata, previous }) {
             </div>
           </a>}
 
-          {next && <a href={next.href} className={`flex p-4 border-t border-slate-100 border-2 w-fit rounded-lg ms-auto`}>
+          {next && <a href={`/wasmo${next.href}`}
+            className={`flex p-4 border-t border-slate-100 border-2 w-fit rounded-lg ms-auto`}>
             <div className="ml-auto text-right">
               <dt className="text-sm font-normal tracking-tight text-slate-600">
                 Next
