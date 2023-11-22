@@ -17,7 +17,8 @@ function Layout({ children, next, metadata, previous }) {
   return <>
     <header className="sticky top-2 z-50 flex items-center justify-between px-3 py-2 bg-white" onClick={() => handleOpen(false)}>
       <div className="flex items-center flex-grow">
-        <a href="" className="text-3xl font-bold tracking-tight text-slate-1200">
+        <a href="" className="text-3xl font-bold tracking-tight text-slate-1200 flex items-center gap-2">
+          <img src="/wasmo/wasmo.png" width={32} />
           Wasmo Docs
         </a>
       </div>

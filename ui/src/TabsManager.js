@@ -157,10 +157,10 @@ function SidebarHeader({ version }) {
       userSelect: 'none',
       fontWeight: 'bold',
       textTransform: 'uppercase',
-      background: '#f9b000',
+      background: '#000',
       color: 'white',
       height: 42
-    }} className="p-2 m-0 d-flex align-items-center">Wasmo <span style={{ fontSize: '1rem', marginTop: 'auto' }} className="ms-auto">{version}</span></h1> : <div className='d-flex justify-content-center p-1'>
+    }} className="p-2 m-0 d-flex align-items-center"><img src="./wasmo.png" width={32} />Wasmo <span style={{ fontSize: '1rem', marginTop: 'auto' }} className="ms-auto">{version}</span></h1> : <div className='d-flex justify-content-center p-1'>
       {LOGOS.logo}
     </div>
     }
