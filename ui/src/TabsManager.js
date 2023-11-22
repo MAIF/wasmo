@@ -4,12 +4,9 @@ import Tab from './Tab'
 import PluginManager from './PluginManager'
 import Terminal from './Terminal';
 import { Run } from './Run';
-import { PublishView } from './PublishView';
 import { TabsHeader } from './TabsHeader';
 import { Sidebar, SidebarContext } from './Sidebar';
 import { LOGOS } from './FilesLogo';
-
-// close the publisher when selecteing other plugins
 
 function TabsManager({ plugins, ...props }) {
   const [tabs, setTabs] = useState([])
@@ -26,7 +23,7 @@ function TabsManager({ plugins, ...props }) {
   useEffect(() => {
     if (props.selectedPlugin && props.selectedPlugin.filename !== currentPlugin) {
       setCurrentPlugin(props.selectedPlugin.filename)
-      setTabs(tabs.filter(t => t === 'Runner' || t === 'Publish'))
+      setTabs(tabs.filter(t => t === 'Runner'))
     }
   }, [props.selectedPlugin])
 
@@ -116,10 +113,6 @@ function TabsManager({ plugins, ...props }) {
                   showPlaySettings={() => {
                     setTab('Runner');
                     props.showPlaySettings();
-                  }}
-                  showPublishSettings={() => {
-                    setTab('Publish');
-                    props.showPublishSettings();
                   }}>
                   <Tabs
                     tabs={tabs}
@@ -134,16 +127,6 @@ function TabsManager({ plugins, ...props }) {
                     onClose={props.onEditorStateReset}
                     plugins={plugins}
                     selectedPlugin={props.selectedPlugin} />}
-                {currentTab === 'Publish' &&
-                  <PublishView
-                    onClose={props.onEditorStateReset}
-                    plugins={plugins}
-                    selectedPlugin={props.selectedPlugin}
-                    createManifest={props.createManifest}
-                    createReadme={props.createReadme}
-                    openTab={setTab}
-                    publish={props.publish}
-                  />}
                 {props.selectedPlugin ? <Contents
                   tabs={tabs}
                   configFiles={props.configFiles}
@@ -189,8 +172,6 @@ function Tabs({ tabs, setCurrentTab, setTabs, currentTab, selectedPlugin, config
     {tabs
       .filter(tab => {
         if (tab === 'Runner') {
-          return true;
-        } else if (tab === 'Publish') {
           return true;
         } else {
           return [...(selectedPlugin ? selectedPlugin.files : []), ...configFiles].find(f => f.filename === tab);

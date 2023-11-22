@@ -4,7 +4,7 @@ import * as Service from './services'
 
 export function TabsHeader({
   selectedPlugin, onSave, onBuild, onDownload,
-  showPlaySettings, showPublishSettings, children }) {
+  showPlaySettings, children }) {
 
   return <Header
     selectedPluginType={selectedPlugin?.type}
@@ -12,15 +12,14 @@ export function TabsHeader({
     onBuild={onBuild}
     onDownload={onDownload}
     showActions={!!selectedPlugin}
-    showPlaySettings={showPlaySettings}
-    showPublishSettings={showPublishSettings}>
+    showPlaySettings={showPlaySettings}>
     {children}
   </Header>
 }
 
 function Header({
   children, onSave, onBuild, showActions, onDownload,
-  showPlaySettings, showPublishSettings, selectedPluginType }) {
+  showPlaySettings, selectedPluginType }) {
 
   const [runtimeState, setRuntimeEnvironment] = useState(false);
 
@@ -41,7 +40,6 @@ function Header({
             <Build onBuild={onBuild} />
             <Release onBuild={onBuild} />
             <Download onDownload={onDownload} />
-            {/* {selectedPluginType !== 'go' && <Publish showPublishSettings={showPublishSettings} />} */}
           </>}
           {runtimeState && <Play showPlaySettings={showPlaySettings} />}
         </div>
@@ -90,17 +88,6 @@ function Download({ onDownload }) {
     className="pe-2"
     onClick={onDownload}>
     <i className='fas fa-download' />
-  </button>
-}
-
-function Publish({ showPublishSettings }) {
-  return <button type="button"
-    tooltip="Publish to WAPM.io"
-    tooltipMargin="-80px"
-    style={{ border: 'none', background: 'none' }}
-    className="pe-2"
-    onClick={showPublishSettings}>
-    <i className='fas fa-upload' />
   </button>
 }
 

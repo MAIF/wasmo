@@ -90,13 +90,6 @@ export const buildPlugin = async (plugin, pluginType, release) => {
     .then(res => res.json())
 };
 
-export const publishPlugin = async plugin => {
-  return rawFetch(`/plugins/${plugin.pluginId}/publish`, {
-    method: 'POST'
-  })
-    .then(res => res.json())
-}
-
 export const removePlugin = plugin => rawFetch(`/plugins/${plugin}`, {
   method: 'DELETE'
 });

@@ -497,12 +497,6 @@ class App extends React.Component {
     })
   }
 
-  showPublishSettings = () => {
-    this.setState({
-      editorState: 'publish',
-    })
-  }
-
   removePlugin = () => {
     if (this.state.selectedPlugin) {
       const { pluginId } = this.state.selectedPlugin
@@ -579,21 +573,6 @@ class App extends React.Component {
     }
   }
 
-  publish = () => {
-    const { selectedPlugin } = this.state;
-    Service.savePlugin(selectedPlugin)
-      .then(() => Service.publishPlugin(selectedPlugin))
-      .then(res => {
-        if (res.error) {
-          toast.error(res.error)
-        } else if (res.alreadyExists) {
-          toast.warn("Your plugin is already publishing or already in the queue.");
-        } else {
-          toast.info(res.message);
-        }
-      })
-  }
-
   render() {
     const { selectedPlugin, plugins, configFiles, editorState, version } = this.state;
 
@@ -622,13 +601,11 @@ class App extends React.Component {
         onDownload={this.onDownload}
         onEditorStateReset={this.onEditorStateReset}
         showPlaySettings={this.showPlaySettings}
-        showPublishSettings={this.showPublishSettings}
         removeFile={this.removeFile}
         onLoadConfigurationFile={this.onLoadConfigurationFile}
         setSelectedPlugin={this.setSelectedPlugin}
         createManifest={this.createManifest}
         createReadme={this.createReadme}
-        publish={this.publish}
       />
     </div>
   }
