@@ -12,7 +12,7 @@ const { FileSystem } = require('../services/file-system');
 const { InformationsReader } = require('../services/informationsReader');
 const { WebSocket } = require('../services/websocket');
 const { Publisher } = require('../services/publish-job');
-const { ENV } = require('../configuration');
+const { ENV, STORAGE } = require('../configuration');
 const { GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { copySync } = require('fs-extra');
 
@@ -346,6 +346,12 @@ router.post('/build', async (req, res) => {
     .then(res => res.blob())
     .then(res => res.arrayBuffer())
 
+  if (metadata.local !== undefined && !metadata.local && ![STORAGE.DOCKER_S3, STORAGE.S3].includes(ENV.STORAGE)) {
+    return res
+      .status(400)
+      .json({ error: "metadata is not compatible with the storage used by Wasmo" });
+  }
+
   FileSystem.createBuildFolder(kind, pluginId)
     .then(folder => {
       unzip(isRustBuild,
@@ -358,7 +364,7 @@ router.post('/build', async (req, res) => {
         .then(() => {
           FileSystem.writeFiles(files, folder, isRustBuild)
             .then(() => {
-              const saveInLocal = metadata.local || true;
+              const saveInLocal = metadata.local !== undefined ? metadata.local : false;
               addPluginToBuildQueue(
                 folder,
                 {

@@ -3,16 +3,16 @@ const fs = require('fs-extra');
 const p = require('path');
 
 function wasmgc(options, buildOptions, path, log) {
+  const outputFilepath = p.join(path.split("/").slice(0, -1).join("/"), options.wasmName);
+
   const command = {
     executable: 'wasm-opt',
-    args: ['-O', path, '-o', path]
+    args: ['-O', outputFilepath, '-o', outputFilepath]
   }
-
-  const outputFilepath = p.join(path.split("/").slice(0, -1).join("/"), options.wasmName);
 
   return new Promise((resolve) => {
     exec(`mv ${path} ${outputFilepath}`, () => {
-      getFileSize(path)
+      getFileSize(outputFilepath)
         .then(originalSize => {
           log(`File size before optimizing: ${originalSize} bytes`)
           log(`${command.executable} ${command.args.join(" ")}`);
@@ -26,7 +26,7 @@ function wasmgc(options, buildOptions, path, log) {
               return resolve(outputFilepath);
             }
 
-            getFileSize(path)
+            getFileSize(outputFilepath)
               .then(newSize => {
                 log(`File size after optimizing: ${newSize} bytes - ${(1 - (newSize / originalSize)) * 100}%`)
 

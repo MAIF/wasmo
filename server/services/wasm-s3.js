@@ -56,13 +56,11 @@ function putWasmInformationsToS3(userMail, pluginId, newHash, generateWasmName) 
   }
 
   return UserManager.getUser(userReq)
-    .then(data => UserManager.updateUser(userReq, {
-      ...data,
-      plugins: data.plugins.map(plugin => {
+    .then(data => {
+      const newPlugins = data.plugins.map(plugin => {
         if (plugin.pluginId !== pluginId) {
           return plugin;
         }
-
         let versions = plugin.versions || [];
 
         // convert legacy array
@@ -91,8 +89,12 @@ function putWasmInformationsToS3(userMail, pluginId, newHash, generateWasmName) 
           wasm: generateWasmName,
           versions
         }
+      });
+      return UserManager.updateUser(userReq, {
+        ...data,
+        plugins: newPlugins
       })
-    }))
+    })
 }
 
 function getWasm(Key, res) {
