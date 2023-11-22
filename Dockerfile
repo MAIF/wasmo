@@ -28,6 +28,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Add wasm-unknown-unknown target
 RUN rustup target add wasm32-unknown-unknown
 
+ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
         wget https://github.com/tinygo-org/tinygo/releases/download/v0.27.0/tinygo_0.27.0_arm64.deb; \
         dpkg -i tinygo_0.27.0_arm64.deb; \
