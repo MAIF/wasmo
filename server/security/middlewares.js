@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { ENV } = require('../configuration');
+const { ENV, AUTHENTICATION } = require('../configuration');
 
 const secret = ENV.OTOROSHI_TOKEN_SECRET || 'veryverysecret';
 
@@ -10,65 +10,55 @@ const missingCredentials = res => {
       error: 'missing credentials'
     })
 }
-
-function extractedUserOrApikey(req) {
-  const jwtUser = req.headers[ENV.OTOROSHI_USER_HEADER] || req.headers['otoroshi-user']
+const otoroshiAuthentication = (req, res, next) => {
+  const jwtUser = req.headers[ENV.OTOROSHI_USER_HEADER] || req.headers['otoroshi-user'];
   if (jwtUser) {
     try {
       const decodedToken = jwt.verify(jwtUser, secret, { algorithms: ['HS512'] });
       req.user = decodedToken.user
-      req.apikey = decodedToken.apikey
-      return true;
-    } catch (_) {
-      return false;
+      next()
+    } catch (err) {
+      console.log(err)
+      missingCredentials(res)
     }
   } else {
-    return false;
+    console.log(`Missing jwt user ${jwtUser}`)
+    missingCredentials(res)
   }
 }
 
+const checkApikey = (header) => {
+  const [clientId, clientSecret] = header.split(':');
+  return clientId === ENV.OTOROSHI_CLIENT_ID &&
+    clientSecret === ENV.OTOROSHI_CLIENT_SECRET;
+}
+
 const extractUserFromQuery = (req, res, next) => {
-  if (ENV.AUTH_MODE === 'AUTH') {
-    const jwtUser = req.headers[ENV.OTOROSHI_USER_HEADER] || req.headers['otoroshi-user']
-    if (jwtUser) {
-      try {
-        const decodedToken = jwt.verify(jwtUser, secret, { algorithms: ['HS512'] });
-        req.user = decodedToken.user
-        next()
-      } catch (err) {
-        console.log(err)
-        missingCredentials(res)
-      }
-    } else {
-      console.log(`Missing jwt user ${jwtUser}`)
-      missingCredentials(res)
-    }
-  } else if (ENV.AUTH_MODE === 'NO_AUTH') {
+  if (ENV.AUTH_MODE === AUTHENTICATION.NO_AUTH) {
     req.user = { email: 'admin@otoroshi.io' }
     next()
+  } else if (ENV.AUTH_MODE === AUTHENTICATION.OTOROSHI) {
+    otoroshiAuthentication(req, res, next);
+  } else if (ENV.AUTH_MODE === AUTHENTICATION.BASIC_AUTH) {
+    if ((req.headers.authorization && checkApikey(atob(req.headers.authorization.replace('Basic ', '')))) ||
+      (req.headers['otoroshi-client-id'] && req.headers['otoroshi-client-secret'] && req.headers['otoroshi-client-id'] === ENV.OTOROSHI_CLIENT_ID &&
+        req.headers['otoroshi-client-secret'] === ENV.OTOROSHI_CLIENT_SECRET)) {
+      req.user = { email: 'admin@otoroshi.io' }
+      next()
+    }
+    else {
+      return res
+        .status(401)
+        .set("WWW-Authenticate", "Basic realm='wasmo'")
+        .json();
+    }
   } else {
     missingCredentials(res)
   }
 }
 
-const checkCLIToken = (req, res, next) => {
-  if (req.path === '/api/plugins/build' || req.path === '/local/wasm') {
-    if (ENV.CLI_AUTHORIZATION !== undefined && req.headers[ENV.CLI_AUTHORIZATION_HEADER.toLocaleLowerCase()] === ENV.CLI_AUTHORIZATION) {
-      return next()
-    } else {
-      return res.status(403).json({
-        error: 'invalid credentials'
-      })
-    }
-  } else {
-    return next()
-  }
-}
-
 module.exports = {
   Security: {
-    extractedUserOrApikey,
-    extractUserFromQuery,
-    checkCLIToken
+    extractUserFromQuery
   }
 }

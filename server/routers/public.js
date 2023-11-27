@@ -1,16 +1,13 @@
 const express = require('express');
 const { UserManager } = require("../services/user");
 const { format } = require('../utils');
-const { Security } = require('../security/middlewares');
-const { ENV } = require('../configuration');
+const { ENV, AUTHENTICATION } = require('../configuration');
 const { getWasm } = require('../services/wasm-s3');
 const { FileSystem } = require('../services/file-system');
 
 const router = express.Router()
 
 const DOMAINS = (ENV.MANAGER_ALLOWED_DOMAINS || "").split(',');
-
-const noAuth = (req, res, next) => next();
 
 const auth = (req, res, next) => {
   res.header('Access-Control-Allow-Origin', req.headers.origin)
@@ -31,9 +28,7 @@ const forbiddenAccess = (req, res, next) => {
 }
 
 router.use((req, res, next) => {
-  if (ENV.AUTH_MODE === 'NO_AUTH') {
-    noAuth(req, res, next);
-  } else if (ENV.AUTH_MODE === 'AUTH' && DOMAINS.includes(req.headers.host) && Security.extractedUserOrApikey(req)) {
+  if (DOMAINS.includes(req.headers.host)) {
     auth(req, res, next);
   } else {
     forbiddenAccess(req, res, next);

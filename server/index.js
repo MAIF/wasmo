@@ -8,7 +8,7 @@ const compression = require('compression');
 const bodyParser = require('body-parser');
 
 const { S3 } = require('./s3');
-const { ENV, STORAGE } = require('./configuration');
+const { ENV, STORAGE, AUTHENTICATION } = require('./configuration');
 
 const pluginsRouter = require('./routers/plugins');
 const templatesRouter = require('./routers/templates');
@@ -21,9 +21,9 @@ const { Security } = require('./security/middlewares');
 
 const manager = require('./logger');
 const { Cron } = require('./services/cron-job');
-const log = manager.createLogger('wasm-manager');
+const log = manager.createLogger('');
 
-if (ENV.AUTH_MODE === "NO_AUTH") {
+if (ENV.AUTH_MODE === AUTHENTICATION.NO_AUTH) {
   console.log("###############################################################")
   console.log("#                                                             #")
   console.log('# ⚠The manager will start without authentication configured⚠  #')
@@ -31,12 +31,16 @@ if (ENV.AUTH_MODE === "NO_AUTH") {
   console.log("###############################################################")
 }
 
-if (!ENV.CLI_AUTHORIZATION) {
-  console.log("###########################################")
-  console.log("#                                           #")
-  console.log('# ⚠CLI Token is missing⚠                    #')
-  console.log("#                                           #")
-  console.log("###########################################")
+if (![AUTHENTICATION.OTOROSHI, AUTHENTICATION.BASIC_AUTH].includes(ENV.AUTH_MODE) ||
+  !ENV.OTOROSHI_CLIENT_ID ||
+  !ENV.OTOROSHI_CLIENT_SECRET) {
+  console.log("#############################################################")
+  console.log("#                                                           #")
+  console.log('# ⚠OTOROSHI_CLIENT_ID or OTOROSHI_CLIENT_SECRET is missing⚠ #')
+  console.log("#                                                           #")
+  console.log("#############################################################")
+
+  return ;
 }
 
 function initializeStorage() {
@@ -60,9 +64,8 @@ function createServer(appVersion) {
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(bodyParser.text());
 
-  app.use('/', publicRouter);
   app.use('/', Security.extractUserFromQuery);
-  app.use('/', Security.checkCLIToken);
+  app.use('/', publicRouter);
   app.use('/api/plugins', pluginsRouter);
   app.use('/api/templates', templatesRouter);
   app.use('/api/wasm', wasmRouter);
@@ -85,7 +88,6 @@ if (ENV.STORAGE === STORAGE.S3 && !S3.configured()) {
   console.log("[S3 INITIALIZATION](failed): S3 Bucket is missing");
   process.exit(1);
 }
-// else if  manage GITHUG
 
 Promise.all([initializeStorage(), getAppVersion()])
   .then(([error, version]) => {

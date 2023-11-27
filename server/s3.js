@@ -4,7 +4,7 @@ const dns = require('dns');
 const url = require('url');
 const manager = require('./logger');
 const { ENV, STORAGE } = require('./configuration');
-const log = manager.createLogger('wasm-manager');
+const log = manager.createLogger('');
 
 let state = {
   s3: undefined,
@@ -39,7 +39,7 @@ const initializeS3Connection = () => {
       Bucket: ENV.S3_BUCKET
     }
 
-    console.log("[S3 INITIALIZATION](ok): S3 Bucket initialized");
+    log.info("S3 Bucket initialized");
     return Promise.resolve()
   }
 }

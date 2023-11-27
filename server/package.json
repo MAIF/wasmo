@@ -1,5 +1,5 @@
 {
-  "name": "wasm-manager",
+  "name": "wasmo",
   "version": "16.9.2",
   "main": "index.js",
   "license": "MIT",

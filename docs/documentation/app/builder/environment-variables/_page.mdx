@@ -56,7 +56,7 @@ This level of authentication should be used at least in production mode. It ensu
 
 Wasmo is accessible without tokens or secrets. The UI is also available without any restrictions.
 
-## Pairing with Otoroshi <Badges values={['OTOROSHI_TOKEN_SECRET', 'OTOROSHI_USER_HEADER', 'AUTH_MODE']} raw />
+## Pairing with Otoroshi <Badges values={['OTOROSHI_TOKEN_SECRET', 'AUTH_MODE']} raw />
 
 [Otoroshi](https://maif.github.io/otoroshi/manual/getting-started.html) is a layer of lightweight api management on top of a modern http reverse proxy written in Scala.
 
@@ -72,9 +72,6 @@ In both cases, you need to configure Wasmo and Otoroshi with same values for the
 # required
 OTOROSHI_TOKEN_SECRET=
 AUTH_MODE=NO_AUTH | AUTH_MODE
-
-# optional
-OTOROSHI_USER_HEADER=<DEFAULT 'otoroshi-user'>
 ```
  
 
@@ -136,8 +133,6 @@ MANAGER_ALLOWED_DOMAINS=     <DEFAULT 'localhost:5001'>
 AUTH_MODE=                   <'AUTH'|'NO_AUTH'>
 # Secret used to verify the signature of the incoming token (only used with AUTH_MODE='AUTH')
 OTOROSHI_TOKEN_SECRET=       <DEFAULT 'veryverysecret'>
-# Header used to communicate the JWT (only used with AUTH_MODE='AUTH')
-OTOROSHI_USER_HEADER=        <DEFAULT 'otoroshi-user'> 
 
 # Enables the Extism environment and the playground zone in UI
 EXTISM_RUNTIME_ENVIRONMENT=  <DEFAULT false>
