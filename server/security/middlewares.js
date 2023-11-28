@@ -29,8 +29,8 @@ const otoroshiAuthentication = (req, res, next) => {
 
 const checkApikey = (header) => {
   const [clientId, clientSecret] = header.split(':');
-  return clientId === ENV.OTOROSHI_CLIENT_ID &&
-    clientSecret === ENV.OTOROSHI_CLIENT_SECRET;
+  return clientId === ENV.WASMO_CLIENT_ID &&
+    clientSecret === ENV.WASMO_CLIENT_SECRET;
 }
 
 const extractUserFromQuery = (req, res, next) => {
@@ -40,9 +40,7 @@ const extractUserFromQuery = (req, res, next) => {
   } else if (ENV.AUTH_MODE === AUTHENTICATION.OTOROSHI) {
     otoroshiAuthentication(req, res, next);
   } else if (ENV.AUTH_MODE === AUTHENTICATION.BASIC_AUTH) {
-    if ((req.headers.authorization && checkApikey(atob(req.headers.authorization.replace('Basic ', '')))) ||
-      (req.headers['otoroshi-client-id'] && req.headers['otoroshi-client-secret'] && req.headers['otoroshi-client-id'] === ENV.OTOROSHI_CLIENT_ID &&
-        req.headers['otoroshi-client-secret'] === ENV.OTOROSHI_CLIENT_SECRET)) {
+    if (req.headers.authorization && checkApikey(atob(req.headers.authorization.replace('Basic ', '')))) {
       req.user = { email: 'admin@otoroshi.io' }
       next()
     }

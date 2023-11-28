@@ -1,7 +1,7 @@
 const express = require('express');
 const { UserManager } = require("../services/user");
 const { format } = require('../utils');
-const { ENV, AUTHENTICATION } = require('../configuration');
+const { ENV } = require('../configuration');
 const { getWasm } = require('../services/wasm-s3');
 const { FileSystem } = require('../services/file-system');
 
@@ -16,7 +16,6 @@ const auth = (req, res, next) => {
 }
 
 const forbiddenAccess = (req, res, next) => {
-  console.log(ENV.AUTH_MODE === 'AUTH')
   console.log(DOMAINS.includes(req.headers.host))
   console.log(req.headers.host)
   console.log(DOMAINS)

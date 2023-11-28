@@ -20,7 +20,8 @@ This project can be installed and compiled from source with this Cargo command:
 ```
 $ cargo install wasmo
 or
-$ brew install wasmo (coming soon)
+$ brew tap maif/wasmo
+$ brew install wasmo
 ```
 
 Additionally there are [precompiled artifacts built on CI][artifacts] which are
@@ -47,17 +48,17 @@ with wasm modules:
 
 | Tool                        | Arguments | Description                                                   |
 | ---------------------------- | -- | ------------------------------------------------------------- |
-| `wasmo config set`            | token &#124; path &#124; server | Globally configure the CLI with the authorization token, the path where the configuration file will be stored and the server to reach during the build. These parameters are optional and can be passed when running the build command.  |
+| `wasmo config set`            | path &#124; server &#124; clientId &#124; clientSecret | Globally configure the CLI with the path where the configuration file will be stored and the server to reach during the build. These parameters are optional and can be passed when running the build command.  |
 | `wasmo config get`         |    | Get the configuration from the configured path file or from `$HOME/.wasmo` |
 | `wasmo config reset`        |     | Clean configuration and reset to default settings. The default file path configuration will be `$HOME/.wasmo`                                   ||
 | `wasmo init`             | template &#124; name &#124; path | Initialize a WASM plugin to the specific path. You can choose between many templates, javascript/typescript (js/ts), Open Policy Agent (opa), Rust or Golang (go). |
-| `wasmo build`             | path &#124; host &#124; server &#124; token | Build the plugin  by sending the contents to the remote or local Wasmo server. As soon as the build is complete, the WASM binary is donwloaded and saved in the plugin folder. |
+| `wasmo build`             | path &#124; host &#124; server &#124; clientId &#124; clientSecret | Build the plugin  by sending the contents to the remote or local Wasmo server. As soon as the build is complete, the WASM binary is donwloaded and saved in the plugin folder. |
 
 # Quick start
 
 ``` 
 wasmo init --name=my-first-plugin --templates=js
-wasmo build --host=OneShotDocker --path=my-first-plugin --token=foobar
+wasmo build --host=OneShotDocker --path=my-first-plugin
 ```
 
 Then open the content of your `my-first-plugin` folder. You should find the generated WASM binary named `my-first-plugin-1.0.0.wasm`.
@@ -84,12 +85,11 @@ You have two ways to build your plugin:
 
 [wasmoserver]: https://github.com/MAIF/wasmo
 
-Assuming we want to build our `my-first-plugin` locally. Enter `wasmo build --host=OneShotDocker --path=my-first-plugin --token=foobar` to start the build. 
+Assuming we want to build our `my-first-plugin` locally. Enter `wasmo build --host=OneShotDocker --path=my-first-plugin` to start the build. 
 
 Let's explain these 3 parameters:
   - the `path` parameter is explicitly used to indicate the plugin to build
   - the `host` indicates which kind of Wasmo server used. The pratical way is to use `Docker` or `OneShotDocker` because it prevents to install a Wasmo server by deploying, inside your locally Docker, a new Wasmo container. The last possible value is `Remote` and can be used to specify with a URI the remote Wasmo server used.
-  - the `token` argument is passed to the Wasmo server to authenticate the CLI. It can also be set up in the [configuration file][#configure-your-configuration-file]
 
 [![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/NdbQR6vQ5Sk/0.jpg)](https://www.youtube.com/watch?v=NdbQR6vQ5Sk)
 
@@ -123,14 +123,12 @@ If value is omitted, then it sets it to an empty string.
 The available keys are: 
   - `path`: configure the path where the wasmo configuration will be stored
   - `server`: the Wasmo server to build your plugins (an URL format value is expected)
-  - `token`: the token, pass to the Wasmo server, to authenticate the CLI 
-  - `docker_authorization`: the token value accepted by Docker instances 
+  - `clientId`: the client id used in Basic and Otoroshi Auth
+  - `clientSecret`: the client secret used in Basic and Otoroshi Auth
 
 You can also edit the configuration file manually. In this case, the following values are :
   - `path` = WASMO_PATH
   - `server` = WASMO_SERVER
-  - `token` = WASMO_TOKEN
-  - `docker_authorization` = DOCKER_AUTHORIZATION
 
 #### get 
 

@@ -19,11 +19,18 @@ pub struct Plugin {
 pub struct PluginMetadata {
     pub name: String,
     pub version: String,
+    pub local: bool
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FileMetadata {
+    pub name: String,
+    pub version: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct TomlMetadata {
-    package: PluginMetadata,
+    package: FileMetadata,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -117,25 +124,33 @@ fn read_files_contents(files: &Vec<DirEntry>) -> Vec<PluginFile> {
 fn read_metadata(path: &str, filename: &str, kind: &str) -> PluginMetadata {
     match fs::read_to_string(format!("{}/{}", path, filename)) {
         Err(err) => panic!("Should be able to read metadata file, {}", err),
-        Ok(content) => match kind {
-            "go" => {
-                // extract data from formatted string like go-plugin/<version>
-                let mut first_line = content
-                    .split("\n")
-                    .next() // get first line
-                    .unwrap()
-                    .split(" ")
-                    .last() // keep only name and version
-                    .unwrap()
-                    .splitn(2, "/");
+        Ok(content) => {
+            let out: FileMetadata = match kind {
+                "go" => {
+                    // extract data from formatted string like go-plugin/<version>
+                    let mut first_line = content
+                        .split("\n")
+                        .next() // get first line
+                        .unwrap()
+                        .split(" ")
+                        .last() // keep only name and version
+                        .unwrap()
+                        .splitn(2, "/");
 
-                PluginMetadata {
-                    name: first_line.next().unwrap().to_string(),
-                    version: first_line.next().unwrap_or("1.0.0").to_string(),
+                    FileMetadata {
+                        name: first_line.next().unwrap().to_string(),
+                        version: first_line.next().unwrap_or("1.0.0").to_string()
+                    }
                 }
+                "rs" => (toml::from_str::<TomlMetadata>(&content).unwrap()).package,
+                _ => serde_json::from_str(&content).unwrap()
+            };
+
+            PluginMetadata {
+                name: out.name,
+                version: out.version,
+                local: true
             }
-            "rs" => (toml::from_str::<TomlMetadata>(&content).unwrap()).package,
-            _ => serde_json::from_str(&content).unwrap(),
         },
     }
 }

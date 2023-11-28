@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { solarizedDark } from '@uiw/codemirror-theme-solarized';
+import { isDevelopmentMode } from './services';
 
-import io from 'socket.io-client';
 import { SidebarContext } from './Sidebar';
-const socket = io();
 
-function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, selectedPlugin, onLoadConfigurationFile, configFiles }) {
+function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, selectedPlugin, onLoadConfigurationFile }) {
   const [content, setContent] = useState('');
   const [loadConfigurationFile, setLoadConfigurationFile] = useState(false);
   const ref = useRef();
@@ -20,30 +19,38 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
 
   useEffect(() => {
     if (selectedPlugin) {
-      socket.on(selectedPlugin.pluginId, text => {
-        if (sizeTerminal === 0) {
-          changeTerminalSize(0.5);
-        }
+      isDevelopmentMode()
+        .then(isDevelopment => {
+          let socket;
 
-        if (text.includes("You can now use the generated wasm")) {
-          setLoadConfigurationFile(true)
-        }
+          if (isDevelopment) {
+            socket = new WebSocket(`ws://${window.location.hostname}:5001/${selectedPlugin.pluginId}`);
+          } else {
+            socket = new WebSocket(`ws://${window.location.host}/${selectedPlugin.pluginId}`);
+          }
 
-        if (text.includes('Starting build')) {
-          setContent(text)
-        } else {
-          setContent(content => content + text)
-          if (ref && ref.current)
-            ref.current.view.scrollDOM.scrollTop = ref.current.view.scrollDOM.scrollHeight;
-        }
-      })
+          socket.onmessage = event => {
+            console.log(event)
+            const text = event.data
+            if (sizeTerminal === 0) {
+              changeTerminalSize(0.5);
+            }
 
-      return () => {
-        socket.removeAllListeners()
-        socket.off('disconnect')
-      };
+            if (text.includes("You can now use the generated wasm")) {
+              setLoadConfigurationFile(true)
+            }
+
+            if (text.includes('Starting build')) {
+              setContent(text)
+            } else {
+              setContent(content => content + text)
+              if (ref && ref.current)
+                ref.current.view.scrollDOM.scrollTop = ref.current.view.scrollDOM.scrollHeight;
+            }
+          }
+        })
     }
-  }, [selectedPlugin]);
+  }, [selectedPlugin?.pluginId]);
 
 
   return <div style={{

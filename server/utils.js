@@ -6,33 +6,38 @@ const pako = require('pako');
 const format = value => value.replace(/[^a-zA-Z ]/g, "");
 
 const unzip = (isRustBuild, zipString, outputFolder, rules = []) => {
-  const zip = new AdmZip(zipString);
-  const entries = zip.getEntries()
+  try {
+    const zip = new AdmZip(zipString);
+    const entries = zip.getEntries();
 
-  return entries.reduce((p, entry) => p.then(() => new Promise(resolve => {
-    try {
-      const content = pako.inflateRaw(entry.getCompressedData(), { to: 'string' });
+    return entries.reduce((p, entry) => p.then(() => new Promise(resolve => {
+      try {
+        const content = pako.inflateRaw(entry.getCompressedData(), { to: 'string' });
 
-      if (!content)
-        return resolve();
+        if (!content)
+          return resolve();
 
-      let filePath = '';
+        let filePath = '';
 
-      if (isRustBuild) {
-        filePath = entry.entryName === 'Cargo.toml' ? '' : 'src';
+        if (isRustBuild) {
+          filePath = entry.entryName === 'Cargo.toml' ? '' : 'src';
+        }
+
+        fs.writeFile(
+          path.join(process.cwd(), 'build', outputFolder, filePath, entry.entryName.split('/').slice(-1).join('/')),
+          rules.reduce((acc, rule) => {
+            return acc.replace(new RegExp(rule.key, "g"), rule.value)
+          }, content)
+        )
+          .then(resolve)
+      } catch (_) {
+        resolve()
       }
+    })), Promise.resolve())
 
-      fs.writeFile(
-        path.join(process.cwd(), 'build', outputFolder, filePath, entry.entryName.split('/').slice(-1).join('/')),
-        rules.reduce((acc, rule) => {
-          return acc.replace(new RegExp(rule.key, "g"), rule.value)
-        }, content)
-      )
-        .then(resolve)
-    } catch (_) {
-      resolve()
-    }
-  })), Promise.resolve())
+  } catch (err) {
+    Promise.resolve(err)
+  }
 }
 
 const unzipTo = (zipString, outputPaths) => {

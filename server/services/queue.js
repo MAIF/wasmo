@@ -10,7 +10,7 @@ const opaCompiler = require('./compiler/opa');
 
 const { BuildOptions, CompilerOptions } = require('./compiler/compiler');
 const { ENV } = require('../configuration');
-const { GetObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const { HeadObjectCommand } = require('@aws-sdk/client-s3');
 
 const COMPILERS = {
   'js': JsCompiler,

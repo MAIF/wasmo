@@ -44,6 +44,8 @@ export const updatePlugin = (pluginId, newFilename) => {
   })
 }
 
+export const isDevelopmentMode = () => jsonFetch('/development');
+
 export const getPlugins = () => jsonFetch('/plugins')
 
 export const getPlugin = plugin => rawFetch(`/plugins/${plugin}`)

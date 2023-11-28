@@ -12,6 +12,8 @@ Launch the documentation server
 yarn run dev
 ```
 
+If all goes well, the documentation should now be serving your project on [wasmo](`http://localhost:3000/wasmo`)
+
 Build production bundle
 
 ```

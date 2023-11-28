@@ -5,6 +5,7 @@ mod error;
 mod port;
 mod logger;
 
+use base64::{engine::general_purpose, Engine as _};
 use clap::{Parser, Subcommand};
 use error::{WasmoError, WasmoResult};
 use hyper_tls::HttpsConnector;
@@ -22,8 +23,8 @@ use dirs;
 
 const WASMO_SERVER: &str = "WASMO_SERVER";
 const WASMO_PATH: &str = "WASMO_PATH";
-const WASMO_TOKEN: &str = "WASMO_TOKEN";
-const WASMO_AUTHORIZATION_HEADER: &str = "WASMO_AUTHORIZATION_HEADER";
+const WASMO_CLIENT_ID: &str = "WASMO_CLIENT_ID";
+const WASMO_CLIENT_SECRET: &str = "WASMO_CLIENT_SECRET";
 
 const ZIP_GO: &[u8] = include_bytes!("../templates/go.zip");
 const ZIP_JS: &[u8] = include_bytes!("../templates/js.zip");
@@ -140,15 +141,22 @@ enum Commands {
             required = false
         )]
         host: String,
-        /// token
+        /// client id
         #[arg(
-            value_name = "TOKEN", 
-            long = "token",
+            value_name = "CLIENT_ID", 
+            long = "clientId",
             required = false
         )]
-        token: Option<String>,
+        client_id: Option<String>,
+        /// client secret
+        #[arg(
+            value_name = "CLIENT_SECRET", 
+            long = "clientSecret",
+            required = false
+        )]
+        client_secret: Option<String>,
     },
-    /// Globally configure the CLI with the authorization token, the path where the configuration file will be stored and the server to reach during the build. These parameters are optional and can be passed when running the build command.
+    /// Globally configure the CLI with the path where the configuration file will be stored and the server to reach during the build. These parameters are optional and can be passed when running the build command.
     Config {
         #[command(subcommand)]
         command: ConfigCommands,
@@ -169,15 +177,6 @@ enum ConfigCommands {
 
         )]
         path: Option<String>,
-        /// The token access, used to authenticate the calls to the server
-        #[arg(
-            value_name = "TOKEN", 
-            short = 't',
-            long = "token",
-            help = "The token access, used to authenticate the calls to the server",
-            required = false
-        )]
-        token: Option<String>,
         /// The remote server to build your plugins
         #[arg(
             value_name = "SERVER", 
@@ -187,16 +186,20 @@ enum ConfigCommands {
             required = false
         )]
         server: Option<String>,
-        /// The cli authorization send to the remote or local builder
+        /// client id
         #[arg(
-            value_name = "DOCKER_AUTHORIZATION", 
-            short = 'd',
-            long = "docker_authorization",
-            help = "The token expected by the docker wasmo container when building. The default value is foobar",
+            value_name = "CLIENT_ID", 
+            long = "clientId",
             required = false
         )]
-        docker_authorization: Option<String>,
-
+        client_id: Option<String>,
+        /// client secret
+        #[arg(
+            value_name = "CLIENT_SECRET", 
+            long = "clientSecret",
+            required = false
+        )]
+        client_secret: Option<String>,
     },
     Get {},
 }
@@ -339,10 +342,11 @@ fn configuration_file_to_hashmap(configuration_path: &PathBuf) -> HashMap<String
 }
 
 fn read_configuration() -> WasmoResult<HashMap<String, String>> {
-    let wasmo_token = option_env!("WASMO_TOKEN");
+    let wasmo_client_id = option_env!("WASMO_CLIENT_ID");
+    let wasmo_client_secret = option_env!("WASMO_CLIENT_SECRET");
     let wasmo_server = option_env!("WASMO_SERVER");
 
-    let envs: HashMap<String, String> = if wasmo_server.is_none() || wasmo_server.is_none() {
+    let envs: HashMap<String, String> = if wasmo_server.is_none() || wasmo_client_id.is_none() || wasmo_client_secret.is_none() {
         let configuration_path: PathBuf = match option_env!("WASMO_PATH") {
             Some(path) => Path::new(path).to_path_buf(),
             None => get_home().unwrap(),
@@ -357,7 +361,8 @@ fn read_configuration() -> WasmoResult<HashMap<String, String>> {
     } else {
         let mut envs: HashMap<String, String> = HashMap::new();
         envs.insert(WASMO_SERVER.to_owned(), wasmo_server.unwrap().to_owned());
-        envs.insert(WASMO_TOKEN.to_owned(), wasmo_token.unwrap().to_owned());
+        envs.insert(WASMO_CLIENT_ID.to_owned(), wasmo_client_id.unwrap().to_owned());
+        envs.insert(WASMO_CLIENT_SECRET.to_owned(), wasmo_client_secret.unwrap().to_owned());
         envs.insert(WASMO_PATH.to_owned(), get_option_home());
         envs
     };
@@ -365,7 +370,7 @@ fn read_configuration() -> WasmoResult<HashMap<String, String>> {
     Ok(envs)
 }
 
-async fn build(path: Option<String>, server: Option<String>, host: Host, token: Option<String>) -> WasmoResult<()> {
+async fn build(path: Option<String>, server: Option<String>, host: Host, client_id: Option<String>, client_secret: Option<String>) -> WasmoResult<()> {
     let mut configuration = read_configuration()?;
 
     let complete_path = match path {
@@ -377,12 +382,12 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, token: 
         configuration.insert(WASMO_SERVER.to_owned(), server.unwrap().to_owned());
     }
 
-    if token.is_some() {
-        configuration.insert(WASMO_TOKEN.to_owned(), token.unwrap().to_owned());
+    if client_id.is_some() {
+        configuration.insert(WASMO_CLIENT_ID.to_owned(), client_id.unwrap().to_owned());
     }
 
-    if !configuration.contains_key(WASMO_TOKEN) {
-        return Err(WasmoError::BuildInterrupt("Should be able to build until WASMO_TOKEN is not defined".to_string()));
+    if client_secret.is_some() {
+        configuration.insert(WASMO_CLIENT_SECRET.to_owned(), client_secret.unwrap().to_owned());
     }
 
     if !Path::new(&complete_path).exists() {
@@ -392,7 +397,7 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, token: 
     let mut container = None;
 
     if host != Host::Remote  {
-        container = Some(docker::docker_create(&host, &configuration).await?);
+        container = Some(docker::docker_create(&host).await?);
 
         configuration.insert(WASMO_SERVER.to_owned(), format!("http://localhost:{}", &container.as_ref().unwrap().port).to_string());
     }
@@ -414,12 +419,10 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, token: 
             configuration.get(WASMO_SERVER).unwrap()
         ))
         .header("Content-Type", "application/json")
-        .header(
-            configuration
-                .get(WASMO_AUTHORIZATION_HEADER)
-                .unwrap_or(&"Authorization".to_string()),
-            configuration.get(WASMO_TOKEN).unwrap(),
-        )
+        .header("Authorization",
+         general_purpose::STANDARD_NO_PAD.encode(format!("{}:{}", 
+         configuration.get(WASMO_CLIENT_ID).unwrap_or(&"".to_string()), 
+         configuration.get(WASMO_CLIENT_SECRET).unwrap_or(&"".to_string()))))
         .body(Body::from(serde_json::to_string(&plugin).unwrap()))
         .unwrap();
 
@@ -434,8 +437,8 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, token: 
         Ok(k) => {
             logger::log(format!("Build call status: {}", k.status()));
 
-            if k.status() == 403 {
-                return Err(WasmoError::BuildInterrupt("".to_string()));
+            if k.status() == 403 || k.status() == 401 {
+                return Err(WasmoError::BuildInterrupt("unauthorized".to_string()));
             }
 
             let body_bytes = hyper::body::to_bytes(k.into_body()).await;
@@ -483,12 +486,11 @@ async fn get_wasm(
 
     let request = Request::get(url)
         .header("Content-Type", "application/json")
-        .header(
-            configuration
-                .get(WASMO_AUTHORIZATION_HEADER)
-                .unwrap_or(&"Authorization".to_string()),
-            configuration.get(WASMO_TOKEN).unwrap(),
-        )
+        .header("Authorization",
+         general_purpose::STANDARD_NO_PAD.encode(format!("{}:{}", 
+         configuration.get(WASMO_CLIENT_ID).unwrap_or(&"".to_string()), 
+         configuration.get(WASMO_CLIENT_SECRET).unwrap_or(&"".to_string()))
+        ))
         .body(Body::empty())
         .unwrap();
 
@@ -581,10 +583,10 @@ fn expand_tilde<P: AsRef<Path>>(path_user_input: P) -> Option<PathBuf> {
     })
 }
 
-fn set_configuration(token: Option<String>, server: Option<String>, path: Option<String>, docker_authorization: Option<String>) -> WasmoResult<()> {
+fn set_configuration(server: Option<String>, path: Option<String>, client_id: Option<String>, client_secret: Option<String>) -> WasmoResult<()> {
 
-    if token.is_none() && server.is_none() && path.is_none() && docker_authorization.is_none() {
-        return Err(WasmoError::Configuration("missing token, server, path or docker_authorization keys".to_string()));
+    if client_id.is_none() && client_secret.is_none() && server.is_none() && path.is_none() {
+        return Err(WasmoError::Configuration("missing client_id, client_secret or path keys".to_string()));
     }
 
     let home_path = get_home()?;
@@ -604,16 +606,16 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
         true => configuration_file_to_hashmap(&complete_path),
     };
 
-    let wasmo_token = extract_variable_or_default(&contents, WASMO_TOKEN, token);
+    let wasmo_client_id = extract_variable_or_default(&contents, WASMO_CLIENT_ID, client_id);
+    let wasmo_client_secret = extract_variable_or_default(&contents, WASMO_CLIENT_SECRET, client_secret);
     let wasmo_server = extract_variable_or_default(&contents, WASMO_SERVER, server);
     let wasmo_path = extract_variable_or_default(&contents, "WASMO_PATH", path.clone());
-    let wasmo_docker_authorization = extract_variable_or_default(&contents, "DOCKER_AUTHORIZATION", path.clone());
 
     if wasmo_path.eq("") {
-        let new_content = format!("WASMO_TOKEN={}\nWASMO_SERVER={}\nDOCKER_AUTHORIZATION={}", 
-            wasmo_token, 
-            wasmo_server, 
-            wasmo_docker_authorization);
+        let new_content = format!("WASMO_SERVER={}\nWASMO_CLIENT_ID={}\nWASMO_CLIENT_SECRET={}",
+            wasmo_server,
+            wasmo_client_id,
+            wasmo_client_secret);
 
         match fs::write(home_path.join(".wasmo"), new_content) {
             Ok(()) => logger::println(format!("wasmo configuration patched")),
@@ -624,8 +626,8 @@ fn set_configuration(token: Option<String>, server: Option<String>, path: Option
         }
     } else {
         let content_at_path = format!(
-            "WASMO_TOKEN={}\nWASMO_SERVER={}\nWASMO_PATH={}\nDOCKER_AUTHORIZATION={}",
-            wasmo_token, wasmo_server, wasmo_path, wasmo_docker_authorization
+            "WASMO_SERVER={}\nWASMO_PATH={}\nWASMO_CLIENT_ID={}\nWASMO_CLIENT_SECRET={}",
+            wasmo_server, wasmo_path, wasmo_client_id, wasmo_client_secret
         );
         let content_at_default_path = format!("WASMO_PATH={}", wasmo_path);
 
@@ -686,17 +688,18 @@ async fn main() {
             server,
             path,
             host,
-            token
+            client_id,
+            client_secret
         } => {
-            build(path.map(absolute_path), server, Host::from_str(&host).unwrap(), token).await
+            build(path.map(absolute_path), server, Host::from_str(&host).unwrap(), client_id, client_secret).await
         },
         Commands::Config { command } => match command {
             ConfigCommands::Set {
-                token,
+                client_id,
+                client_secret,
                 server,
-                path,
-                docker_authorization
-            } => set_configuration(token, server, path.map(absolute_path), docker_authorization),
+                path
+            } => set_configuration(server, path.map(absolute_path), client_id, client_secret),
             ConfigCommands::Get {} => {
                 logger::loading("<yellow>Read</> configuration".to_string());
                 let configuration = read_configuration().unwrap();
@@ -713,4 +716,6 @@ async fn main() {
         logger::error(format!("{}", e));
         std::process::exit(1);
      }
+
+     std::process::exit(0);
 }

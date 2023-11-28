@@ -31,16 +31,16 @@ if (ENV.AUTH_MODE === AUTHENTICATION.NO_AUTH) {
   console.log("###############################################################")
 }
 
-if (![AUTHENTICATION.OTOROSHI, AUTHENTICATION.BASIC_AUTH].includes(ENV.AUTH_MODE) ||
-  !ENV.OTOROSHI_CLIENT_ID ||
-  !ENV.OTOROSHI_CLIENT_SECRET) {
+if (AUTHENTICATION.BASIC_AUTH === ENV.AUTH_MODE &&
+  (!ENV.WASMO_CLIENT_ID ||
+    !ENV.WASMO_CLIENT_SECRET)) {
   console.log("#############################################################")
   console.log("#                                                           #")
-  console.log('# ⚠OTOROSHI_CLIENT_ID or OTOROSHI_CLIENT_SECRET is missing⚠ #')
+  console.log('# WASMO_CLIENT_ID or WASMO_CLIENT_SECRET is missing⚠ #')
   console.log("#                                                           #")
   console.log("#############################################################")
 
-  return ;
+  return;
 }
 
 function initializeStorage() {
@@ -70,6 +70,7 @@ function createServer(appVersion) {
   app.use('/api/templates', templatesRouter);
   app.use('/api/wasm', wasmRouter);
   app.use('/api/version', (_, res) => res.json(appVersion));
+  app.use('/api/development', (_, res) => res.json(process.env.NODE_ENV === "development"));
 
   app.use('/health', (_, res) => res.json({ status: true }))
 

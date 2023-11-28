@@ -351,34 +351,36 @@ router.post('/build', async (req, res) => {
   }
 
   FileSystem.createBuildFolder(kind, pluginId)
-    .then(folder => {
-      unzip(isRustBuild,
+    .then(async folder => {
+      const error = await unzip(isRustBuild,
         Buffer.from(zip),
         folder,
         [
           { key: '@@PLUGIN_NAME@@', value: metadata.name },
           { key: '@@PLUGIN_VERSION@@', value: metadata.version || '1.0.0' }
         ])
+
+      if (error)
+        return res.status(400).json({ error: 'failed to unzip file' });
+
+      FileSystem.writeFiles(files, folder, isRustBuild)
         .then(() => {
-          FileSystem.writeFiles(files, folder, isRustBuild)
-            .then(() => {
-              const saveInLocal = metadata.local !== undefined ? metadata.local : false;
-              addPluginToBuildQueue(
-                folder,
-                {
-                  filename: metadata.name,
-                  type: kind,
-                  pluginId,
-                  last_hash: " ",
-                  versions: []
-                },
-                req,
-                res,
-                "zipHashToTest",
-                metadata.release,
-                saveInLocal
-              );
-            });
+          const saveInLocal = metadata.local !== undefined ? metadata.local : false;
+          addPluginToBuildQueue(
+            folder,
+            {
+              filename: metadata.name,
+              type: kind,
+              pluginId,
+              last_hash: " ",
+              versions: []
+            },
+            req,
+            res,
+            "zipHashToTest",
+            metadata.release,
+            saveInLocal
+          );
         });
     });
 })
@@ -473,7 +475,8 @@ router.post('/:id/build', async (req, res) => {
         res.json({ queue_id: pluginId, alreadyExists: true });
       } else {
         const folder = await FileSystem.createBuildFolder(plugin.type, pluginId);
-        await unzip(isRustBuild, req.body, folder);
+        await unzip(isRustBuild, req.body, folder)
+          .catch(() => res.status(400).json({ error: 'failed to unzip file' }));
         try {
           const zipHash = crypto
             .createHash('md5')

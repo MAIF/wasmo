@@ -7,7 +7,7 @@ const STORAGE = {
 const AUTHENTICATION = {
     NO_AUTH: 'NO_AUTH',
     BASIC_AUTH: 'BASIC_AUTH',
-    OTOROSHI: 'OTOROSHI'
+    OTOROSHI: 'OTOROSHI_AUTH'
 };
 
 module.exports = {
@@ -34,14 +34,12 @@ module.exports = {
 
         AUTH_MODE: process.env.AUTH_MODE || AUTHENTICATION.NO_AUTH,
 
-        OTOROSHI_CLIENT_ID: process.env.OTOROSHI_CLIENT_ID,
-        OTOROSHI_CLIENT_SECRET: process.env.OTOROSHI_CLIENT_SECRET,
+        WASMO_CLIENT_ID: process.env.WASMO_CLIENT_ID,
+        WASMO_CLIENT_SECRET: process.env.WASMO_CLIENT_SECRET,
 
         OTOROSHI_TOKEN_SECRET: process.env.OTOROSHI_TOKEN_SECRET || 'veryverysecret',
 
         EXTISM_RUNTIME_ENVIRONMENT: process.env.EXTISM_RUNTIME_ENVIRONMENT || false,
-        // CLI_AUTHORIZATION: process.env.CLI_AUTHORIZATION,
-        // CLI_AUTHORIZATION_HEADER: process.env.AUTHORIZATION_HEADER || 'Authorization',
 
         LOCAL_WASM_JOB_CLEANING: process.envLOCAL_WASM_JOB_CLEANING || (60 * 60 * 1000) // 1 hour
     }

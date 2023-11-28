@@ -112,8 +112,7 @@ fn _5_can_set_configuration() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "config",
         "set",
-        "--path=/tmp/wasmo",
-        "--token=foobar",
+        "--path=/tmp/wasmo"
     ]);
     cmd.assert()
         .stdout(predicate::str::contains("wasmo configuration patched"))

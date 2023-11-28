@@ -46,11 +46,16 @@ LOCAL_WASM_JOB_CLEANING=<DEFAULT 60 * 60 * 1000> # 1 hour
 
 ## Authentications <Badges values={['AUTH_MODE']} raw />
 
-Wasmo has one level of authentication. The value can be `AUTH` or `NO_AUTH`. 
+Wasmo has one level of authentication. The value can be `NO_AUTH`, `BASIC_AUTH` or `OTOROSHI_AUTH`. 
 
-`AUTH_MODE=AUTH`
+`AUTH_MODE=OTOROSHI_AUTH`
 
 This level of authentication should be used at least in production mode. It ensures that the Wasmo's UI and backend are only accessible with tokens.
+
+`AUTH_MODE=BASIC_AUTH`
+
+The Wasmo UI will be secure with basic authentication (credentials configured from environment variables) and other endpoint will be 
+secured with a pair of clientId/clientSecret. These credentials should be sent with basic authenticaiton format `Basic base64(clientId:clientSecret)`.
 
 `AUTH_MODE=NO_AUTH`
 
@@ -71,29 +76,8 @@ In both cases, you need to configure Wasmo and Otoroshi with same values for the
 ```
 # required
 OTOROSHI_TOKEN_SECRET=
-AUTH_MODE=NO_AUTH | AUTH_MODE
+AUTH_MODE=NO_AUTH | BASIC_AUTH | OTOROSHI_AUTH
 ```
- 
-
-## Using the CLI <Badges values={['CLI_AUTHORIZATION_HEADER', 'CLI_AUTHORIZATION']} raw />
-
-Wasmo Builder can be called by its own UI or by a Wasmo CLI. To secure calls, Wasmo CLI must send some headers.
-These values must be equal between Wasmo Builder and Wasmo CLI and will be used by Wasmo CLI when calling the builder.
-
-``` Query
-POST /build HTTP/1.1
-...
-<CLI_AUTHORIZATION_HEADER>: <CLI_AUTHORIZATION>
-```
-
-```
-# required
-CLI_AUTHORIZATION=
-
-# optional
-CLI_AUTHORIZATION_HEADER=<DEFAULT 'Authorization'>
-```
-
 
 ## Miscellaneous
 
@@ -129,17 +113,18 @@ MANAGER_TEMPLATES=
 MANAGER_MAX_PARALLEL_JOBS=   <DEFAULT 2>
 # The domains allowed to call the Wasmo backend. This list is used by the CORS policy.
 MANAGER_ALLOWED_DOMAINS=     <DEFAULT 'localhost:5001'>
-# Defines whether Wasmo should be called with a JWT or not
-AUTH_MODE=                   <'AUTH'|'NO_AUTH'>
-# Secret used to verify the signature of the incoming token (only used with AUTH_MODE='AUTH')
+# Defines whether Wasmo will be secured
+AUTH_MODE=                   <'NO_AUTH'|'BASIC_AUTH'|'OTOROSHI_AUTH'>
+# Secret used to verify the signature of the incoming token (only used with AUTH_MODE='OTOROSHI_AUTH')
 OTOROSHI_TOKEN_SECRET=       <DEFAULT 'veryverysecret'>
+
+# Expected client id (only used with AUTH_MODE='BASIC_AUTH')
+WASMO_CLIENT_ID=
+# Expected client secret (only used with AUTH_MODE='BASIC_AUTH')
+WASMO_CLIENT_SECRET=
 
 # Enables the Extism environment and the playground zone in UI
 EXTISM_RUNTIME_ENVIRONMENT=  <DEFAULT false>
-# Value expected by Wasmo when the CLI calls endpoints to create and build a plugin
-CLI_AUTHORIZATION=
-# Previous value are expected in this header
-CLI_AUTHORIZATION_HEADER=    <DEFAULT 'Authorization'>
 
 # At each time interval, Wasmo will clear a folder full of locally generated Wasm binaries
 LOCAL_WASM_JOB_CLEANING=     <DEFAULT 60 * 60 * 1000> // 1 hour

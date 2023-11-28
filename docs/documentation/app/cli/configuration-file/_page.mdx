@@ -28,14 +28,12 @@ If value is omitted, then it sets it to an empty string.
 The available keys are: 
   - `path`: configure the path where the wasmo configuration will be stored
   - `server`: the Wasmo server to build your plugins (an URL format value is expected)
-  - `token`: the token, pass to the Wasmo server, to authenticate the CLI 
-  - `docker_authorization`: the token value accepted by Docker instances 
+  - `clientId`: the client id used in Basic and Otoroshi Auth
+  - `clientSecret`: the client secret used in Basic and Otoroshi Auth
 
 You can also edit the configuration file manually. In this case, the following values are :
   - `path` = WASMO_PATH
   - `server` = WASMO_SERVER
-  - `token` = WASMO_TOKEN
-  - `docker_authorization` = DOCKER_AUTHORIZATION
 
 ### get 
 

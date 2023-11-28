@@ -15,7 +15,7 @@ export default function Home() {
       title: "Plugin Structure"
     }}
     next={{
-      href: "/cli/overview",
+      href: "/cli/getting-started",
       title: "Wasmo CLI"
     }}>
     <Page />
