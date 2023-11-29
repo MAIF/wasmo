@@ -53,29 +53,44 @@ router.get('/', (req, res) => {
     })
 });
 
-router.get('/:id', (req, res) => {
+function getSources(pluginId) {
   const { s3, Bucket } = S3.state()
-
-  const filename = req.params.id;
 
   const params = {
     Bucket,
-    Key: `${filename}.zip`
+    Key: `${pluginId}.zip`
   }
 
-  s3.send(new GetObjectCommand(params))
+  return s3.send(new GetObjectCommand(params))
     .then(data => new fetch.Response(data.Body).buffer())
     .then(data => {
-      res.attachment('plugin.zip');
-      res.send(data);
+      return {
+        status: 200,
+        body: data
+      }
     })
     .catch((err) => {
-      res
-        .status(err.$metadata.httpStatusCode)
-        .json({
+      return {
+        status: err.$metadata.httpStatusCode,
+        body: {
           error: err.Code,
           status: err.$metadata.httpStatusCode
-        })
+        }
+      }
+    })
+}
+
+router.get('/:id', (req, res) => {
+  getSources(req.params.id)
+    .then(out => {
+      if (out.status === 200) {
+        res.attachment('plugin.zip');
+        res.send(out.body);
+      } else {
+        res
+          .status(out.status)
+          .json(out.body)
+      }
     })
 })
 
@@ -112,7 +127,6 @@ router.get('/:id/configurations', (req, res) => {
           ])
         })
         .catch(err => {
-          console.log(err)
           res.json(files)
         })
     })
@@ -215,7 +229,7 @@ function createEmptyPlugin(req, metadata) {
             const plugins = [
               ...(data.plugins || []),
               {
-                filename: metadata.name,
+                filename: metadata.name.replace(/ /g, '-'),
                 type: metadata.type,
                 pluginId: pluginId
               }
@@ -286,7 +300,6 @@ function updatePluginContent(id, body) {
 }
 
 router.post('/', async (req, res) => {
-
   if (!req.body ||
     Object.keys(req.body).length === 0 ||
     (!req.body.metadata && !(req.body.plugin && req.body.type))) {
@@ -301,11 +314,20 @@ router.post('/', async (req, res) => {
   if (out.status !== 201 || !req.body.files) {
     return res.status(out.status).json(out.body);
   } else {
-    const templatesFiles = await FileSystem.templatesFilesToJSON(req.body.metadata.type);
+    const templatesFiles = await FileSystem.templatesFilesToJSON(req.body.metadata.type, req.body.metadata.name.replace(/ /g, '-'));
     const zip = await FileSystem.createZipFromJSONFiles(req.body.files, templatesFiles);
-    updatePluginContent(out.body.plugins[out.body.plugins.length - 1].pluginId, zip)
+    const pluginId = out.body.plugins[out.body.plugins.length - 1].pluginId;
+    updatePluginContent(pluginId, zip)
       .then(out => {
-        res.status(out.status).json(out.body);
+        if (out.status === 204) {
+          res.status(201)
+            .json({
+              plugin_id: pluginId
+            })
+        } else {
+          res.status(out.status)
+            .json(out.body);
+        }
       });
   }
 })
@@ -396,7 +418,7 @@ router.post('/build', async (req, res) => {
         Buffer.from(zip),
         folder,
         [
-          { key: '@@PLUGIN_NAME@@', value: metadata.name },
+          { key: '@@PLUGIN_NAME@@', value: metadata.name.replace(/ /g, '-') },
           { key: '@@PLUGIN_VERSION@@', value: metadata.version || '1.0.0' }
         ])
 
@@ -409,7 +431,7 @@ router.post('/build', async (req, res) => {
           addPluginToBuildQueue(
             folder,
             {
-              filename: metadata.name,
+              filename: metadata.name.replace(/ /g, '-'),
               type: kind,
               pluginId,
               last_hash: " ",
@@ -515,12 +537,28 @@ router.post('/:id/build', async (req, res) => {
         res.json({ queue_id: pluginId, alreadyExists: true });
       } else {
         const folder = await FileSystem.createBuildFolder(plugin.type, pluginId);
-        await unzip(isRustBuild, req.body, folder)
+
+        let sources = req.body;
+        if (!sources || Object.keys(sources).length === 0) {
+          await getSources(pluginId)
+            .then(out => {
+              if (out.status === 200) {
+                sources = out.body;
+              } else {
+                res
+                  .status(out.status)
+                  .json(out.body)
+              }
+            })
+        }
+
+        await unzip(isRustBuild, sources, folder)
           .catch(() => res.status(400).json({ error: 'failed to unzip file' }));
+
         try {
           const zipHash = crypto
             .createHash('md5')
-            .update(req.body.toString())
+            .update(sources.toString())
             .digest('hex');
 
           if (release || plugin['last_hash'] !== zipHash) {

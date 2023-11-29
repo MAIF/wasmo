@@ -101,31 +101,30 @@ const getLocalWasm = (id, res) => {
 
 const createZipFromJSONFiles = (jsonFiles, templatesFiles) => {
   const zip = new AdmZip();
-  [...templatesFiles, ...jsonFiles].forEach(({ name, content }) => {
-    zip.addFile(name, content)
-  })
+
+  console.log(templatesFiles)
+  console.log(jsonFiles);
+  [
+    ...templatesFiles.filter(t => !jsonFiles.find(f => f.name === t.name)),
+    ...jsonFiles].forEach(({ name, content }) => {
+      zip.addFile(name, content)
+    })
 
   return zip.toBuffer()
 }
 
-const templatesFilesToJSON = type => {
-  const folder = path.join(process.cwd(), 'templates', 'builds', type);
+const templatesFilesToJSON = (type, name) => {
+  const folder = path.join(process.cwd(), 'templates', `${type}.zip`);
 
-  return new Promise(resolve => fs.readdir(folder, (err, filenames) => {
-    if (err) {
-      return [];
-    }
+  const zip = new AdmZip(folder);
 
-    Promise.all(filenames.map(name => new Promise(resolve => {
-      fs.readFile(path.join(folder, name), 'utf-8', (err, content) => {
-        if (err) {
-          resolve({ name, content: "" })
-        }
-        resolve({ name, content })
-      });
-    })))
-      .then(resolve)
-  }))
+  return zip.getEntries()
+    .map(entry => ({
+      name: entry.entryName.replace(`${type}/`, ''),
+      content: entry.getData().toString('utf-8')
+        .replace('@@PLUGIN_NAME@@', name)
+        .replace('@@PLUGIN_VERSION@@', '1.0.0')
+    }))
 
 }
 
