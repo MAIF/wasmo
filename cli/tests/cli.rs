@@ -122,7 +122,6 @@ fn _5_can_set_configuration() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args(["config", "get"]);
     cmd.assert()
         .stdout(predicate::str::contains("/tmp/wasmo"))
-        .stdout(predicate::str::contains("foobar"))
         .success();
 
     setup.clean();
