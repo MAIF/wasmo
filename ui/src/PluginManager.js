@@ -14,20 +14,20 @@ class PluginManager extends React.Component {
 
     return (
       <div className='d-flex flex-column' style={{ minWidth: 250, flex: selectedPlugin ? 0 : 1 }}>
-        <Header onNewPlugin={onNewPlugin} reloadPlugins={props.reloadPlugins} />
+        {!selectedPlugin && <Header onNewPlugin={onNewPlugin} reloadPlugins={props.reloadPlugins} />}
         {selectedPlugin && <div className='d-flex justify-content-between align-items-center sidebar-header'
           style={{
             cursor: 'pointer'
           }} onClick={() => props.setSelectedPlugin(undefined)}>
           <div className='d-flex align-items-center'>
-            <i className='fas fa-shuffle me-1' />
+            <i className='fas fa-chevron-left me-1' />
             <span className='fw-bold'>Change current plugin</span>
           </div>
         </div>}
         <div className='d-flex flex-column scroll-container'>
           {!selectedPlugin &&
             [...plugins]
-              .sort((a, b) => a.type.localeCompare(b.type))
+              .sort((a, b) => a.type?.localeCompare(b.type))
               .map(plugin => {
                 return <Plugin
                   key={plugin.pluginId || 'new'}

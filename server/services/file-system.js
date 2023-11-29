@@ -1,6 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 const { INFORMATIONS_FILENAME } = require('../utils');
+const AdmZip = require('adm-zip');
 
 const createBuildFolder = (type, name) => {
   if (['rust', 'js', 'ts'].includes(type)) {
@@ -86,6 +87,7 @@ const writeFiles = (files, folder, isRustBuild) => {
   }));
 }
 
+
 const storeWasm = (fromFolder, filename) => fs.move(fromFolder, pathsToPath(`/wasm/${filename}`));
 
 const getLocalWasm = (id, res) => {
@@ -95,6 +97,36 @@ const getLocalWasm = (id, res) => {
       res.status(404)
         .json({ error: "file not found" });
     })
+}
+
+const createZipFromJSONFiles = (jsonFiles, templatesFiles) => {
+  const zip = new AdmZip();
+  [...templatesFiles, ...jsonFiles].forEach(({ name, content }) => {
+    zip.addFile(name, content)
+  })
+
+  return zip.toBuffer()
+}
+
+const templatesFilesToJSON = type => {
+  const folder = path.join(process.cwd(), 'templates', 'builds', type);
+
+  return new Promise(resolve => fs.readdir(folder, (err, filenames) => {
+    if (err) {
+      return [];
+    }
+
+    Promise.all(filenames.map(name => new Promise(resolve => {
+      fs.readFile(path.join(folder, name), 'utf-8', (err, content) => {
+        if (err) {
+          resolve({ name, content: "" })
+        }
+        resolve({ name, content })
+      });
+    })))
+      .then(resolve)
+  }))
+
 }
 
 module.exports = {
@@ -111,6 +143,8 @@ module.exports = {
     existsFile,
     pathsToPath,
     storeWasm,
-    getLocalWasm
+    getLocalWasm,
+    createZipFromJSONFiles,
+    templatesFilesToJSON
   }
 }

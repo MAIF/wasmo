@@ -15,7 +15,9 @@ const otoroshiAuthentication = (req, res, next) => {
   if (jwtUser) {
     try {
       const decodedToken = jwt.verify(jwtUser, secret, { algorithms: ['HS512'] });
-      req.user = decodedToken.user || decodedToken.apikey.clientId
+      req.user = decodedToken.user || {
+        email: decodedToken.apikey.clientId
+      }
       next()
     } catch (err) {
       console.log(err)

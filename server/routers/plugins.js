@@ -201,80 +201,120 @@ function createPluginFromGithub(req) {
     });
 }
 
-router.post('/', (req, res) => {
+function createEmptyPlugin(req, metadata) {
   const { s3, Bucket } = S3.state()
 
   const user = format(req.user.email)
 
-  UserManager.createUserIfNotExists(req)
-    .then(() => {
-      UserManager.getUser(req)
-        .then(data => {
-          const pluginId = crypto.randomUUID()
-          const plugins = [
-            ...(data.plugins || []),
-            {
-              filename: req.body.plugin,
-              type: req.body.type,
-              pluginId: pluginId
-            }
-          ]
-          const params = {
-            Bucket,
-            Key: `${user}.json`,
-            Body: JSON.stringify({
-              ...data,
-              plugins
-            })
-          }
-
-          s3.send(new PutObjectCommand(params))
-            .then(() => res
-              .status(201)
-              .json({
+  return new Promise(resolve => {
+    UserManager.createUserIfNotExists(req)
+      .then(() => {
+        UserManager.getUser(req)
+          .then(data => {
+            const pluginId = crypto.randomUUID()
+            const plugins = [
+              ...(data.plugins || []),
+              {
+                filename: metadata.name,
+                type: metadata.type,
+                pluginId: pluginId
+              }
+            ]
+            const params = {
+              Bucket,
+              Key: `${user}.json`,
+              Body: JSON.stringify({
+                ...data,
                 plugins
-              }))
-            .catch(err => {
-              console.log(err)
-              res
-                .status(err.$metadata.httpStatusCode)
-                .json({
-                  error: err.Code,
-                  status: err.$metadata.httpStatusCode
-                })
-            })
-        })
-    })
-    .catch(err => {
-      res
-        .status(400)
-        .json({
-          error: err.message
-        })
-    })
-})
+              })
+            }
 
-router.put('/:id', (req, res) => {
+            s3.send(new PutObjectCommand(params))
+              .then(() => {
+                resolve({
+                  status: 201,
+                  body: {
+                    plugins
+                  }
+                })
+              })
+              .catch(err => {
+                resolve({
+                  status: err.$metadata.httpStatusCode,
+                  body: {
+                    error: err.Code,
+                    status: err.$metadata.httpStatusCode
+                  }
+                })
+              })
+          })
+      })
+      .catch(err => {
+        resolve({
+          status: 400,
+          body: {
+            error: err.message
+          }
+        })
+      })
+  })
+}
+
+function updatePluginContent(id, body) {
   const { s3, Bucket } = S3.state();
 
   const params = {
     Bucket,
-    Key: `${req.params.id}.zip`,
-    Body: req.body
+    Key: `${id}.zip`,
+    Body: body
   }
 
-  s3.send(new PutObjectCommand(params))
-    .then(() => res
-      .status(204)
-      .json(null))
+  return s3.send(new PutObjectCommand(params))
+    .then(() => ({
+      status: 204,
+      body: null
+    }))
     .catch(err => {
-      res
-        .status(err.$metadata.httpStatusCode)
-        .json({
+      return {
+        status: err.$metadata.httpStatusCode,
+        body: {
           error: err.Code,
           status: err.$metadata.httpStatusCode
-        })
+        }
+      }
     })
+}
+
+router.post('/', async (req, res) => {
+
+  if (!req.body ||
+    Object.keys(req.body).length === 0 ||
+    (!req.body.metadata && !(req.body.plugin && req.body.type))) {
+    return res.status(400).json({ error: 'missing body' });
+  }
+
+  const out = await createEmptyPlugin(req, req.body.metadata || {
+    name: req.body.plugin,
+    type: req.body.type
+  });
+
+  if (out.status !== 201 || !req.body.files) {
+    return res.status(out.status).json(out.body);
+  } else {
+    const templatesFiles = await FileSystem.templatesFilesToJSON(req.body.metadata.type);
+    const zip = await FileSystem.createZipFromJSONFiles(req.body.files, templatesFiles);
+    updatePluginContent(out.body.plugins[out.body.plugins.length - 1].pluginId, zip)
+      .then(out => {
+        res.status(out.status).json(out.body);
+      });
+  }
+})
+
+router.put('/:id', (req, res) => {
+  updatePluginContent(req.params.id, req.body)
+    .then(out => {
+      res.status(out.status).json(out.body);
+    });
 })
 
 router.delete('/:id', async (req, res) => {

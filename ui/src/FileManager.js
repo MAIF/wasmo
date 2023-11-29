@@ -52,7 +52,7 @@ function Group({ items, folder, onFileClick, component, ...props }) {
     <div className='d-flex flex-column'>
       {component ? <Component {...props} /> :
         items
-          .sort((a, b) => a.ext.localeCompare(b.ext))
+          .sort((a, b) => a.ext?.localeCompare(b.ext))
           .map((item, i) => {
             return <File {...item}
               key={`item.filename-${i}`}
@@ -103,7 +103,17 @@ function FileManager({
 
   return (
     <div className='d-flex flex-column' style={{ minWidth: 250, background: '#eee', flex: 1 }}>
-      <Header onNewFile={onNewFile} selectedPlugin={selectedPlugin} readOnly={selectedPlugin.type === "github"} />
+      {selectedPlugin?.filename && <h2 style={{
+        color: '#000',
+        fontSize: '1rem',
+        fontWeight: 'bold',
+        padding: '0 12px',
+        margin: 0,
+        height: 36,
+        lineHeight: '36px',
+        textTransform: 'uppercase'
+      }}>{selectedPlugin?.filename}</h2>}
+      {selectedPlugin.type !== "github" && <Header onNewFile={onNewFile} readOnly={selectedPlugin.type === "github"} />}
 
       <div className='d-flex flex-column scroll-container mt-1'>
         {[...files]
@@ -151,23 +161,17 @@ function FileManager({
   );
 }
 
-function Header({ onNewFile, selectedPlugin, readOnly }) {
+function Header({ onNewFile, readOnly }) {
   return <div className='d-flex justify-content-between align-items-center sidebar-header'
     style={{
+      margin: '0 6px 6px',
       cursor: readOnly ? 'initial' : 'pointer',
       pointerEvents: readOnly ? 'none' : 'initial'
     }} onClick={onNewFile}>
     <div className='d-flex align-items-center'>
-      <i className='fas fa-chess-rook me-1' />
-      <span className='fw-bold'>{selectedPlugin?.filename}</span>
+      <i className='fas fa-file-circle-plus p-1 me-1' />
+      <span className='fw-bold'>New File</span>
     </div>
-
-    {!readOnly && <div style={{
-      background: '#eee',
-      borderRadius: 4
-    }}>
-      <i className='fas fa-file-circle-plus p-1' />
-    </div>}
   </div>
 }
 
