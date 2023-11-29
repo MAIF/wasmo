@@ -64,6 +64,11 @@ function createServer(appVersion) {
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(bodyParser.text());
 
+  // app.use('*', (req, res, next) => {
+  //   console.log(req.headers)
+  //   next()
+  // })
+
   app.use('/', Security.extractUserFromQuery);
   app.use('/', publicRouter);
   app.use('/api/plugins', pluginsRouter);

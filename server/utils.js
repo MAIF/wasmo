@@ -3,7 +3,7 @@ const fs = require("fs-extra");
 const path = require("path");
 const pako = require('pako');
 
-const format = value => value.replace(/[^a-zA-Z ]/g, "");
+const format = value => value?.replace(/[^a-zA-Z ]/g, "");
 
 const unzip = (isRustBuild, zipString, outputFolder, rules = []) => {
   try {

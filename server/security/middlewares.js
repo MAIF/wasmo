@@ -15,14 +15,14 @@ const otoroshiAuthentication = (req, res, next) => {
   if (jwtUser) {
     try {
       const decodedToken = jwt.verify(jwtUser, secret, { algorithms: ['HS512'] });
-      req.user = decodedToken.user
+      req.user = decodedToken.user || decodedToken.apikey.clientId
       next()
     } catch (err) {
       console.log(err)
       missingCredentials(res)
     }
   } else {
-    console.log(`Missing jwt user ${jwtUser}`)
+    console.log(`Missing jwt user`, jwtUser)
     missingCredentials(res)
   }
 }
