@@ -2,10 +2,8 @@ const crypto = require('crypto')
 const fetch = require('node-fetch');
 const express = require('express');
 
-const { UserManager } = require('../services/user');
 const { format, unzip } = require('../utils');
 
-const { S3 } = require('../s3');
 const { Queue } = require('../services/queue');
 const { FileSystem } = require('../services/file-system');
 
@@ -13,6 +11,7 @@ const { InformationsReader } = require('../services/informationsReader');
 const { WebSocket } = require('../services/websocket');
 const { ENV, STORAGE } = require('../configuration');
 const { GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const Datastore = require('../datastores');
 
 const router = express.Router()
 
@@ -47,10 +46,8 @@ router.post('/github', (req, res) => {
 });
 
 router.get('/', (req, res) => {
-  UserManager.getUser(req)
-    .then(data => {
-      res.json(data.plugins || [])
-    })
+  Datastore.getUserPlugins(req.user.email)
+    .then(res.json)
 });
 
 function getSources(pluginId) {
@@ -167,7 +164,7 @@ function createPluginFromGithub(req) {
   const user = format(req.user.email)
 
   return new Promise(resolve => {
-    UserManager.createUserIfNotExists(req)
+    UserManager.createUserIfNotExists(req.user.email)
       .then(() => UserManager.getUser(req))
       .then(data => {
         const pluginId = crypto.randomUUID()
@@ -221,7 +218,7 @@ function createEmptyPlugin(req, metadata) {
   const user = format(req.user.email)
 
   return new Promise(resolve => {
-    UserManager.createUserIfNotExists(req)
+    UserManager.createUserIfNotExists(req.user.email)
       .then(() => {
         UserManager.getUser(req)
           .then(data => {
@@ -345,7 +342,7 @@ router.delete('/:id', async (req, res) => {
   const data = await UserManager.getUser(req);
 
   if (Object.keys(data).length > 0) {
-    UserManager.updateUser(req, {
+    UserManager.updateUser(req.user.email, {
       ...data,
       plugins: data.plugins.filter(f => f.pluginId !== req.params.id)
     })
@@ -589,7 +586,7 @@ router.post('/:id/build', async (req, res) => {
 router.patch('/:id/filename', (req, res) => {
 
   UserManager.getUser(req)
-    .then(data => UserManager.updateUser(req, {
+    .then(data => UserManager.updateUser(req.user.email, {
       ...data,
       plugins: (data.plugins || []).map(plugin => {
         if (plugin.pluginId === req.params.id) {

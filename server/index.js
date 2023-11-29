@@ -7,8 +7,7 @@ const http = require('http');
 const compression = require('compression');
 const bodyParser = require('body-parser');
 
-const { S3 } = require('./s3');
-const { ENV, STORAGE, AUTHENTICATION } = require('./configuration');
+const { ENV, AUTHENTICATION } = require('./configuration');
 
 const pluginsRouter = require('./routers/plugins');
 const templatesRouter = require('./routers/templates');
@@ -18,6 +17,8 @@ const wasmRouter = require('./routers/wasm');
 const { WebSocket } = require('./services/websocket');
 const { FileSystem } = require('./services/file-system');
 const { Security } = require('./security/middlewares');
+
+const Datastore = require('./datastores');
 
 const manager = require('./logger');
 const { Cron } = require('./services/cron-job');
@@ -41,15 +42,6 @@ if (AUTHENTICATION.BASIC_AUTH === ENV.AUTH_MODE &&
   console.log("#############################################################")
 
   return;
-}
-
-function initializeStorage() {
-  if (ENV.STORAGE !== STORAGE.LOCAL)
-    return S3.initializeS3Connection()
-      .then(() => S3.createBucketIfMissing())
-      .catch(err => console.log(err))
-  else
-    return Promise.resolve()
 }
 
 function createServer(appVersion) {
@@ -90,12 +82,7 @@ function getAppVersion() {
     .then(file => file.version);
 }
 
-if (ENV.STORAGE === STORAGE.S3 && !S3.configured()) {
-  console.log("[S3 INITIALIZATION](failed): S3 Bucket is missing");
-  process.exit(1);
-}
-
-Promise.all([initializeStorage(), getAppVersion()])
+Promise.all([Datastore.initialize(), getAppVersion()])
   .then(([error, version]) => {
     if (error) {
       throw error;

@@ -1,6 +1,6 @@
 const { WebSocket } = require('../services/websocket');
 const manager = require('../logger');
-const { S3 } = require('../s3');
+
 const { FileSystem } = require('./file-system');
 
 const JsCompiler = require('./compiler/javascript');

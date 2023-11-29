@@ -1,5 +1,4 @@
 const express = require('express');
-const { S3 } = require('../s3');
 const { UserManager } = require('../services/user');
 const { ENV } = require('../configuration');
 const { getWasm } = require('../services/wasm-s3');

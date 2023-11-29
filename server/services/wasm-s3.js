@@ -1,11 +1,9 @@
-const { S3 } = require("../s3")
 const fs = require('fs-extra');
 const AdmZip = require('adm-zip');
 
 const { UserManager } = require('./user');
 const { GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const fetch = require("node-fetch");
-
 
 const isAString = variable => typeof variable === 'string' || variable instanceof String;
 
@@ -90,7 +88,7 @@ function putWasmInformationsToS3(userMail, pluginId, newHash, generateWasmName) 
           versions
         }
       });
-      return UserManager.updateUser(userReq, {
+      return UserManager.updateUser(userReq.user.email, {
         ...data,
         plugins: newPlugins
       })
