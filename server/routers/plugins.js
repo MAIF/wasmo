@@ -10,7 +10,6 @@ const { FileSystem } = require('../services/file-system');
 const { InformationsReader } = require('../services/informationsReader');
 const { WebSocket } = require('../services/websocket');
 const { ENV, STORAGE } = require('../configuration');
-const { GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const Datastore = require('../datastores');
 
 const router = express.Router()
@@ -462,7 +461,7 @@ function addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, saveI
         (plugin.type === 'opa' ? InformationsReader.extractOPAInformations(folder) : Promise.resolve(undefined))
           .then(opaMetadata => {
             const wasmName = `${pluginName}-${pluginVersion}${release ? '' : '-dev'}`;
-            Queue.isBinaryExists(wasmName, release)
+            Datastore.isBinaryExists(wasmName, release)
               .then(exists => {
                 if (exists) {
                   FileSystem.removeFolder('build', folder)

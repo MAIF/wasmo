@@ -4,8 +4,9 @@ const { GetObjectCommand, PutObjectCommand, HeadObjectCommand,
 const fetch = require('node-fetch');
 const dns = require('dns');
 const url = require('url');
+const fs = require('fs-extra');
 
-const { format } = require('../utils');
+const { format, isAString } = require('../utils');
 const Datastore = require('./api');
 const { ENV, STORAGE } = require("../configuration");
 const manager = require("../logger");
@@ -25,7 +26,7 @@ module.exports = class S3Datastore extends Datastore {
     #createBucketIfMissing() {
         const params = { Bucket: this.#state.Bucket }
 
-        return this.#state.s3.send(new HeadBucketCommand(params))
+        return this.#state.instance.send(new HeadBucketCommand(params))
             .then(() => log.info("Using existing bucket"))
             .catch(res => {
                 if (res.$metadata.httpStatusCode === 404 ||
@@ -214,11 +215,155 @@ module.exports = class S3Datastore extends Datastore {
         })
     }
 
-    putWasmFileToS3(wasmFolder) { console.log('putWasmFileToS3') }
+    putWasmFileToS3(wasmFolder) {
+        const { instance, Bucket } = this.#state;
 
-    putBuildLogsToS3(logId, logsFolder) { }
+        const Key = wasmFolder.split('/').slice(-1)[0]
 
-    putWasmInformationsToS3(userMail, pluginId, newHash, generateWasmName) { }
+        return new Promise((resolve, reject) => {
+            fs.readFile(wasmFolder, (err, data) => {
+                if (err)
+                    reject(err)
+                else
+                    instance.send(new PutObjectCommand({
+                        Bucket,
+                        Key: Key.endsWith(".wasm") ? Key : `${Key}.wasm`,
+                        Body: data
+                    }))
+                        .then(resolve)
+                        .catch(reject)
+            })
+        })
+    }
 
-    getWasm(Key, res) { }
+    putBuildLogsToS3(logId, logsFolder) {
+        const { instance, Bucket } = this.#state;
+
+        const zip = new AdmZip()
+        zip.addLocalFolder(logsFolder, 'logs')
+
+        return new Promise((resolve, reject) => {
+            instance.send(new PutObjectCommand({
+                Bucket,
+                Key: logId,
+                Body: zip.toBuffer()
+            }))
+                .then(resolve)
+                .catch(reject)
+        })
+    }
+
+    putWasmInformationsToS3(email, pluginId, newHash, generateWasmName) {
+        return this.getUser(email)
+            .then(data => {
+                const newPlugins = data.plugins.map(plugin => {
+                    if (plugin.pluginId !== pluginId) {
+                        return plugin;
+                    }
+                    let versions = plugin.versions || [];
+
+                    // convert legacy array
+                    if (versions.length > 0 && isAString(versions[0])) {
+                        versions = versions.map(name => ({ name }))
+                    }
+
+                    const index = versions.findIndex(item => item.name === generateWasmName);
+                    if (index === -1)
+                        versions.push({
+                            name: generateWasmName,
+                            updated_at: Date.now(),
+                            creator: email
+                        })
+                    else {
+                        versions[index] = {
+                            ...versions[index],
+                            updated_at: Date.now(),
+                            creator: email
+                        }
+                    }
+
+                    return {
+                        ...plugin,
+                        last_hash: newHash,
+                        wasm: generateWasmName,
+                        versions
+                    }
+                });
+                return this.updateUser(email, {
+                    ...data,
+                    plugins: newPlugins
+                })
+            })
+    }
+
+    getWasm(wasmId) {
+        const { instance, Bucket } = this.#state;
+
+        return new Promise(resolve => {
+            instance.send(new GetObjectCommand({
+                Bucket,
+                wasmId
+            }))
+                .then(data => new fetch.Response(data.Body).buffer())
+                .then(data => {
+                    resolve({ content: data });
+                })
+                .catch(err => {
+                    resolve({
+                        error: err.Code,
+                        status: err.$metadata.httpStatusCode
+                    })
+                });
+        });
+    }
+
+    run(wasm, { input, functionName, wasi }) {
+        const { instance, Bucket } = this.#state();
+
+        instance.send(new GetObjectCommand({
+            Bucket,
+            Key: wasm
+        }))
+            .then(data => new fetch.Response(data.Body).buffer())
+            .then(async data => {
+                const { Context } = require('@extism/extism');
+                const ctx = new Context();
+                const plugin = ctx.plugin(data, wasi);
+
+                const buf = await plugin.call(functionName, input)
+                const output = buf.toString()
+                plugin.free()
+
+                return {
+                    status: 200,
+                    body: {
+                        data: output
+                    }
+                }
+            })
+            .catch(err => {
+                console.log(err)
+                return {
+                    status: 400,
+                    body: {
+                        error: err
+                    }
+                }
+            })
+    }
+
+    isWasmExists(wasmId, release) {
+        const { instance, Bucket } = this.#state();
+
+        if (!release) {
+            return Promise.resolve(false);
+        } else {
+            return instance.send(new HeadObjectCommand({
+                Bucket,
+                Key: `${wasmId}.wasm`
+            }))
+                .then(() => true)
+                .catch(() => false)
+        }
+    }
 };

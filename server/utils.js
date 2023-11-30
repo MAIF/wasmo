@@ -5,6 +5,8 @@ const pako = require('pako');
 
 const format = value => value?.replace(/[^a-zA-Z ]/g, "");
 
+const isAString = variable => typeof variable === 'string' || variable instanceof String;
+
 const unzip = (isRustBuild, zipString, outputFolder, rules = []) => {
   try {
     const zip = new AdmZip(zipString);
@@ -76,5 +78,6 @@ module.exports = {
   format,
   unzip,
   unzipTo,
-  INFORMATIONS_FILENAME
+  INFORMATIONS_FILENAME,
+  isAString
 }

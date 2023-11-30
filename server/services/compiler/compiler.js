@@ -5,8 +5,9 @@ const fs = require('fs-extra');
 const manager = require('../../logger');
 const { WebSocket } = require('../../services/websocket');
 const { FileSystem } = require('../file-system');
-const WasmS3 = require('../wasm-s3');
 const { optimizeBinaryFile } = require('../wasmgc');
+
+const Datastore = require('../../datastores');
 
 const COMMAND_DELIMITER = " ";
 const BUILD_FOLDER_NAME = "build";
@@ -147,11 +148,11 @@ class Compiler {
         return (buildOptions.saveInLocal ?
           FileSystem.storeWasm(outputFilepath, `${buildOptions.folderPath}.wasm`) :
           Promise.all([
-            WasmS3.putWasmFileToS3(outputFilepath)
+            Datastore.putWasmFileToS3(outputFilepath)
               .then(() => this.#websocketEmitMessage(buildOptions, "WASM has been saved ...")),
-            WasmS3.putBuildLogsToS3(`${buildOptions.plugin.id}-logs.zip`, buildOptions.logsFolder)
+            Datastore.putBuildLogsToS3(`${buildOptions.plugin.id}-logs.zip`, buildOptions.logsFolder)
               .then(() => this.#websocketEmitMessage(buildOptions, "Logs has been saved ...")),
-            WasmS3.putWasmInformationsToS3(buildOptions.userEmail, buildOptions.plugin.id, buildOptions.plugin.hash, `${this.options.wasmName}.wasm`)
+            Datastore.putWasmInformationsToS3(buildOptions.userEmail, buildOptions.plugin.id, buildOptions.plugin.hash, `${this.options.wasmName}.wasm`)
               .then(() => this.#websocketEmitMessage(buildOptions, "Informations has been updated"))
           ]))
           .then(() => {
