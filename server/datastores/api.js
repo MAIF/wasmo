@@ -69,5 +69,48 @@ module.exports = class Datastore {
      * @param {string} wasmId 
      * @param {boolean} release 
      */
-    isWasmExists(wasmId, release) { console.log('isWasmExists')}
+    isWasmExists(wasmId, release) { console.log('isWasmExists') }
+
+    /**
+     * Fetch plugin sources
+     * @param {string} pluginId 
+     * @returns sources as buffer
+     */
+    getSources = pluginId => console.log('getSources')
+
+    /**
+     * Fetch configuration file
+     * @param {string} email 
+     * @param {string} pluginId 
+     */
+    getConfigurations = (email, pluginId) => console.log('getConfigurations')
+
+    /**
+     * Delete specific plugin
+     * @param {string} email 
+     * @param {string} pluginId 
+     */
+    deletePlugin = (email, pluginId) => console.log('deletePlugin');
+
+    /**
+     * Update plugin content
+     * @param {string} id 
+     * @param {JSON} body 
+     */
+    updatePlugin = (id, body) => console.log('updatePlugin');
+
+    /**
+     * Create plugin with name and version of specific type
+     * @param {string} email 
+     * @param {JSON} metadata 
+     */
+    createEmptyPlugin = (email, metadata, isGithub) => console.log('createEmptyPlugin')
+
+    /**
+     * Edit the plugin name
+     * @param {string} email 
+     * @param {string} pluginId 
+     * @param {string} newName 
+     */
+    patchPluginName = (email, pluginId, newName) => console.log('patchPluginName')
 };

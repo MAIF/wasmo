@@ -2,8 +2,7 @@ const crypto = require('crypto')
 const fetch = require('node-fetch');
 const express = require('express');
 
-const { format, unzip } = require('../utils');
-
+const { unzip } = require('../utils');
 const { Queue } = require('../services/queue');
 const { FileSystem } = require('../services/file-system');
 
@@ -46,38 +45,11 @@ router.post('/github', (req, res) => {
 
 router.get('/', (req, res) => {
   Datastore.getUserPlugins(req.user.email)
-    .then(res.json)
+    .then(data => res.json(data))
 });
 
-function getSources(pluginId) {
-  const { s3, Bucket } = S3.state()
-
-  const params = {
-    Bucket,
-    Key: `${pluginId}.zip`
-  }
-
-  return s3.send(new GetObjectCommand(params))
-    .then(data => new fetch.Response(data.Body).buffer())
-    .then(data => {
-      return {
-        status: 200,
-        body: data
-      }
-    })
-    .catch((err) => {
-      return {
-        status: err.$metadata.httpStatusCode,
-        body: {
-          error: err.Code,
-          status: err.$metadata.httpStatusCode
-        }
-      }
-    })
-}
-
 router.get('/:id', (req, res) => {
-  getSources(req.params.id)
+  Datastore.getSources(req.params.id)
     .then(out => {
       if (out.status === 200) {
         res.attachment('plugin.zip');
@@ -91,41 +63,8 @@ router.get('/:id', (req, res) => {
 })
 
 router.get('/:id/configurations', (req, res) => {
-  const { s3, Bucket } = S3.state();
-
-  UserManager.getUser(req)
-    .then(data => {
-      const plugin = data.plugins.find(f => f.pluginId === req.params.id)
-
-      const files = [{
-        ext: 'json',
-        filename: 'config',
-        readOnly: true,
-        content: JSON.stringify({
-          ...plugin
-        }, null, 4)
-      }]
-
-      s3.send(new GetObjectCommand({
-        Bucket,
-        Key: `${plugin.pluginId}-logs.zip`
-      }))
-        .then(data => new fetch.Response(data.Body).buffer())
-        .then(data => {
-          res.json([
-            ...files,
-            {
-              ext: 'zip',
-              filename: 'logs',
-              readOnly: true,
-              content: data
-            }
-          ])
-        })
-        .catch(err => {
-          res.json(files)
-        })
-    })
+  Datastore.getConfigurations(req.user.email, req.params.id)
+    .then(data => res.json(data))
 })
 
 router.post('/github/repo', (req, res) => {
@@ -137,7 +76,7 @@ router.post('/github/repo', (req, res) => {
   })
     .then(r => {
       if (r.status === 200) {
-        return createPluginFromGithub(req);
+        return Datastore.createEmptyPlugin(req.user.email, req.body, true);
       } else {
         if ((r.headers.get('Content-Type') === "application/json")) {
           return r.json()
@@ -157,144 +96,6 @@ router.post('/github/repo', (req, res) => {
     })
 })
 
-function createPluginFromGithub(req) {
-  const { s3, Bucket } = S3.state()
-
-  const user = format(req.user.email)
-
-  return new Promise(resolve => {
-    UserManager.createUserIfNotExists(req.user.email)
-      .then(() => UserManager.getUser(req))
-      .then(data => {
-        const pluginId = crypto.randomUUID()
-        const plugins = [
-          ...(data.plugins || []),
-          {
-            filename: req.body.repo,
-            owner: req.body.owner,
-            ref: req.body.ref,
-            type: 'github',
-            pluginId: pluginId,
-            private: req.body.private
-          }
-        ]
-        const params = {
-          Bucket,
-          Key: `${user}.json`,
-          Body: JSON.stringify({
-            ...data,
-            plugins
-          })
-        }
-
-        // create and add new plugin to the user
-        s3.send(new PutObjectCommand(params))
-          .then(() => resolve({ status: 201 }))
-          .catch(err => {
-            if (err) {
-              resolve({
-                status: err.$metadata.httpStatusCode,
-                result: err.Code
-              });
-            }
-            else {
-              resolve({ status: 201 })
-            }
-          });
-      });
-  })
-    .catch(err => {
-      resolve({
-        status: 404,
-        result: err.message
-      })
-    });
-}
-
-function createEmptyPlugin(req, metadata) {
-  const { s3, Bucket } = S3.state()
-
-  const user = format(req.user.email)
-
-  return new Promise(resolve => {
-    UserManager.createUserIfNotExists(req.user.email)
-      .then(() => {
-        UserManager.getUser(req)
-          .then(data => {
-            const pluginId = crypto.randomUUID()
-            const plugins = [
-              ...(data.plugins || []),
-              {
-                filename: metadata.name.replace(/ /g, '-'),
-                type: metadata.type,
-                pluginId: pluginId
-              }
-            ]
-            const params = {
-              Bucket,
-              Key: `${user}.json`,
-              Body: JSON.stringify({
-                ...data,
-                plugins
-              })
-            }
-
-            s3.send(new PutObjectCommand(params))
-              .then(() => {
-                resolve({
-                  status: 201,
-                  body: {
-                    plugins
-                  }
-                })
-              })
-              .catch(err => {
-                resolve({
-                  status: err.$metadata.httpStatusCode,
-                  body: {
-                    error: err.Code,
-                    status: err.$metadata.httpStatusCode
-                  }
-                })
-              })
-          })
-      })
-      .catch(err => {
-        resolve({
-          status: 400,
-          body: {
-            error: err.message
-          }
-        })
-      })
-  })
-}
-
-function updatePluginContent(id, body) {
-  const { s3, Bucket } = S3.state();
-
-  const params = {
-    Bucket,
-    Key: `${id}.zip`,
-    Body: body
-  }
-
-  return s3.send(new PutObjectCommand(params))
-    .then(() => ({
-      status: 204,
-      body: null
-    }))
-    .catch(err => {
-      return {
-        status: err.$metadata.httpStatusCode,
-        body: {
-          error: err.Code,
-          status: err.$metadata.httpStatusCode
-        }
-      }
-    })
-}
-
 router.post('/', async (req, res) => {
   if (!req.body ||
     Object.keys(req.body).length === 0 ||
@@ -302,7 +103,7 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'missing body' });
   }
 
-  const out = await createEmptyPlugin(req, req.body.metadata || {
+  const out = await Datastore.createEmptyPlugin(req, req.body.metadata || {
     name: req.body.plugin,
     type: req.body.type
   });
@@ -313,7 +114,7 @@ router.post('/', async (req, res) => {
     const templatesFiles = await FileSystem.templatesFilesToJSON(req.body.metadata.type, req.body.metadata.name.replace(/ /g, '-'));
     const zip = await FileSystem.createZipFromJSONFiles(req.body.files, templatesFiles);
     const pluginId = out.body.plugins[out.body.plugins.length - 1].pluginId;
-    updatePluginContent(pluginId, zip)
+    Datastore.updatePlugin(pluginId, zip)
       .then(out => {
         if (out.status === 204) {
           res.status(201)
@@ -329,52 +130,17 @@ router.post('/', async (req, res) => {
 })
 
 router.put('/:id', (req, res) => {
-  updatePluginContent(req.params.id, req.body)
+  Datastore.updatePlugin(req.params.id, req.body)
     .then(out => {
       res.status(out.status).json(out.body);
     });
 })
 
 router.delete('/:id', async (req, res) => {
-  const { s3, Bucket } = S3.state()
-
-  const data = await UserManager.getUser(req);
-
-  if (Object.keys(data).length > 0) {
-    UserManager.updateUser(req.user.email, {
-      ...data,
-      plugins: data.plugins.filter(f => f.pluginId !== req.params.id)
+  Datastore.deletePlugin(req.user.email, req.params.id)
+    .then(out => {
+      res.status(out.status).json(out.body)
     })
-      .then(() => {
-        const pluginHash = data.plugins
-          .find(f => f.pluginId !== req.params.id) || {}
-            .last_hash
-
-        const params = {
-          Bucket,
-          Key: `${pluginHash}.zip`
-        }
-
-        s3.send(new DeleteObjectCommand(params))
-          .then(() => res
-            .status(204)
-            .json(null))
-          .catch(err => {
-            res
-              .status(err.$metadata.httpStatusCode)
-              .json({
-                error: err.Code,
-                status: err.$metadata.httpStatusCode
-              })
-          })
-      })
-  } else {
-    res
-      .status(401)
-      .json({
-        error: 'invalid credentials'
-      })
-  }
 })
 
 router.post('/build', async (req, res) => {
@@ -461,7 +227,7 @@ function addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, saveI
         (plugin.type === 'opa' ? InformationsReader.extractOPAInformations(folder) : Promise.resolve(undefined))
           .then(opaMetadata => {
             const wasmName = `${pluginName}-${pluginVersion}${release ? '' : '-dev'}`;
-            Datastore.isBinaryExists(wasmName, release)
+            Datastore.isWasmExists(wasmName, release)
               .then(exists => {
                 if (exists) {
                   FileSystem.removeFolder('build', folder)
@@ -519,7 +285,7 @@ router.post('/:id/build', async (req, res) => {
   const pluginId = req.params.id;
   const release = req.query.release === 'true';
 
-  const data = await UserManager.getUser(req)
+  const data = await Datastore.getUser(req.user.email)
   let plugin = (data.plugins || []).find(p => p.pluginId === pluginId);
   if (plugin.type === 'github') {
     plugin.type = req.query.plugin_type;
@@ -583,21 +349,7 @@ router.post('/:id/build', async (req, res) => {
 })
 
 router.patch('/:id/filename', (req, res) => {
-
-  UserManager.getUser(req)
-    .then(data => UserManager.updateUser(req.user.email, {
-      ...data,
-      plugins: (data.plugins || []).map(plugin => {
-        if (plugin.pluginId === req.params.id) {
-          return {
-            ...plugin,
-            filename: req.body.filename
-          }
-        } else {
-          return plugin
-        }
-      })
-    }))
+  Datastore.patchPluginName(req.user.email, req.params.id, req.body.filename)
     .then(() => {
       res
         .status(204)

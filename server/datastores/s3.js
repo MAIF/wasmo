@@ -1,6 +1,11 @@
-const { GetObjectCommand, PutObjectCommand, HeadObjectCommand,
-    S3Client, HeadBucketCommand, CreateBucketCommand,
-    DeleteObjectCommand, ListObjectsCommand } = require("@aws-sdk/client-s3");
+const { GetObjectCommand,
+    PutObjectCommand,
+    HeadObjectCommand,
+    S3Client,
+    HeadBucketCommand,
+    CreateBucketCommand,
+    DeleteObjectCommand
+} = require("@aws-sdk/client-s3");
 const fetch = require('node-fetch');
 const dns = require('dns');
 const url = require('url');
@@ -10,6 +15,8 @@ const { format, isAString } = require('../utils');
 const Datastore = require('./api');
 const { ENV, STORAGE } = require("../configuration");
 const manager = require("../logger");
+const consumers = require('node:stream/consumers');
+const AdmZip = require("adm-zip");
 
 const log = manager.createLogger('S3');
 
@@ -23,7 +30,7 @@ module.exports = class S3Datastore extends Datastore {
         Bucket: undefined
     }
 
-    #createBucketIfMissing() {
+    #createBucketIfMissing = () => {
         const params = { Bucket: this.#state.Bucket }
 
         return this.#state.instance.send(new HeadBucketCommand(params))
@@ -50,7 +57,7 @@ module.exports = class S3Datastore extends Datastore {
             })
     }
 
-    async initialize() {
+    initialize = async () => {
         if (!ENV.S3_BUCKET) {
             console.log("[S3 INITIALIZATION](failed): S3 Bucket is missing");
             process.exit(1);
@@ -62,7 +69,7 @@ module.exports = class S3Datastore extends Datastore {
             const URL = url.parse(ENV.S3_ENDPOINT)
             initializeClient = new Promise(resolve => dns.lookup(URL.hostname, function (err, ip) {
                 log.debug(`${URL.protocol}//${ip}:${URL.port}${URL.pathname}`)
-                state = {
+                this.#state = {
                     instance: new S3Client({
                         region: ENV.AWS_DEFAULT_REGION,
                         endpoint: `${URL.protocol}//${ip}:${URL.port}${URL.pathname}`,
@@ -73,7 +80,7 @@ module.exports = class S3Datastore extends Datastore {
                 resolve()
             }))
         } else {
-            state = {
+            this.#state = {
                 instance: new S3Client({
                     region: ENV.AWS_DEFAULT_REGION,
                     endpoint: ENV.S3_ENDPOINT,
@@ -86,11 +93,11 @@ module.exports = class S3Datastore extends Datastore {
             initializeClient = Promise.resolve();
         }
 
-        return initializeClient()
+        return initializeClient
             .then(this.#createBucketIfMissing)
     }
 
-    getUser(email) {
+    getUser = (email) => {
         const { instance, Bucket } = this.#state;
 
         return new Promise(resolve => {
@@ -107,19 +114,23 @@ module.exports = class S3Datastore extends Datastore {
                         else
                             resolve({})
                     } catch (err) {
+                        log.error(err)
                         resolve({})
                     }
                 })
-                .catch(_ => resolve({}))
+                .catch(err => {
+                    log.error(err)
+                    resolve({})
+                })
         })
     }
 
-    getUserPlugins(email) {
+    getUserPlugins = (email) => {
         return this.getUser(email)
             .then(data => data.plugins || [])
     }
 
-    #addUser(email) {
+    #addUser = (email) => {
         const { instance, Bucket } = this.#state;
 
         return new Promise((resolve, reject) => {
@@ -158,7 +169,7 @@ module.exports = class S3Datastore extends Datastore {
         })
     }
 
-    createUserIfNotExists(email) {
+    createUserIfNotExists = (email) => {
         const { instance, Bucket } = this.#state;;
 
         return new Promise((resolve, reject) => instance.send(new HeadObjectCommand({
@@ -181,7 +192,7 @@ module.exports = class S3Datastore extends Datastore {
             }))
     }
 
-    getUsers() {
+    getUsers = () => {
         const { instance, Bucket } = this.#state;
 
         return instance.send(new GetObjectCommand({
@@ -192,7 +203,7 @@ module.exports = class S3Datastore extends Datastore {
             .catch(err => console.log(err))
     }
 
-    updateUser(email, content) {
+    updateUser = (email, content) => {
         const { instance, Bucket } = this.#state;
 
         const jsonProfile = format(email);
@@ -215,7 +226,7 @@ module.exports = class S3Datastore extends Datastore {
         })
     }
 
-    putWasmFileToS3(wasmFolder) {
+    putWasmFileToS3 = (wasmFolder) => {
         const { instance, Bucket } = this.#state;
 
         const Key = wasmFolder.split('/').slice(-1)[0]
@@ -236,7 +247,7 @@ module.exports = class S3Datastore extends Datastore {
         })
     }
 
-    putBuildLogsToS3(logId, logsFolder) {
+    putBuildLogsToS3 = (logId, logsFolder) => {
         const { instance, Bucket } = this.#state;
 
         const zip = new AdmZip()
@@ -253,7 +264,7 @@ module.exports = class S3Datastore extends Datastore {
         })
     }
 
-    putWasmInformationsToS3(email, pluginId, newHash, generateWasmName) {
+    putWasmInformationsToS3 = (email, pluginId, newHash, generateWasmName) => {
         return this.getUser(email)
             .then(data => {
                 const newPlugins = data.plugins.map(plugin => {
@@ -296,7 +307,7 @@ module.exports = class S3Datastore extends Datastore {
             })
     }
 
-    getWasm(wasmId) {
+    getWasm = (wasmId) => {
         const { instance, Bucket } = this.#state;
 
         return new Promise(resolve => {
@@ -317,10 +328,10 @@ module.exports = class S3Datastore extends Datastore {
         });
     }
 
-    run(wasm, { input, functionName, wasi }) {
-        const { instance, Bucket } = this.#state();
+    run = (wasm, { input, functionName, wasi }) => {
+        const { instance, Bucket } = this.#state;
 
-        instance.send(new GetObjectCommand({
+        return instance.send(new GetObjectCommand({
             Bucket,
             Key: wasm
         }))
@@ -352,8 +363,8 @@ module.exports = class S3Datastore extends Datastore {
             })
     }
 
-    isWasmExists(wasmId, release) {
-        const { instance, Bucket } = this.#state();
+    isWasmExists = (wasmId, release) => {
+        const { instance, Bucket } = this.#state;
 
         if (!release) {
             return Promise.resolve(false);
@@ -365,5 +376,220 @@ module.exports = class S3Datastore extends Datastore {
                 .then(() => true)
                 .catch(() => false)
         }
+    }
+
+    getSources = pluginId => {
+        const { instance, Bucket } = this.#state;
+
+        const params = {
+            Bucket,
+            Key: `${pluginId}.zip`
+        }
+
+        return instance.send(new GetObjectCommand(params))
+            .then(data => new fetch.Response(data.Body).buffer())
+            .then(data => {
+                return {
+                    status: 200,
+                    body: data
+                }
+            })
+            .catch((err) => {
+                return {
+                    status: err.$metadata.httpStatusCode,
+                    body: {
+                        error: err.Code,
+                        status: err.$metadata.httpStatusCode
+                    }
+                }
+            })
+    }
+
+    getConfigurations = (email, pluginId) => {
+        const { instance, Bucket } = this.#state;
+
+        return this.getUser(email)
+            .then(data => {
+                const plugin = data.plugins.find(f => f.pluginId === pluginId)
+
+                const files = [{
+                    ext: 'json',
+                    filename: 'config',
+                    readOnly: true,
+                    content: JSON.stringify({
+                        ...plugin
+                    }, null, 4)
+                }]
+
+                return instance.send(new GetObjectCommand({
+                    Bucket,
+                    Key: `${plugin.pluginId}-logs.zip`
+                }))
+                    .then(data => new fetch.Response(data.Body).buffer())
+                    .then(data => {
+                        return [
+                            ...files,
+                            {
+                                ext: 'zip',
+                                filename: 'logs',
+                                readOnly: true,
+                                content: data
+                            }
+                        ]
+                    })
+                    .catch(() => {
+                        return files;
+                    })
+            })
+    }
+
+    deletePlugin = (email, pluginId) => {
+        const { instance, Bucket } = this.#state;
+
+        return new Promise(resolve => this.getUser(email)
+            .then(data => {
+                if (Object.keys(data).length > 0) {
+                    this.updateUser(email, {
+                        ...data,
+                        plugins: data.plugins.filter(f => f.pluginId !== pluginId)
+                    })
+                        .then(() => {
+                            const pluginHash = data.plugins
+                                .find(f => f.pluginId !== pluginId) || {}
+                                    .last_hash
+
+                            const params = {
+                                Bucket,
+                                Key: `${pluginHash}.zip`
+                            }
+
+                            instance.send(new DeleteObjectCommand(params))
+                                .then(() => resolve({ status: 204, body: null }))
+                                .catch(err => {
+                                    resolve({
+                                        status: err.$metadata.httpStatusCode,
+                                        body: {
+                                            error: err.Code,
+                                            status: err.$metadata.httpStatusCode
+                                        }
+                                    })
+                                })
+                        })
+                } else {
+                    resolve({
+                        status: 401,
+                        body: {
+                            error: 'invalid credentials'
+                        }
+                    })
+                }
+            }))
+    }
+
+    updatePlugin = (id, body) => {
+        const { instance, Bucket } = this.#state;
+
+        const params = {
+            Bucket,
+            Key: `${id}.zip`,
+            Body: body
+        }
+
+        return instance.send(new PutObjectCommand(params))
+            .then(() => ({
+                status: 204,
+                body: null
+            }))
+            .catch(err => {
+                return {
+                    status: err.$metadata.httpStatusCode,
+                    body: {
+                        error: err.Code,
+                        status: err.$metadata.httpStatusCode
+                    }
+                }
+            })
+    }
+
+    createEmptyPlugin = (email, metadata, isGithub) => {
+        const { instance, Bucket } = this.#state;
+
+        return new Promise(resolve => {
+            this.createUserIfNotExists(email)
+                .then(() => {
+                    this.getUser(email)
+                        .then(data => {
+                            const pluginId = crypto.randomUUID()
+                            const plugins = [
+                                ...(data.plugins || []),
+                                isGithub ? {
+                                    filename: metadata.repo,
+                                    owner: metadata.owner,
+                                    ref: metadata.ref,
+                                    type: 'github',
+                                    pluginId: pluginId,
+                                    private: metadata.private
+                                } : {
+                                    filename: metadata.name.replace(/ /g, '-'),
+                                    type: metadata.type,
+                                    pluginId: pluginId
+                                }
+
+                            ]
+                            const params = {
+                                Bucket,
+                                Key: `${user}.json`,
+                                Body: JSON.stringify({
+                                    ...data,
+                                    plugins
+                                })
+                            }
+
+                            instance.send(new PutObjectCommand(params))
+                                .then(() => {
+                                    resolve({
+                                        status: 201,
+                                        body: {
+                                            plugins
+                                        }
+                                    })
+                                })
+                                .catch(err => {
+                                    resolve({
+                                        status: err.$metadata.httpStatusCode,
+                                        body: {
+                                            error: err.Code,
+                                            status: err.$metadata.httpStatusCode
+                                        }
+                                    })
+                                })
+                        })
+                })
+                .catch(err => {
+                    resolve({
+                        status: 400,
+                        body: {
+                            error: err.message
+                        }
+                    })
+                })
+        })
+    }
+
+    patchPluginName = (email, pluginId, newName) => {
+        return this.getUser(email)
+            .then(data => this.updateUser(email, {
+                ...data,
+                plugins: (data.plugins || []).map(plugin => {
+                    if (plugin.pluginId === pluginId) {
+                        return {
+                            ...plugin,
+                            filename: newName
+                        }
+                    } else {
+                        return plugin
+                    }
+                })
+            }))
     }
 };
