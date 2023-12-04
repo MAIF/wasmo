@@ -1,7 +1,7 @@
 const express = require('express');
 const { ENV } = require('../configuration');
 const { FileSystem } = require('../services/file-system');
-const Datastore = require('../datastores/api');
+const Datastore = require('../datastores');
 
 const router = express.Router()
 
