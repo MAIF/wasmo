@@ -166,7 +166,7 @@ router.post('/build', async (req, res) => {
 
   const zip = await fetch(`http://localhost:${ENV.PORT}/api/templates?type=${kind}`)
     .then(res => res.blob())
-    .then(res => res.arrayBuffer())
+    .then(res => res.arrayBuffer());
 
   if (metadata.local !== undefined && !metadata.local && ![STORAGE.DOCKER_S3, STORAGE.S3].includes(ENV.STORAGE)) {
     return res

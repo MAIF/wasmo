@@ -146,7 +146,7 @@ class Compiler {
     )
       .then(outputFilepath => {
         return (buildOptions.saveInLocal ?
-          FileSystem.storeWasm(outputFilepath, `${buildOptions.folderPath}.wasm`) :
+          FileSystem.storeWasm(outputFilepath) :
           Promise.all([
             Datastore.putWasmFileToS3(outputFilepath)
               .then(() => this.#websocketEmitMessage(buildOptions, "WASM has been saved ...")),
