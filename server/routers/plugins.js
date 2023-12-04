@@ -103,7 +103,7 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'missing body' });
   }
 
-  const out = await Datastore.createEmptyPlugin(req, req.body.metadata || {
+  const out = await Datastore.createEmptyPlugin(req.user.email, req.body.metadata || {
     name: req.body.plugin,
     type: req.body.type
   });

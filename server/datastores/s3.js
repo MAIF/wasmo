@@ -1,3 +1,4 @@
+const crypto = require('crypto')
 const { GetObjectCommand,
     PutObjectCommand,
     HeadObjectCommand,
@@ -443,9 +444,23 @@ module.exports = class S3Datastore extends Datastore {
             })
     }
 
-    deletePlugin = (email, pluginId) => {
+    #removeBinaries = versions => {
+        return Promise.all(versions.map(version => this.#deleteObject(version)));
+    }
+
+    #deleteObject = key => {
         const { instance, Bucket } = this.#state;
 
+        const params = {
+            Bucket,
+            Key: key
+        }
+
+        return instance.send(new DeleteObjectCommand(params))
+            .catch(err => { log.error(err) });
+    }
+
+    deletePlugin = (email, pluginId) => {
         return new Promise(resolve => this.getUser(email)
             .then(data => {
                 if (Object.keys(data).length > 0) {
@@ -454,23 +469,20 @@ module.exports = class S3Datastore extends Datastore {
                         plugins: data.plugins.filter(f => f.pluginId !== pluginId)
                     })
                         .then(() => {
-                            const pluginHash = data.plugins
-                                .find(f => f.pluginId !== pluginId) || {}
-                                    .last_hash
+                            const plugin = data.plugins.find(f => f.pluginId === pluginId);
+                            const pluginHash = (plugin || {}).last_hash;
 
-                            const params = {
-                                Bucket,
-                                Key: `${pluginHash}.zip`
-                            }
-
-                            instance.send(new DeleteObjectCommand(params))
+                            Promise.all([
+                                this.#deleteObject(`${pluginHash}.zip`),
+                                this.#deleteObject(`${pluginHash}-logs.zip`),
+                                this.#removeBinaries((plugin.versions || []).map(r => r.name))
+                            ])
                                 .then(() => resolve({ status: 204, body: null }))
                                 .catch(err => {
                                     resolve({
-                                        status: err.$metadata.httpStatusCode,
+                                        status: 400,
                                         body: {
-                                            error: err.Code,
-                                            status: err.$metadata.httpStatusCode
+                                            error: err.message
                                         }
                                     })
                                 })
@@ -538,7 +550,7 @@ module.exports = class S3Datastore extends Datastore {
                             ]
                             const params = {
                                 Bucket,
-                                Key: `${user}.json`,
+                                Key: `${format(email)}.json`,
                                 Body: JSON.stringify({
                                     ...data,
                                     plugins
