@@ -1,9 +1,8 @@
 const express = require('express');
-const { UserManager } = require("../services/user");
 const { format } = require('../utils');
 const { ENV } = require('../configuration');
-const { getWasm } = require('../services/wasm-s3');
 const { FileSystem } = require('../services/file-system');
+const Datastore = require('../datastores');
 
 const router = express.Router()
 
@@ -34,21 +33,40 @@ router.use((req, res, next) => {
   }
 });
 
-router.get('/local/wasm/:id', (req, res) => FileSystem.getLocalWasm(`${req.params.id}.wasm`, res))
+router.get('/local/wasm/:id', (req, res) => {
+  FileSystem.getLocalWasm(`${req.params.id}.wasm`, res)
+})
 
-router.get('/wasm/:pluginId/:version', (req, res) => getWasm(`${req.params.pluginId}-${req.params.version}.wasm`, res));
-router.get('/wasm/:id', (req, res) => getWasm(req.params.id, res));
+function getWasm(wasmId, res) {
+  Datastore.getWasm(wasmId)
+    .then(({ content, error, status }) => {
+      if (error) {
+        res.status(status).json({ error, status })
+      } else {
+        res.attachment(Key);
+        res.send(content);
+      }
+    })
+}
+
+router.get('/wasm/:pluginId/:version', (req, res) => {
+  getWasm(`${req.params.pluginId}-${req.params.version}.wasm`, res);
+});
+
+router.get('/wasm/:id', (req, res) => {
+  getWasm(req.params.id, res);
+});
 
 router.get('/plugins', (req, res) => {
   const reg = req.headers['kind'] || '*';
 
   if (reg === '*') {
-    UserManager.getUsers()
+    Datastore.getUsers()
       .then(r => {
         const users = [...new Set([...(r || []), "adminotoroshiio"])];
 
         if (users.length > 0) {
-          Promise.all(users.map(UserManager.getUserFromString))
+          Promise.all(users.map(Datastore.getUser))
             .then(pluginsByUser => {
               res.json(pluginsByUser
                 .map(user => user.plugins)
@@ -59,7 +77,7 @@ router.get('/plugins', (req, res) => {
         }
       })
   } else {
-    UserManager.getUserFromString(format(reg))
+    Datastore.getUser(format(reg))
       .then(data => res.json(data.plugins))
   }
 });

@@ -3,7 +3,11 @@ const fs = require("fs-extra");
 const path = require("path");
 const pako = require('pako');
 
-const format = value => value?.replace(/[^a-zA-Z ]/g, "");
+const format = value => {
+  return value ? value.replace(/[^a-zA-Z ]/g, "") : "";
+}
+
+const isAString = variable => typeof variable === 'string' || variable instanceof String;
 
 const unzip = (isRustBuild, zipString, outputFolder, rules = []) => {
   try {
@@ -76,5 +80,6 @@ module.exports = {
   format,
   unzip,
   unzipTo,
-  INFORMATIONS_FILENAME
+  INFORMATIONS_FILENAME,
+  isAString
 }

@@ -3,7 +3,7 @@ module.exports = class Datastore {
     /**
      * Initialize the datastore
      */
-    async initialize() { console.log('initialize')}
+    async initialize() { console.log('initialize') }
     /**
      * Get current user
      */
@@ -44,17 +44,73 @@ module.exports = class Datastore {
 
     /**
      * Save plugin information after build process 
-     * @param {string} userMail 
+     * @param {string} email 
      * @param {string} pluginId 
      * @param {string} newHash 
      * @param {string} generateWasmName 
      */
-    putWasmInformationsToS3(userMail, pluginId, newHash, generateWasmName) { }
+    putWasmInformationsToS3(email, pluginId, newHash, generateWasmName) { }
 
     /**
      * Fetch wasm from datastore
-     * @param {string} Key 
-     * @param {string} res 
+     * @param {string} wasmId
      */
-    getWasm(Key, res) { }
+    getWasm(wasmId) { console.log('getWasm') }
+
+    /**
+     * Run and return execution of wasm file
+     * @param {string} wasmId 
+     * @param {JSON} runOptions 
+     */
+    runWasm(wasmId, runOptions) { console.log('runWasm') }
+
+    /**
+     * Check the presence of a specific wasm in database
+     * @param {string} wasmId 
+     * @param {boolean} release 
+     */
+    isWasmExists(wasmId, release) { console.log('isWasmExists') }
+
+    /**
+     * Fetch plugin sources
+     * @param {string} pluginId 
+     * @returns sources as buffer
+     */
+    getSources = pluginId => console.log('getSources')
+
+    /**
+     * Fetch configuration file
+     * @param {string} email 
+     * @param {string} pluginId 
+     */
+    getConfigurations = (email, pluginId) => console.log('getConfigurations')
+
+    /**
+     * Delete specific plugin
+     * @param {string} email 
+     * @param {string} pluginId 
+     */
+    deletePlugin = (email, pluginId) => console.log('deletePlugin');
+
+    /**
+     * Update plugin content
+     * @param {string} id 
+     * @param {JSON} body 
+     */
+    updatePlugin = (id, body) => console.log('updatePlugin');
+
+    /**
+     * Create plugin with name and version of specific type
+     * @param {string} email 
+     * @param {JSON} metadata 
+     */
+    createEmptyPlugin = (email, metadata, isGithub) => console.log('createEmptyPlugin')
+
+    /**
+     * Edit the plugin name
+     * @param {string} email 
+     * @param {string} pluginId 
+     * @param {string} newName 
+     */
+    patchPluginName = (email, pluginId, newName) => console.log('patchPluginName')
 };

@@ -10,7 +10,6 @@ const opaCompiler = require('./compiler/opa');
 
 const { BuildOptions, CompilerOptions } = require('./compiler/compiler');
 const { ENV } = require('../configuration');
-const { HeadObjectCommand } = require('@aws-sdk/client-s3');
 
 const COMPILERS = {
   'js': JsCompiler,
@@ -80,20 +79,6 @@ const addBuildToQueue = props => {
 module.exports = {
   Queue: {
     addBuildToQueue,
-    isBuildRunning: folder => FileSystem.buildFolderAlreadyExits('build', folder),
-    isBinaryExists: (name, release) => {
-      const { s3, Bucket } = S3.state()
-
-      if (!release) {
-        return Promise.resolve(false);
-      } else {
-        return s3.send(new HeadObjectCommand({
-          Bucket,
-          Key: `${name}.wasm`
-        }))
-          .then(() => true)
-          .catch(() => false)
-      }
-    }
+    isBuildRunning: folder => FileSystem.buildFolderAlreadyExits('build', folder)
   }
 }
