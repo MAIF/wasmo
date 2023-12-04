@@ -90,7 +90,7 @@ module.exports = class S3Datastore extends Datastore {
                 Bucket: ENV.S3_BUCKET
             }
 
-            log.info("S3 Bucket initialized");
+            log.info("Bucket initialized");
             initializeClient = Promise.resolve();
         }
 

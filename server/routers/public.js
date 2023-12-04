@@ -1,8 +1,7 @@
 const express = require('express');
-const { format } = require('../utils');
 const { ENV } = require('../configuration');
 const { FileSystem } = require('../services/file-system');
-const Datastore = require('../datastores');
+const Datastore = require('../datastores/api');
 
 const router = express.Router()
 
@@ -77,7 +76,7 @@ router.get('/plugins', (req, res) => {
         }
       })
   } else {
-    Datastore.getUser(format(reg))
+    Datastore.getUser(reg)
       .then(data => res.json(data.plugins))
   }
 });

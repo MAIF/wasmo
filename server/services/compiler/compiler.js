@@ -6,6 +6,7 @@ const manager = require('../../logger');
 const { WebSocket } = require('../../services/websocket');
 const { FileSystem } = require('../file-system');
 const { optimizeBinaryFile } = require('../wasmgc');
+const Datastore = require('../../datastores/api');
 
 const Datastore = require('../../datastores');
 
