@@ -1,7 +1,6 @@
 const STORAGE = {
     S3: "S3",
-    DOCKER_S3: 'DOCKER_S3',
-    LOCAL: "LOCAL",
+    DOCKER_S3: 'DOCKER_S3'
 };
 
 const AUTHENTICATION = {
@@ -15,7 +14,7 @@ module.exports = {
     AUTHENTICATION,
     ENV: {
         PORT: process.env.MANAGER_PORT || 5001,
-        STORAGE: process.env.STORAGE || STORAGE.LOCAL,
+        STORAGE: process.env.STORAGE,
 
         // process.env.AWS_ACCESS_KEY_ID,
         // process.env.AWS_SECRET_ACCESS_KEY,
@@ -31,6 +30,7 @@ module.exports = {
         MANAGER_TEMPLATES: process.env.MANAGER_TEMPLATES,
         MANAGER_MAX_PARALLEL_JOBS: process.env.MANAGER_MAX_PARALLEL_JOBS || 2,
         MANAGER_ALLOWED_DOMAINS: process.env.MANAGER_ALLOWED_DOMAINS || 'localhost:5001',
+        CHECK_DOMAINS: process.env.CHECK_DOMAINS,
 
         AUTH_MODE: process.env.AUTH_MODE || AUTHENTICATION.NO_AUTH,
 

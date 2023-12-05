@@ -302,7 +302,7 @@ router.post('/:id/build', async (req, res) => {
 
         let sources = req.body;
         if (!sources || Object.keys(sources).length === 0) {
-          await getSources(pluginId)
+          await Datastore.getSources(pluginId)
             .then(out => {
               if (out.status === 200) {
                 sources = out.body;

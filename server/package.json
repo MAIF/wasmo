@@ -6,10 +6,11 @@
   "scripts": {
     "start": "node index.js",
     "watch": "nodemon index.js",
-    "test": "node tests/test.js"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.427.0",
+    "@aws-sdk/util-utf8-node": "^3.259.0",
     "@extism/extism": "^0.2.0",
     "adm-zip": "^0.5.10",
     "body-parser": "^1.20.1",
@@ -27,6 +28,7 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
+    "jest": "^29.7.0",
     "nodemon": "^2.0.20"
   }
 }

@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
       })
   } else {
     const { type } = req.query;
-    if (['rust', 'assembly-script', 'js', 'go', 'ts', 'opa'].includes(type)) {
+    if (['rust', 'js', 'go', 'ts', 'opa'].includes(type)) {
       getTemplates(type, res);
     } else {
       res

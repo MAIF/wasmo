@@ -5,8 +5,12 @@ const { GetObjectCommand,
     S3Client,
     HeadBucketCommand,
     CreateBucketCommand,
-    DeleteObjectCommand
+    DeleteObjectCommand,
+    DeleteBucketCommand
 } = require("@aws-sdk/client-s3");
+const { fromUtf8 } = require("@aws-sdk/util-utf8-node");
+
+
 const fetch = require('node-fetch');
 const dns = require('dns');
 const url = require('url');
@@ -35,7 +39,9 @@ module.exports = class S3Datastore extends Datastore {
         const params = { Bucket: this.#state.Bucket }
 
         return this.#state.instance.send(new HeadBucketCommand(params))
-            .then(() => log.info("Using existing bucket"))
+            .then(() => {
+                log.info("Using existing bucket")
+            })
             .catch(res => {
                 if (res.$metadata.httpStatusCode === 404 ||
                     res.$metadata.httpStatusCode === 403 ||
@@ -44,7 +50,6 @@ module.exports = class S3Datastore extends Datastore {
                     return new Promise(resolve => {
                         this.#state.instance.send(new CreateBucketCommand(params), err => {
                             if (err) {
-                                console.log(err)
                                 throw err;
                             } else {
                                 log.info(`Bucket ${this.#state.Bucket} created.`)
@@ -65,21 +70,20 @@ module.exports = class S3Datastore extends Datastore {
         }
 
         log.info("Initialize s3 client");
-        let initializeClient;
+
         if (ENV.STORAGE === STORAGE.DOCKER_S3) {
-            const URL = url.parse(ENV.S3_ENDPOINT)
-            initializeClient = new Promise(resolve => dns.lookup(URL.hostname, function (err, ip) {
-                log.debug(`${URL.protocol}//${ip}:${URL.port}${URL.pathname}`)
-                this.#state = {
-                    instance: new S3Client({
-                        region: ENV.AWS_DEFAULT_REGION,
-                        endpoint: `${URL.protocol}//${ip}:${URL.port}${URL.pathname}`,
-                        forcePathStyle: ENV.S3_FORCE_PATH_STYLE
-                    }),
-                    Bucket: ENV.S3_BUCKET
-                }
-                resolve()
-            }))
+            const URL = url.parse(ENV.S3_ENDPOINT);
+
+            const ip = await new Promise(resolve => dns.lookup(URL.hostname, (_, ip) => resolve(ip)));
+            log.debug(`${URL.protocol}//${ip}:${URL.port}${URL.pathname}`)
+            this.#state = {
+                instance: new S3Client({
+                    region: ENV.AWS_DEFAULT_REGION,
+                    endpoint: `${URL.protocol}//${ip}:${URL.port}${URL.pathname}`,
+                    forcePathStyle: ENV.S3_FORCE_PATH_STYLE
+                }),
+                Bucket: ENV.S3_BUCKET
+            }
         } else {
             this.#state = {
                 instance: new S3Client({
@@ -91,11 +95,15 @@ module.exports = class S3Datastore extends Datastore {
             }
 
             log.info("Bucket initialized");
-            initializeClient = Promise.resolve();
         }
 
-        return initializeClient
-            .then(this.#createBucketIfMissing)
+        try {
+            await this.#state.instance.send(new DeleteBucketCommand({ Bucket: this.#state.Bucket }));
+        } catch (_err) { 
+            // console.log(_err)
+        }
+
+        return this.#createBucketIfMissing();
     }
 
     getUser = (email) => {
@@ -114,13 +122,11 @@ module.exports = class S3Datastore extends Datastore {
                         }
                         else
                             resolve({})
-                    } catch (err) {
-                        log.error(err)
+                    } catch (_err) {
                         resolve({})
                     }
                 })
-                .catch(err => {
-                    log.error(err)
+                .catch(_err => {
                     resolve({})
                 })
         })
@@ -131,66 +137,52 @@ module.exports = class S3Datastore extends Datastore {
             .then(data => data.plugins || [])
     }
 
-    #addUser = (email) => {
+    #addUser = async (email) => {
         const { instance, Bucket } = this.#state;
 
-        return new Promise((resolve, reject) => {
-            instance.send(new GetObjectCommand({
+        try {
+            const data = await instance.send(new GetObjectCommand({
                 Bucket,
                 Key: 'users.json'
-            }))
-                .then(data => {
-                    let users = []
-                    try {
-                        users = JSON.parse(data.Body.toString('utf-8'))
-                    } catch (err) { }
+            }));
 
-                    instance.send(new PutObjectCommand({
-                        Bucket,
-                        Key: 'users.json',
-                        Body: JSON.stringify([
-                            ...users,
-                            email
-                        ])
-                    }))
-                        .then(resolve)
-                })
-                .catch(err => {
-                    if (err.Code === "NoSuchKey") {
-                        instance.send(new PutObjectCommand({
-                            Bucket,
-                            Key: 'users.json',
-                            Body: JSON.stringify([email])
-                        }))
-                            .then(resolve)
-                    } else {
-                        reject(err)
-                    }
-                })
-        })
+            let users = []
+            try {
+                users = JSON.parse(data.Body.toString('utf-8'))
+            } catch (err) {
+                users = [];
+            }
+
+            await instance.send(new PutObjectCommand({
+                Bucket,
+                Key: 'users.json',
+                Body: fromUtf8(JSON.stringify([
+                    ...users,
+                    email
+                ])),
+                ContentType: 'application/json',
+            }))
+        } catch (err) {
+            await instance.send(new PutObjectCommand({
+                Bucket,
+                Key: 'users.json',
+                Body: fromUtf8(JSON.stringify([email])),
+                ContentType: 'application/json'
+            }))
+        }
     }
 
-    createUserIfNotExists = (email) => {
+    createUserIfNotExists = async (email) => {
         const { instance, Bucket } = this.#state;;
 
-        return new Promise((resolve, reject) => instance.send(new HeadObjectCommand({
-            Bucket,
-            Key: `${format(email)}.json`
-        }))
-            .then(() => resolve(true))
-            .catch(err => {
-                if (err) {
-                    if (err.$metadata.httpStatusCode === 404) {
-                        this.#addUser(format(email))
-                            .then(resolve)
-                            .catch(reject)
-                    } else {
-                        reject(err)
-                    }
-                } else {
-                    resolve(true)
-                }
+        try {
+            await instance.send(new HeadObjectCommand({
+                Bucket,
+                Key: `${format(email)}.json`
             }))
+        } catch (err) {
+            await this.#addUser(format(email))
+        }
     }
 
     getUsers = () => {
@@ -201,7 +193,7 @@ module.exports = class S3Datastore extends Datastore {
             Key: 'users.json'
         }))
             .then(data => new fetch.Response(data.Body).json())
-            .catch(err => console.log(err))
+            .catch(err => log.error(err))
     }
 
     updateUser = (email, content) => {
@@ -213,7 +205,8 @@ module.exports = class S3Datastore extends Datastore {
             instance.send(new PutObjectCommand({
                 Bucket,
                 Key: `${jsonProfile}.json`,
-                Body: JSON.stringify(content)
+                Body: fromUtf8(JSON.stringify(content)),
+                ContentType: 'application/json'
             }))
                 .then(_ => resolve({
                     status: 200
@@ -323,7 +316,7 @@ module.exports = class S3Datastore extends Datastore {
                 .catch(err => {
                     resolve({
                         error: err.Code,
-                        status: err.$metadata.httpStatusCode
+                        status: err?.$metadata?.httpStatusCode || 404
                     })
                 });
         });
@@ -354,7 +347,6 @@ module.exports = class S3Datastore extends Datastore {
                 }
             })
             .catch(err => {
-                console.log(err)
                 return {
                     status: 400,
                     body: {
@@ -551,10 +543,11 @@ module.exports = class S3Datastore extends Datastore {
                             const params = {
                                 Bucket,
                                 Key: `${format(email)}.json`,
-                                Body: JSON.stringify({
+                                Body: fromUtf8(JSON.stringify({
                                     ...data,
                                     plugins
-                                })
+                                })),
+                                ContentType: 'application/json',
                             }
 
                             instance.send(new PutObjectCommand(params))

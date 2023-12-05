@@ -30,7 +30,6 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
           }
 
           socket.onmessage = event => {
-            console.log(event)
             const text = event.data
             if (sizeTerminal === 0) {
               changeTerminalSize(0.5);

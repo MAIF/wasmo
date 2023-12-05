@@ -7,7 +7,8 @@ const router = express.Router()
 router.get('/runtime', (_, res) => res.json(ENV.EXTISM_RUNTIME_ENVIRONMENT === 'true'));
 
 router.get('/:id', (req, res) => {
-  Datastore.getWasm(`${req.params.id}.wasm`)
+  const Key = `${req.params.id}.wasm`;
+  Datastore.getWasm(Key)
     .then(({ content, error, status }) => {
       if (error) {
         res.status(status).json({ error, status })

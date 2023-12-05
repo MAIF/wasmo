@@ -154,8 +154,6 @@ async fn run_docker_container(container_name: &String) -> WasmoResult<u16> {
                     "AUTH_MODE=NO_AUTH",
                     "-e",
                     &format!("MANAGER_ALLOWED_DOMAINS=localhost:5001,localhost:{}", port),
-                    "-e",
-                    "STORAGE=LOCAL",
                     "maif/wasmo",
                 ])
                 .stdout(Stdio::piped())

@@ -10,7 +10,7 @@ Wasmo Builder is fully configurable and the only way to configure it is to use t
 - [Using the CLI](#using-the-cli)
 - [Miscellaneous](#miscellaneous)
 
-## Storage <Badges values={['STOS3', 'DOCKER_S3', 'LOCAL']} raw />
+## Storage <Badges values={['S3', 'DOCKER_S3']} raw />
 
 Wasmo Builder can be run on three differents ways:
 
@@ -30,17 +30,8 @@ AWS_DEFAULT_REGION=<DEFAULT 'us-east-1'>
 
 # optional
 S3_FORCE_PATH_STYLE=<DEFAULT false>
-```
 
-- `STORAGE=LOCAL`: Use the filesystem to store generated Wasm binaries. The Builder UI is not available with this storage type. You should use this
-storage if you want to quickly start an instance and only use the Wasmo CLI. The `local` storage 
-involves setting an interval to the cleanup job. The job removes binaries with outdated dates.
 
-```
-# required
-STORAGE=LOCAL
-
-# optional
 LOCAL_WASM_JOB_CLEANING=<DEFAULT 60 * 60 * 1000> # 1 hour
 ```
 
@@ -85,7 +76,7 @@ AUTH_MODE=NO_AUTH | BASIC_AUTH | OTOROSHI_AUTH
 # Listening PORT
 PORT=                       <DEFAULT '5001'>            
 # Storage used
-STORAGE=                    <DEFAULT 'LOCAL'>           
+STORAGE=                    
 
 # S3
 # Specifies an access key associated with your S3 instance

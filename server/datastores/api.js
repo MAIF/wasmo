@@ -7,40 +7,40 @@ module.exports = class Datastore {
     /**
      * Get current user
      */
-    getUser(email) { console.log('getUser') }
+    getUser(email) { return Promise.resolve() }
     /**
      * Get plugins of user
      * @returns {Object[]}
      */
-    getUserPlugins(email) { console.log('getUserPlugins') }
+    getUserPlugins(email) { return Promise.resolve() }
     /**
      * register a new user if not present
      * @param {string} email 
      */
-    createUserIfNotExists(email) { console.log('createUserIfNotExists') }
+    createUserIfNotExists(email) { return Promise.resolve() }
     /**
      * Get user list
      */
-    getUsers() { console.log('getUsers') }
+    getUsers() { return Promise.resolve([]) }
     /**
      * Update a specific user with new content
      * @param {string} email 
      * @param {JSON} content 
      */
-    updateUser(email, content) { console.log('updateUser') }
+    updateUser(email, content) { return Promise.resolve() }
 
     /**
      * Save wasm file
      * @param {string} wasmFolder 
      */
-    putWasmFileToS3(wasmFolder) { console.log('putWasmFileToS3') }
+    putWasmFileToS3(wasmFolder) { return Promise.resolve() }
 
     /**
      * Save logs file
      * @param {string} logId 
      * @param {string} logsFolder 
      */
-    putBuildLogsToS3(logId, logsFolder) { }
+    putBuildLogsToS3(logId, logsFolder) { return Promise.resolve() }
 
     /**
      * Save plugin information after build process 
@@ -49,62 +49,68 @@ module.exports = class Datastore {
      * @param {string} newHash 
      * @param {string} generateWasmName 
      */
-    putWasmInformationsToS3(email, pluginId, newHash, generateWasmName) { }
+    putWasmInformationsToS3(email, pluginId, newHash, generateWasmName) { return Promise.resolve() }
 
     /**
      * Fetch wasm from datastore
      * @param {string} wasmId
      */
-    getWasm(wasmId) { console.log('getWasm') }
+    getWasm(wasmId) { return Promise.resolve() }
 
     /**
      * Run and return execution of wasm file
      * @param {string} wasmId 
      * @param {JSON} runOptions 
      */
-    runWasm(wasmId, runOptions) { console.log('runWasm') }
+    runWasm(wasmId, runOptions) { return Promise.resolve() }
 
     /**
      * Check the presence of a specific wasm in database
      * @param {string} wasmId 
      * @param {boolean} release 
      */
-    isWasmExists(wasmId, release) { console.log('isWasmExists') }
+    isWasmExists(wasmId, release) {
+        return Promise.resolve()
+    }
 
     /**
      * Fetch plugin sources
      * @param {string} pluginId 
      * @returns sources as buffer
      */
-    getSources = pluginId => console.log('getSources')
+    getSources = pluginId => {
+        return Promise.resolve()
+    }
 
     /**
      * Fetch configuration file
      * @param {string} email 
      * @param {string} pluginId 
      */
-    getConfigurations = (email, pluginId) => console.log('getConfigurations')
+    getConfigurations = (email, pluginId) => {
+        return Promise.resolve()
+    }
 
     /**
      * Delete specific plugin
      * @param {string} email 
      * @param {string} pluginId 
      */
-    deletePlugin = (email, pluginId) => console.log('deletePlugin');
+    deletePlugin = (email, pluginId) => Promise.resolve()
 
     /**
      * Update plugin content
      * @param {string} id 
      * @param {JSON} body 
      */
-    updatePlugin = (id, body) => console.log('updatePlugin');
+    updatePlugin = (id, body) => Promise.resolve()
 
     /**
      * Create plugin with name and version of specific type
      * @param {string} email 
      * @param {JSON} metadata 
      */
-    createEmptyPlugin = (email, metadata, isGithub) => console.log('createEmptyPlugin')
+    createEmptyPlugin = (email, metadata, isGithub) => Promise.resolve()
 
     /**
      * Edit the plugin name
@@ -112,5 +118,5 @@ module.exports = class Datastore {
      * @param {string} pluginId 
      * @param {string} newName 
      */
-    patchPluginName = (email, pluginId, newName) => console.log('patchPluginName')
+    patchPluginName = (email, pluginId, newName) => Promise.resolve()
 };

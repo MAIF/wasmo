@@ -2,6 +2,7 @@ const express = require('express');
 const { ENV } = require('../configuration');
 const { FileSystem } = require('../services/file-system');
 const Datastore = require('../datastores');
+const { copySync } = require('fs-extra');
 
 const router = express.Router()
 
@@ -25,7 +26,11 @@ const forbiddenAccess = (req, res, next) => {
 }
 
 router.use((req, res, next) => {
-  if (DOMAINS.includes(req.headers.host)) {
+  const checkDomain = ENV.CHECK_DOMAINS !== undefined ? ENV.CHECK_DOMAINS : true;
+
+  if (checkDomain === 'false') {
+    auth(req, res, next);
+  } else if (DOMAINS.includes(req.headers.host)) {
     auth(req, res, next);
   } else {
     forbiddenAccess(req, res, next);

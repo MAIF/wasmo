@@ -8,8 +8,8 @@ let datastore;
 
 if ([STORAGE.S3, STORAGE.DOCKER_S3].includes(ENV.STORAGE)) {
     datastore = new S3Datastore();
-} else if (ENV.STORAGE === STORAGE.LOCAL) {
-
+} else {
+    datastore = new Datastore()
 }
 
 /** @type {Datastore} */

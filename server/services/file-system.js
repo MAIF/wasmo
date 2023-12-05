@@ -103,9 +103,6 @@ const getLocalWasm = (id, res) => {
 
 const createZipFromJSONFiles = (jsonFiles, templatesFiles) => {
   const zip = new AdmZip();
-
-  console.log(templatesFiles)
-  console.log(jsonFiles);
   [
     ...templatesFiles.filter(t => !jsonFiles.find(f => f.name === t.name)),
     ...jsonFiles].forEach(({ name, content }) => {
