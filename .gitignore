@@ -7,7 +7,6 @@ ui/node_modules
 server/.env
 /dev.env
 /lib
-server/tests
 debug/
 target/
 **/*.rs.bk
