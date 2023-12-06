@@ -248,6 +248,8 @@ function Header({ onNewPlugin, reloadPlugins }) {
 
 class Plugin extends React.Component {
 
+  timer = undefined;
+
   render() {
     const { onPluginClick, filename, pluginId, newFilename, ...props } = this.props;
 
@@ -255,13 +257,20 @@ class Plugin extends React.Component {
       style={{ border: 'none' }}
       className="d-flex align-items-center justify-content-between py-1"
       onClick={() => {
-        if (!props.new)
-          onPluginClick(pluginId)
+        if (!props.new) {
+          if (this.timer) {
+            clearTimeout(this.timer)
+          }
+          this.timer = setTimeout(() => onPluginClick(pluginId), 250);
+        }
       }}
-    // onDoubleClick={e => {
-    //   e.stopPropagation()
-    //   props.enablePluginRenaming(pluginId)
-    // }}
+      onDoubleClick={e => {
+        e.stopPropagation()
+        if (this.timer) {
+          clearTimeout(this.timer)
+        }
+        props.enablePluginRenaming(pluginId)
+      }}
     >
 
       {props.new && <>

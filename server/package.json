@@ -22,6 +22,7 @@
     "node-cron": "^3.0.2",
     "node-fetch": "^2.6.9",
     "pako": "^2.1.0",
+    "pg": "^8.11.3",
     "simple-node-logger": "^21.8.12",
     "testcontainers": "^10.3.2",
     "toml": "^3.0.0",

@@ -1,6 +1,8 @@
 const STORAGE = {
     S3: "S3",
-    DOCKER_S3: 'DOCKER_S3'
+    DOCKER_S3: 'DOCKER_S3',
+    S3_POSTGRES: "S3_POSTGRES",
+    DOCKER_S3_POSTGRES: "DOCKER_S3_POSTGRES",
 };
 
 const AUTHENTICATION = {
@@ -41,6 +43,17 @@ module.exports = {
 
         EXTISM_RUNTIME_ENVIRONMENT: process.env.EXTISM_RUNTIME_ENVIRONMENT || false,
 
-        LOCAL_WASM_JOB_CLEANING: process.envLOCAL_WASM_JOB_CLEANING || (60 * 60 * 1000) // 1 hour
+        LOCAL_WASM_JOB_CLEANING: process.envLOCAL_WASM_JOB_CLEANING || (60 * 60 * 1000), // 1 hour
+
+        PG: {
+            HOST: process.env.PG_HOST || 'localhost',
+            PORT: process.env.PG_PORT || 5432,
+            DATABASE: process.env.PG_DATABASE || 'wasmo',
+            USER: process.env.PG_USER || 'postgres',
+            PASSWORD: process.env.PG_PASSWORD || 'password',
+            POOL_SIZE: process.env.PG_POOL_SIZE || 20,
+            PG_IDLE_TIMEOUT_MILLIS: process.env.PG_IDLE_TIMEOUT_MILLIS || 30000,
+            CONNECTION_TIMEOUT_MILLIS: process.env.PG_CONNECTION_TIMEOUT_MILLIS || 2000,
+        }
     }
 }

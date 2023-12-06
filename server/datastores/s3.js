@@ -10,7 +10,6 @@ const { GetObjectCommand,
 } = require("@aws-sdk/client-s3");
 const { fromUtf8 } = require("@aws-sdk/util-utf8-node");
 
-
 const fetch = require('node-fetch');
 const dns = require('dns');
 const url = require('url');
@@ -238,18 +237,22 @@ module.exports = class S3Datastore extends Datastore {
     putBuildLogsToS3 = (logId, logsFolder) => {
         const { instance, Bucket } = this.#state;
 
-        const zip = new AdmZip()
-        zip.addLocalFolder(logsFolder, 'logs')
+        try {
+            const zip = new AdmZip()
+            zip.addLocalFolder(logsFolder, 'logs')
 
-        return new Promise((resolve, reject) => {
-            instance.send(new PutObjectCommand({
-                Bucket,
-                Key: logId,
-                Body: zip.toBuffer()
-            }))
-                .then(resolve)
-                .catch(reject)
-        })
+            return new Promise((resolve, reject) => {
+                instance.send(new PutObjectCommand({
+                    Bucket,
+                    Key: logId,
+                    Body: zip.toBuffer()
+                }))
+                    .then(resolve)
+                    .catch(reject)
+            })
+        } catch (err) {
+            return Promise.resolve()
+        }
     }
 
     putWasmInformationsToS3 = (email, pluginId, newHash, generateWasmName) => {
@@ -392,9 +395,31 @@ module.exports = class S3Datastore extends Datastore {
             })
     }
 
-    getConfigurations = (email, pluginId) => {
+    getConfigurationsFile = (pluginId, files) => {
         const { instance, Bucket } = this.#state;
 
+        return instance.send(new GetObjectCommand({
+            Bucket,
+            Key: `${pluginId}-logs.zip`
+        }))
+            .then(data => new fetch.Response(data.Body).buffer())
+            .then(data => {
+                return [
+                    ...files,
+                    {
+                        ext: 'zip',
+                        filename: 'logs',
+                        readOnly: true,
+                        content: data
+                    }
+                ]
+            })
+            .catch(() => {
+                return files;
+            })
+    }
+
+    getConfigurations = (email, pluginId) => {
         return this.getUser(email)
             .then(data => {
                 const plugin = data.plugins.find(f => f.pluginId === pluginId)
@@ -408,33 +433,15 @@ module.exports = class S3Datastore extends Datastore {
                     }, null, 4)
                 }]
 
-                return instance.send(new GetObjectCommand({
-                    Bucket,
-                    Key: `${plugin.pluginId}-logs.zip`
-                }))
-                    .then(data => new fetch.Response(data.Body).buffer())
-                    .then(data => {
-                        return [
-                            ...files,
-                            {
-                                ext: 'zip',
-                                filename: 'logs',
-                                readOnly: true,
-                                content: data
-                            }
-                        ]
-                    })
-                    .catch(() => {
-                        return files;
-                    })
+                return this.getConfigurationsFile(plugin.pluginId, files);
             })
     }
 
-    #removeBinaries = versions => {
-        return Promise.all(versions.map(version => this.#deleteObject(version)));
+    removeBinaries = versions => {
+        return Promise.all(versions.map(version => this.deleteObject(version)));
     }
 
-    #deleteObject = key => {
+    deleteObject = key => {
         const { instance, Bucket } = this.#state;
 
         const params = {
@@ -459,9 +466,9 @@ module.exports = class S3Datastore extends Datastore {
                             const pluginHash = (plugin || {}).last_hash;
 
                             Promise.all([
-                                this.#deleteObject(`${pluginHash}.zip`),
-                                this.#deleteObject(`${pluginHash}-logs.zip`),
-                                this.#removeBinaries((plugin.versions || []).map(r => r.name))
+                                this.deleteObject(`${pluginHash}.zip`),
+                                this.deleteObject(`${pluginHash}-logs.zip`),
+                                this.removeBinaries((plugin.versions || []).map(r => r.name))
                             ])
                                 .then(() => resolve({ status: 204, body: null }))
                                 .catch(err => {
