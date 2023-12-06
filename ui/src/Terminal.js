@@ -17,36 +17,63 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
     }
   }, [loadConfigurationFile]);
 
+  const connect = (isDevelopment, attempts) => {
+    let socket;
+    let internalAttempts = attempts;
+
+    if (isDevelopment) {
+      socket = new WebSocket(`ws://${window.location.hostname}:5001/${selectedPlugin.pluginId}`);
+    } else {
+      socket = new WebSocket(`ws://${window.location.host}/${selectedPlugin.pluginId}`);
+    }
+
+    socket.onopen = () => {
+      internalAttempts = 1;
+    }
+
+    socket.onmessage = event => {
+      const text = event.data
+      if (sizeTerminal === 0) {
+        changeTerminalSize(0.5);
+      }
+
+      if (text.includes("You can now use the generated wasm")) {
+        setLoadConfigurationFile(true)
+      }
+
+      if (text.includes('Starting build')) {
+        setContent(text)
+      } else {
+        setContent(content => content + text)
+        if (ref && ref.current)
+          ref.current.view.scrollDOM.scrollTop = ref.current.view.scrollDOM.scrollHeight;
+      }
+    }
+
+    socket.onclose = function (e) {
+      console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+
+      if (internalAttempts <= 5) {
+        console.log(1000 * (internalAttempts))
+        setTimeout(function () {
+          connect(isDevelopment, internalAttempts + 1);
+        }, 1000 * (internalAttempts));
+      } else {
+        console.log('Reconnect attempts have failed. You need to reload the page');
+      }
+    };
+
+    socket.onerror = function (err) {
+      console.error('Socket encountered error: ', err.message, 'Closing socket');
+      socket.close();
+    };
+  }
+
   useEffect(() => {
     if (selectedPlugin) {
       isDevelopmentMode()
         .then(isDevelopment => {
-          let socket;
-
-          if (isDevelopment) {
-            socket = new WebSocket(`ws://${window.location.hostname}:5001/${selectedPlugin.pluginId}`);
-          } else {
-            socket = new WebSocket(`ws://${window.location.host}/${selectedPlugin.pluginId}`);
-          }
-
-          socket.onmessage = event => {
-            const text = event.data
-            if (sizeTerminal === 0) {
-              changeTerminalSize(0.5);
-            }
-
-            if (text.includes("You can now use the generated wasm")) {
-              setLoadConfigurationFile(true)
-            }
-
-            if (text.includes('Starting build')) {
-              setContent(text)
-            } else {
-              setContent(content => content + text)
-              if (ref && ref.current)
-                ref.current.view.scrollDOM.scrollTop = ref.current.view.scrollDOM.scrollHeight;
-            }
-          }
+          connect(isDevelopment, 1)
         })
     }
   }, [selectedPlugin?.pluginId]);

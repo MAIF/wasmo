@@ -1,0 +1,60 @@
+{
+  "_loc": {
+    "tenant": "default",
+    "teams": [
+      "default"
+    ]
+  },
+  "type": "basic",
+  "id": "auth_mod_dev_f7b3446f-dee2-424f-849f-e6c1e372ae38",
+  "name": "New auth. module",
+  "desc": "New auth. module",
+  "basicAuth": false,
+  "webauthn": false,
+  "clientSideSessionEnabled": true,
+  "sessionMaxAge": 86400,
+  "metadata": {},
+  "tags": [],
+  "users": [
+    {
+      "name": "Walker Bins",
+      "password": "$2a$10$hy8dKr1F2MjjhXAR2rZb/eSWj8u8E8.R0oIneNYrMPkNLHClv0X3m",
+      "email": "wasm@oto.tools",
+      "metadata": {},
+      "tags": [],
+      "webauthn": null,
+      "rights": [
+        {
+          "tenant": "*:rw",
+          "teams": [
+            "*:rw"
+          ]
+        }
+      ],
+      "adminEntityValidators": {}
+    },
+    {
+      "name": "Stanley Nikolaus",
+      "password": "$2a$10$.pnZk8BEvPkN1/ZPMIhMbuXXIeOX8Zl77lvIpOzxPlFA.dN9b8lmy",
+      "email": "second@oto.tools",
+      "metadata": {},
+      "tags": [],
+      "webauthn": null,
+      "rights": [
+        {
+          "tenant": "*:rw",
+          "teams": [
+            "*:rw"
+          ]
+        }
+      ],
+      "adminEntityValidators": {}
+    }
+  ],
+  "sessionCookieValues": {
+    "httpOnly": true,
+    "secure": false
+  },
+  "userValidators": [],
+  "kind": "AuthModule"
+}

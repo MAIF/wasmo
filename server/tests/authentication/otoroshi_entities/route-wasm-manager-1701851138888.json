@@ -1,0 +1,176 @@
+{
+  "_loc": {
+    "tenant": "default",
+    "teams": [
+      "default"
+    ]
+  },
+  "id": "wasm-manager",
+  "name": "wasmo",
+  "description": "",
+  "tags": [],
+  "metadata": {},
+  "enabled": false,
+  "debug_flow": false,
+  "export_reporting": false,
+  "capture": false,
+  "groups": [
+    "default"
+  ],
+  "frontend": {
+    "domains": [
+      "wasmo.oto.tools"
+    ],
+    "strip_path": true,
+    "exact": false,
+    "headers": {},
+    "query": {},
+    "methods": []
+  },
+  "backend": {
+    "targets": [
+      {
+        "id": "http://localhost:5001",
+        "hostname": "localhost",
+        "port": 5001,
+        "tls": false,
+        "weight": 1,
+        "predicate": {
+          "type": "AlwaysMatch"
+        },
+        "protocol": "HTTP/1.1",
+        "ip_address": null,
+        "tls_config": {
+          "certs": [],
+          "trusted_certs": [],
+          "enabled": false,
+          "loose": false,
+          "trust_all": false
+        }
+      }
+    ],
+    "root": "/",
+    "rewrite": false,
+    "load_balancing": {
+      "type": "RoundRobin"
+    },
+    "client": {
+      "retries": 1,
+      "max_errors": 20,
+      "retry_initial_delay": 50,
+      "backoff_factor": 2,
+      "call_timeout": 30000,
+      "call_and_stream_timeout": 120000,
+      "connection_timeout": 10000,
+      "idle_timeout": 60000,
+      "global_timeout": 30000,
+      "sample_interval": 2000,
+      "proxy": {},
+      "custom_timeouts": [],
+      "cache_connection_settings": {
+        "enabled": false,
+        "queue_size": 2048
+      }
+    },
+    "health_check": {
+      "enabled": false,
+      "url": "",
+      "timeout": 5000,
+      "healthyStatuses": [],
+      "unhealthyStatuses": []
+    }
+  },
+  "backend_ref": null,
+  "plugins": [
+    {
+      "enabled": true,
+      "debug": false,
+      "plugin": "cp:otoroshi.next.plugins.ApikeyCalls",
+      "include": [],
+      "exclude": [],
+      "config": {
+        "extractors": {
+          "basic": {
+            "enabled": true,
+            "header_name": null,
+            "query_name": null
+          },
+          "custom_headers": {
+            "enabled": true,
+            "client_id_header_name": null,
+            "client_secret_header_name": null
+          },
+          "client_id": {
+            "enabled": true,
+            "header_name": null,
+            "query_name": null
+          },
+          "jwt": {
+            "enabled": true,
+            "secret_signed": true,
+            "keypair_signed": true,
+            "include_request_attrs": false,
+            "max_jwt_lifespan_sec": null,
+            "header_name": "",
+            "query_name": null,
+            "cookie_name": null
+          }
+        },
+        "routing": {
+          "enabled": false
+        },
+        "validate": true,
+        "mandatory": true,
+        "pass_with_user": true,
+        "wipe_backend_request": false,
+        "update_quotas": true
+      },
+      "plugin_index": {
+        "validate_access": 0,
+        "transform_request": 0,
+        "match_route": 0
+      },
+      "nodeId": "cp:otoroshi.next.plugins.ApikeyCalls"
+    },
+    {
+      "enabled": true,
+      "debug": false,
+      "plugin": "cp:otoroshi.next.plugins.AuthModule",
+      "include": [],
+      "exclude": [],
+      "config": {
+        "pass_with_apikey": true,
+        "auth_module": null,
+        "module": "auth_mod_dev_f7b3446f-dee2-424f-849f-e6c1e372ae38"
+      },
+      "plugin_index": {
+        "validate_access": 1
+      },
+      "nodeId": "cp:otoroshi.next.plugins.AuthModule"
+    },
+    {
+      "enabled": true,
+      "debug": false,
+      "plugin": "cp:otoroshi.next.plugins.OtoroshiInfos",
+      "include": [],
+      "exclude": [],
+      "config": {
+        "version": "Latest",
+        "ttl": 30,
+        "header_name": "Otoroshi-User",
+        "add_fields": null,
+        "algo": {
+          "type": "HSAlgoSettings",
+          "size": 512,
+          "secret": "secret",
+          "base64": false
+        }
+      },
+      "plugin_index": {
+        "transform_request": 1
+      },
+      "nodeId": "cp:otoroshi.next.plugins.OtoroshiInfos"
+    }
+  ],
+  "kind": "Route"
+}
