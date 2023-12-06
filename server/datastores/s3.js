@@ -97,12 +97,6 @@ module.exports = class S3Datastore extends Datastore {
             log.info("Bucket initialized");
         }
 
-        try {
-            await this.#state.instance.send(new DeleteBucketCommand({ Bucket: this.#state.Bucket }));
-        } catch (_err) { 
-            // console.log(_err)
-        }
-
         return this.#createBucketIfMissing();
     }
 
