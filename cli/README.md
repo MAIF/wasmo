@@ -57,7 +57,7 @@ with wasm modules:
 # Quick start
 
 ``` 
-wasmo init --name=my-first-plugin --templates=js
+wasmo init --name=my-first-plugin --template=js
 wasmo build --host=OneShotDocker --path=my-first-plugin
 ```
 
@@ -70,7 +70,7 @@ You can now optionally start a new plugin from a template by appending `--templa
 If you don't pass a template, Wasmo will list the available templates: `js`, `ts`, `opa`, `go` and `rust`.
 
 ```
-wasmo init --name=my-first-plugin --templates=[template-name] --path=[output-directory]
+wasmo init --name=my-first-plugin --template=[template-name] --path=[output-directory]
 ```
 
 Running this command with any of theses templates will create a directory called `my-first-plugin` inside the specified output directory (or the current if omitted). Inside that directory, it will generate the initial project structure with the metadata file pre-filled with the name of your plugin.
@@ -90,8 +90,8 @@ Assuming we want to build our `my-first-plugin` locally. Enter `wasmo build --ho
 Let's explain these 3 parameters:
   - the `path` parameter is explicitly used to indicate the plugin to build
   - the `host` indicates which kind of Wasmo server used. The pratical way is to use `Docker` or `OneShotDocker` because it prevents to install a Wasmo server by deploying, inside your locally Docker, a new Wasmo container. The last possible value is `Remote` and can be used to specify with a URI the remote Wasmo server used.
-
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/NdbQR6vQ5Sk/0.jpg)](https://www.youtube.com/watch?v=NdbQR6vQ5Sk)
+<!-- 
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/NdbQR6vQ5Sk/0.jpg)](https://www.youtube.com/watch?v=NdbQR6vQ5Sk) -->
 
 ## Configure your configuration file
 

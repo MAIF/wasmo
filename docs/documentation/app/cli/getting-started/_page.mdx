@@ -33,7 +33,7 @@ $ wasmo help
 # Quick start
 
 ``` 
-wasmo init --name=my-first-plugin --templates=js
+wasmo init --name=my-first-plugin --template=js
 wasmo build --host=OneShotDocker --path=my-first-plugin
 ```
 
@@ -46,7 +46,7 @@ You can now optionally start a new plugin from a template by appending `--templa
 If you don't pass a template, Wasmo will list the available templates: `js`, `ts`, `opa`, `go` and `rust`.
 
 ```
-wasmo init --name=my-first-plugin --templates=[template-name] --path=[output-directory]
+wasmo init --name=my-first-plugin --template=[template-name] --path=[output-directory]
 ```
 
 Running this command with any of theses templates will create a directory called `my-first-plugin` inside the specified output directory (or the current if omitted). Inside that directory, it will generate the initial project structure with the metadata file pre-filled with the name of your plugin.
