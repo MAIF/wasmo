@@ -88,7 +88,7 @@ module.exports = class PgDatastore extends Datastore {
         if (!optUser) {
             await this.#pool.connect()
                 .then(client => {
-                    return client.query("INSERT INTO users(email) VALUES($1)", [email])
+                    return client.query("INSERT INTO users(email, content) VALUES($1, $2::jsonb)", [email, {}])
                         .then(() => client.release())
                 })
         }

@@ -1,11 +1,13 @@
 const { GenericContainer, Network } = require("testcontainers");
 
 let instance;
+let s3;
+let container;
 
 beforeAll(async () => {
   const network = await new Network().start();
 
-  const s3 = await new GenericContainer("scality/s3server:latest")
+  s3 = await new GenericContainer("scality/s3server:latest")
     .withNetwork(network)
     .withName("s3")
     .withExposedPorts(8000)
@@ -15,7 +17,7 @@ beforeAll(async () => {
     })
     .start();
 
-  const container = await new GenericContainer("wasmo")
+  container = await new GenericContainer("wasmo")
     .withNetwork(network)
     .withExposedPorts(5002)
     .withEnvironment({

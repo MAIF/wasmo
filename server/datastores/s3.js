@@ -42,14 +42,16 @@ module.exports = class S3Datastore extends Datastore {
                 log.info("Using existing bucket")
             })
             .catch(res => {
-                if (res.$metadata.httpStatusCode === 404 ||
+                if (res || res.$metadata.httpStatusCode === 404 ||
                     res.$metadata.httpStatusCode === 403 ||
                     res.$metadata.httpStatusCode === 400) {
-                    log.error(`Bucket ${this.#state.Bucket} is missing.`)
+                    log.info(`Bucket ${this.#state.Bucket} is missing.`)
                     return new Promise(resolve => {
                         this.#state.instance.send(new CreateBucketCommand(params), err => {
                             if (err) {
-                                throw err;
+                                console.log("Failed to create missing bucket")
+                                console.log(err)
+                                // process.exit(1)
                             } else {
                                 log.info(`Bucket ${this.#state.Bucket} created.`)
                                 resolve()
@@ -70,7 +72,7 @@ module.exports = class S3Datastore extends Datastore {
 
         log.info("Initialize s3 client");
 
-        if (ENV.STORAGE === STORAGE.DOCKER_S3) {
+        if (ENV.STORAGE === STORAGE.DOCKER_S3 || ENV.STORAGE === STORAGE.DOCKER_S3_POSTGRES) {
             const URL = url.parse(ENV.S3_ENDPOINT);
 
             const ip = await new Promise(resolve => dns.lookup(URL.hostname, (_, ip) => resolve(ip)));
