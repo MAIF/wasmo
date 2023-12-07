@@ -19,3 +19,4 @@ cli/go
 cli/rust
 cli/ts
 *.wasmo
+*.log

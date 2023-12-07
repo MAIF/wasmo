@@ -1,4 +1,4 @@
-const { GenericContainer, Network } = require("testcontainers");
+const { GenericContainer, Network, Wait } = require("testcontainers");
 
 let instance;
 let s3;
@@ -9,12 +9,13 @@ beforeAll(async () => {
 
   s3 = await new GenericContainer("scality/s3server:latest")
     .withNetwork(network)
-    .withName("s3")
     .withExposedPorts(8000)
     .withEnvironment({
       SCALITY_ACCESS_KEY_ID: 'access_key',
       SCALITY_SECRET_ACCESS_KEY: 'secret'
     })
+    .withWaitStrategy(Wait.forHttp("/_/healthcheck", 8000)
+      .forStatusCodeMatching(statusCode => statusCode === 403))
     .start();
 
   container = await new GenericContainer("wasmo")
@@ -33,14 +34,17 @@ beforeAll(async () => {
       STORAGE: "DOCKER_S3",
       S3_BUCKET: "wasmo",
     })
+    .withWaitStrategy(Wait.forHttp("/_/healthcheck", 5002)
+      .forStatusCodeMatching(statusCode => statusCode === 200))
     .start();
 
   instance = `http://localhost:${container.getFirstMappedPort()}`;
-
-  await new Promise(resolve => {
-    setTimeout(resolve, 10000);
-  })
 }, 60000);
+
+afterAll(() => {
+  s3?.stop()
+  container?.stop()
+})
 
 test('/api/plugins', () => {
   return fetch(`${instance}/api/plugins`)

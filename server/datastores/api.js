@@ -3,7 +3,7 @@ module.exports = class Datastore {
     /**
      * Initialize the datastore
      */
-    async initialize() { console.log('initialize') }
+    async initialize() { Promise.resolve() }
     /**
      * Get current user
      */
@@ -119,4 +119,28 @@ module.exports = class Datastore {
      * @param {string} newName 
      */
     patchPluginName = (email, pluginId, newName) => Promise.resolve()
+
+    /**
+     * Check if a job with this id is running
+     * @param {string} pluginId 
+     */
+    isJobRunning = pluginId => Promise.resolve()
+
+    /**
+     * Clean up all legacy tasks on startup
+     */
+    cleanJobs = () => Promise.resolve()
+
+    /**
+     * Remove specific job from datastore
+     * @param {string} pluginId 
+     */
+    removeJob = pluginId => Promise.resolve()
+
+    /**
+     * Get the minimum of time to wait before running the plugin
+     * @param {string} pluginId
+     * @returns {Promise<int>}
+     */
+    waitingTimeBeforeNextRun = pluginId => Promise.resolve(-1)
 };

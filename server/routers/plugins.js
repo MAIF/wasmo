@@ -62,6 +62,16 @@ router.get('/:id', (req, res) => {
     })
 })
 
+router.get('/:id/state', (req, res) => {
+  Datastore.waitingTimeBeforeNextRun(req.params.id)
+    .then(msTime => {
+      if (msTime === null) {
+        res.status(404)
+      }
+      res.json(msTime)
+    });
+})
+
 router.get('/:id/configurations', (req, res) => {
   Datastore.getConfigurations(req.user.email, req.params.id)
     .then(data => res.json(data))
@@ -203,19 +213,23 @@ router.post('/build', async (req, res) => {
             res,
             "zipHashToTest",
             metadata.release,
-            saveInLocal
+            saveInLocal,
+            pluginId
           );
         });
     });
 })
 
-function addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, saveInLocal) {
+function addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, saveInLocal, pluginId) {
   FileSystem.checkIfInformationsFileExists(folder, plugin.type)
     .then(() => InformationsReader.extractInformations(folder, plugin.type))
     .then(({ pluginName, pluginVersion, metadata, err }) => {
       if (err) {
         WebSocket.emitError(plugin.pluginId, release, err);
-        FileSystem.removeFolder('build', folder)
+        Promise.all([
+          Datastore.removeJob(pluginId),
+          FileSystem.removeFolder('build', folder)
+        ])
           .then(() => {
             res
               .status(400)
@@ -230,7 +244,10 @@ function addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, saveI
             Datastore.isWasmExists(wasmName, release)
               .then(exists => {
                 if (exists) {
-                  FileSystem.removeFolder('build', folder)
+                  Promise.all([
+                    Datastore.removeJob(pluginId),
+                    FileSystem.removeFolder('build', folder)
+                  ])
                     .then(() => {
                       res
                         .status(400)
@@ -293,7 +310,7 @@ router.post('/:id/build', async (req, res) => {
 
   const isRustBuild = plugin.type == 'rust';
 
-  Queue.isBuildRunning(pluginId)
+  Queue.isJobRunning(pluginId)
     .then(async exists => {
       if (exists) {
         res.json({ queue_id: pluginId, alreadyExists: true });
@@ -324,7 +341,7 @@ router.post('/:id/build', async (req, res) => {
             .digest('hex');
 
           if (release || plugin['last_hash'] !== zipHash) {
-            addPluginToBuildQueue(folder, plugin, req, res, zipHash, release)
+            addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, undefined, pluginId)
           } else {
             FileSystem.removeFolder('build', folder)
               .then(() => {

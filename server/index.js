@@ -20,9 +20,8 @@ const { Security } = require('./security/middlewares');
 
 const Datastore = require('./datastores');
 
-const manager = require('./logger');
+const logger = require('./logger');
 const { Cron } = require('./services/cron-job');
-const log = manager.createLogger('');
 
 if (ENV.AUTH_MODE === AUTHENTICATION.NO_AUTH) {
   console.log("###############################################################")
@@ -56,10 +55,9 @@ function createServer(appVersion) {
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(bodyParser.text());
 
-  // app.use('*', (req, res, next) => {
-  //   console.log(req.headers)
-  //   next()
-  // })
+  app.use('/_/healthcheck', (_, res) => {
+    return res.status(200).json()
+  });
 
   app.use('/', Security.extractUserFromQuery);
   app.use('/', publicRouter);
@@ -89,6 +87,7 @@ Promise.all([Datastore.initialize(), getAppVersion()])
     }
 
     FileSystem.cleanBuildsAndLogsFolders();
+    Datastore.cleanJobs();
 
     Cron.initialize();
 
@@ -96,5 +95,5 @@ Promise.all([Datastore.initialize(), getAppVersion()])
 
     WebSocket.createLogsWebSocket(server);
 
-    server.listen(ENV.PORT, () => log.info(`Wasmo ${version}, listening on ${ENV.PORT}`));
+    server.listen(ENV.PORT, () => logger.info(`Wasmo ${version}, listening on ${ENV.PORT}`));
   });

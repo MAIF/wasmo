@@ -1,4 +1,4 @@
-const { GenericContainer, Network } = require("testcontainers");
+const { GenericContainer, Network, Wait } = require("testcontainers");
 
 let instance;
 let container;
@@ -21,15 +21,17 @@ beforeAll(async () => {
       WASMO_CLIENT_ID,
       WASMO_CLIENT_SECRET
     })
+    .withWaitStrategy(Wait.forHttp("/_/healthcheck", 5003)
+      .forStatusCodeMatching(statusCode => statusCode === 200))
     .start()
-    .catch(err => console.log(err))
 
   instance = `http://localhost:${container.getFirstMappedPort()}`;
-
-  await new Promise(resolve => {
-    setTimeout(resolve, 10000);
-  })
 }, 60000);
+
+
+afterAll(() => {
+  container?.stop()
+})
 
 test('/health', async () => {
   return fetch(`${instance}/health`)

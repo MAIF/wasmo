@@ -15,9 +15,7 @@ const auth = (req, res, next) => {
 }
 
 const forbiddenAccess = (req, res, next) => {
-  console.log(DOMAINS.includes(req.headers.host))
-  console.log(req.headers.host)
-  console.log(DOMAINS)
+  logger.debug(`Received host: ${req.headers.host} - available domains: ${JSON.stringify(DOMAINS, null, 2)}`)
   res
     .status(403)
     .json({

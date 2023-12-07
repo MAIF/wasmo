@@ -1,4 +1,4 @@
-const { GenericContainer, Network } = require("testcontainers");
+const { GenericContainer, Network, Wait } = require("testcontainers");
 
 const wasmo_route = require('./otoroshi_entities/route-wasm-manager-1701851138888.json');
 const authentication_module = require('./otoroshi_entities/authentication-module-new-auth-module-1701851199519.json');
@@ -21,6 +21,8 @@ beforeAll(async () => {
       OTOROSHI_INITIAL_ADMIN_PASSWORD: 'password',
       OTOROSHI_INITIAL_ADMIN_LOGIN: 'admin@otoroshi.io'
     })
+    .withWaitStrategy(Wait.forHttp("/live", 8080)
+      .forStatusCodeMatching(statusCode => statusCode === 404))
     .start()
 
   container = await new GenericContainer("wasmo")
@@ -30,18 +32,25 @@ beforeAll(async () => {
       MANAGER_PORT: 5003,
       AUTH_MODE: "OTOROSHI_AUTH",
       CHECK_DOMAINS: false,
-      STORAGE: 'test',
       WASMO_CLIENT_ID,
       WASMO_CLIENT_SECRET
     })
+    .withWaitStrategy(Wait.forHttp("/_/healthcheck", 5003)
+      .forStatusCodeMatching(statusCode => statusCode === 200))
     .start()
 
   instance = `http://localhost:${container.getFirstMappedPort()}`;
 
-  await new Promise(resolve => {
-    setTimeout(resolve, 10000);
-  })
-}, 60000);
+  // await new Promise(resolve => {
+  //   setTimeout(resolve, 10000);
+  // })
+}, 15000);
+
+
+afterAll(() => {
+  otoroshi?.stop()
+  container?.stop()
+})
 
 test('setup otoroshi', async () => {
   const _createdRoute = await fetch(`http://otoroshi-api.oto.tools:${otoroshi.getFirstMappedPort()}/api/routes`, {

@@ -17,9 +17,8 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
     }
   }, [loadConfigurationFile]);
 
-  const connect = (isDevelopment, attempts) => {
+  const connect = (isDevelopment) => {
     let socket;
-    let internalAttempts = attempts;
 
     if (isDevelopment) {
       socket = new WebSocket(`ws://${window.location.hostname}:5001/${selectedPlugin.pluginId}`);
@@ -28,7 +27,6 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
     }
 
     socket.onopen = () => {
-      internalAttempts = 1;
     }
 
     socket.onmessage = event => {
@@ -53,14 +51,9 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
     socket.onclose = function (e) {
       console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
 
-      if (internalAttempts <= 5) {
-        console.log(1000 * (internalAttempts))
-        setTimeout(function () {
-          connect(isDevelopment, internalAttempts + 1);
-        }, 1000 * (internalAttempts));
-      } else {
-        console.log('Reconnect attempts have failed. You need to reload the page');
-      }
+      setTimeout(function () {
+        connect(isDevelopment);
+      }, 5000);
     };
 
     socket.onerror = function (err) {
@@ -73,7 +66,7 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
     if (selectedPlugin) {
       isDevelopmentMode()
         .then(isDevelopment => {
-          connect(isDevelopment, 1)
+          connect(isDevelopment)
         })
     }
   }, [selectedPlugin?.pluginId]);

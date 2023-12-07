@@ -8,9 +8,10 @@ router.get('/runtime', (_, res) => res.json(ENV.EXTISM_RUNTIME_ENVIRONMENT === '
 
 router.get('/:id', (req, res) => {
   const Key = `${req.params.id}.wasm`;
+
   Datastore.getWasm(Key)
     .then(({ content, error, status }) => {
-      if (error) {
+      if (error || status === 404) {
         res.status(status).json({ error, status })
       } else {
         res.attachment(Key);

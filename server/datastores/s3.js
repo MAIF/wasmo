@@ -18,11 +18,9 @@ const fs = require('fs-extra');
 const { format, isAString } = require('../utils');
 const Datastore = require('./api');
 const { ENV, STORAGE } = require("../configuration");
-const manager = require("../logger");
+const logger = require("../logger");
 const consumers = require('node:stream/consumers');
 const AdmZip = require("adm-zip");
-
-const log = manager.createLogger('S3');
 
 /**
  * Class representing S3.
@@ -39,21 +37,21 @@ module.exports = class S3Datastore extends Datastore {
 
         return this.#state.instance.send(new HeadBucketCommand(params))
             .then(() => {
-                log.info("Using existing bucket")
+                logger.info("Using existing bucket")
             })
             .catch(res => {
                 if (res || res.$metadata.httpStatusCode === 404 ||
                     res.$metadata.httpStatusCode === 403 ||
                     res.$metadata.httpStatusCode === 400) {
-                    log.info(`Bucket ${this.#state.Bucket} is missing.`)
+                    logger.info(`Bucket ${this.#state.Bucket} is missing.`)
                     return new Promise(resolve => {
                         this.#state.instance.send(new CreateBucketCommand(params), err => {
                             if (err) {
-                                console.log("Failed to create missing bucket")
-                                console.log(err)
-                                // process.exit(1)
+                                logger.error("Failed to create missing bucket")
+                                logger.error(err)
+                                process.exit(1)
                             } else {
-                                log.info(`Bucket ${this.#state.Bucket} created.`)
+                                logger.info(`Bucket ${this.#state.Bucket} created.`)
                                 resolve()
                             }
                         });
@@ -66,17 +64,17 @@ module.exports = class S3Datastore extends Datastore {
 
     initialize = async () => {
         if (!ENV.S3_BUCKET) {
-            console.log("[S3 INITIALIZATION](failed): S3 Bucket is missing");
+            logger.error("[S3 INITIALIZATION](failed): S3 Bucket is missing");
             process.exit(1);
         }
 
-        log.info("Initialize s3 client");
+        logger.info("Initialize s3 client");
 
         if (ENV.STORAGE === STORAGE.DOCKER_S3 || ENV.STORAGE === STORAGE.DOCKER_S3_POSTGRES) {
             const URL = url.parse(ENV.S3_ENDPOINT);
 
             const ip = await new Promise(resolve => dns.lookup(URL.hostname, (_, ip) => resolve(ip)));
-            log.debug(`${URL.protocol}//${ip}:${URL.port}${URL.pathname}`)
+            logger.debug(`${URL.protocol}//${ip}:${URL.port}${URL.pathname}`)
             this.#state = {
                 instance: new S3Client({
                     region: ENV.AWS_DEFAULT_REGION,
@@ -95,7 +93,7 @@ module.exports = class S3Datastore extends Datastore {
                 Bucket: ENV.S3_BUCKET
             }
 
-            log.info("Bucket initialized");
+            logger.info("Bucket initialized");
         }
 
         return this.#createBucketIfMissing();
@@ -188,7 +186,7 @@ module.exports = class S3Datastore extends Datastore {
             Key: 'users.json'
         }))
             .then(data => new fetch.Response(data.Body).json())
-            .catch(err => log.error(err))
+            .catch(err => logger.error(err))
     }
 
     updateUser = (email, content) => {
@@ -300,25 +298,32 @@ module.exports = class S3Datastore extends Datastore {
             })
     }
 
-    getWasm = (wasmId) => {
+    #getWasm = async name => {
         const { instance, Bucket } = this.#state;
 
-        return new Promise(resolve => {
-            instance.send(new GetObjectCommand({
+        try {
+            const data = await instance.send(new GetObjectCommand({
                 Bucket,
-                wasmId
+                Key: name
             }))
-                .then(data => new fetch.Response(data.Body).buffer())
-                .then(data => {
-                    resolve({ content: data });
-                })
-                .catch(err => {
-                    resolve({
-                        error: err.Code,
-                        status: err?.$metadata?.httpStatusCode || 404
-                    })
-                });
-        });
+            const content = await new fetch.Response(data.Body).buffer();
+            return { content };
+        } catch (err) {
+            return {
+                error: err.Code,
+                status: err?.$metadata?.httpStatusCode || 404
+            }
+        }
+    }
+
+    getWasm = (wasmId) => {
+        return this.#getWasm(wasmId)
+            .then(out => {
+                if (out.error) {
+                    return this.#getWasm(wasmId.replace('.wasm', ''));
+                } else
+                    return out;
+            })
     }
 
     run = (wasm, { input, functionName, wasi }) => {
@@ -452,7 +457,7 @@ module.exports = class S3Datastore extends Datastore {
         }
 
         return instance.send(new DeleteObjectCommand(params))
-            .catch(err => { log.error(err) });
+            .catch(err => { logger.error(err) });
     }
 
     deletePlugin = (email, pluginId) => {

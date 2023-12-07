@@ -13,9 +13,9 @@ const createLogsWebSocket = server => {
 
     clients[request.url.slice(1)] = ws;
 
-    ws.on('message', function message(data) {
-      console.log(`Received message ${data} from user ${client}`);
-    });
+    // ws.on('message', function message(data) {
+    //   console.log(`Received message ${data} from user ${client}`);
+    // });
 
     ws.on('close', () => {
       delete clients[request.url.slice(1)];

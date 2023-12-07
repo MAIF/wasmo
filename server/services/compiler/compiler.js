@@ -2,7 +2,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs-extra');
 
-const manager = require('../../logger');
+const logger = require('../../logger');
 const { WebSocket } = require('../../services/websocket');
 const { FileSystem } = require('../file-system');
 const { optimizeBinaryFile } = require('../wasmgc');
@@ -55,7 +55,6 @@ class BuildOptions {
 
 class Compiler {
   constructor({ name, commands, options, outputWasmFolder }) {
-    this.log = manager.createLogger(`[${name} BUILDER]`);
     this.options = options;
 
     this.commands = this.splitCommands(commands);
@@ -113,17 +112,18 @@ class Compiler {
     });
 
     child.on('error', (error) => {
-      console.log(error)
+      logger.error(`[${buildOptions.plugin?.id}] ${error}`)
       this.#websocketEmitMessage(buildOptions, error, true);
       stderrStream.write(`${error.stack}\n`);
     });
   }
 
-  #handleCloseEvent = (buildOptions, closeCode, isLastCommand, { justToNext, onAllSuccess, onChildFailure }) => {
+  #handleCloseEvent = (buildOptions, closeCode, isLastCommand, { runNextCommand, onAllSuccess, onChildFailure }) => {
     const childProcessHasFailed = closeCode !== 0;
 
     if (childProcessHasFailed) {
       this.#handleChildFailure([buildOptions.buildFolder, buildOptions.logsFolder], closeCode, onChildFailure);
+      Datastore.removeJob(buildOptions.plugin.id)
     } else if (isLastCommand) {
       this.#websocketEmitMessage(buildOptions, "Build done.");
       this.#onSuccess(buildOptions, {
@@ -131,7 +131,7 @@ class Compiler {
         handleFailure: onChildFailure
       });
     } else {
-      justToNext();
+      runNextCommand();
     }
   }
 
@@ -156,14 +156,19 @@ class Compiler {
               .then(() => this.#websocketEmitMessage(buildOptions, "Informations has been updated"))
           ]))
           .then(() => {
-            FileSystem.cleanFolders(buildOptions.buildFolder, buildOptions.logsFolder)
-              .then(callback)
+            return Promise.all([
+              Datastore.removeJob(buildOptions.plugin.id),
+              FileSystem.cleanFolders(buildOptions.buildFolder, buildOptions.logsFolder)
+                .then(callback)
+            ])
           })
       })
       .catch(err => {
-        this.log.error(`Build failed: ${err}`)
+        logger.error(`[${buildOptions.plugin.id}] ${err}`)
         this.#websocketEmitMessage(buildOptions, err, true);
         this.#handleChildFailure([buildOptions.buildFolder, buildOptions.logsFolder], -1, handleFailure)
+
+        Datastore.removeJob(buildOptions.plugin.id);
       });
   }
 
@@ -174,7 +179,7 @@ class Compiler {
 
   build(rawBuildOptions) {
     const buildOptions = { ...rawBuildOptions };
-    this.log.info(`Starting build ${buildOptions.folderPath}`)
+    logger.info(`[${rawBuildOptions.plugin.id}] Starting build`)
 
     const root = process.cwd();
 
@@ -189,7 +194,7 @@ class Compiler {
           this.#websocketEmitMessage(buildOptions, 'Starting build ...');
 
           return this.commands
-            .reduce((promise, fn, index) => promise.then(() => new Promise(justToNext => {
+            .reduce((promise, fn, index) => promise.then(() => new Promise(runNextCommand => {
               const { executable, args } = fn;
 
               this.#websocketEmitMessage(buildOptions, `Running command ${executable} ${args.join(' ')} ...`);
@@ -199,7 +204,7 @@ class Compiler {
                 buildOptions,
                 code,
                 this.commands.length - 1 === index,
-                { justToNext, onAllSuccess, onChildFailure },
+                { runNextCommand, onAllSuccess, onChildFailure },
               ));
 
               this.#attachListeners(childProcess, buildOptions);

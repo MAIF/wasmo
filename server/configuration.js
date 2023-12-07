@@ -54,6 +54,11 @@ module.exports = {
             POOL_SIZE: process.env.PG_POOL_SIZE || 20,
             PG_IDLE_TIMEOUT_MILLIS: process.env.PG_IDLE_TIMEOUT_MILLIS || 30000,
             CONNECTION_TIMEOUT_MILLIS: process.env.PG_CONNECTION_TIMEOUT_MILLIS || 2000,
+        },
+
+        LOGGER: {
+            FILE: process.env.LOGGER_FILE || false,
+            LEVEL: process.env.LOGGER_LEVEL || 'info'
         }
     }
 }

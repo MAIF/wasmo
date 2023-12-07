@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { ENV, AUTHENTICATION } = require('../configuration');
+const logger = require('../logger');
 
 const secret = ENV.OTOROSHI_TOKEN_SECRET || 'veryverysecret';
 
@@ -20,11 +21,11 @@ const otoroshiAuthentication = (req, res, next) => {
       }
       next()
     } catch (err) {
-      console.log(err)
+      logger.debug(err)
       missingCredentials(res)
     }
   } else {
-    console.log(`Missing jwt user`, jwtUser)
+    logger.debug('missing or wrong jwt')
     missingCredentials(res)
   }
 }

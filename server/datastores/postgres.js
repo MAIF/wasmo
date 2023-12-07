@@ -1,25 +1,14 @@
 const crypto = require('crypto')
+const cron = require('node-cron');
 
-const { format } = require('../utils');
 const { ENV } = require("../configuration");
 
 const Datastore = require('./api');
 const S3Datastore = require('./s3');
 const { Pool } = require('pg');
 
-const manager = require("../logger");
-const log = manager.createLogger('PG');
-
-const configuration = {
-    host: ENV.PG.HOST,
-    port: ENV.PG.PORT,
-    database: ENV.PG.DATABASE,
-    user: ENV.PG.USER,
-    password: ENV.PG.PASSWORD,
-    max: ENV.PG.POOL_SIZE,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-}
+const logger = require("../logger");
+const { isAString } = require('../utils');
 
 /**
  * Class representing PG.
@@ -42,7 +31,7 @@ module.exports = class PgDatastore extends Datastore {
 
 
     initialize = async () => {
-        log.info("Initialize pg client");
+        logger.info("Initialize pg client");
 
         await this.#sourcesDatastore.initialize();
 
@@ -56,12 +45,15 @@ module.exports = class PgDatastore extends Datastore {
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 2000,
         })
-            .on('error', err => log.error(err));
+            .on('error', err => logger.error(err));
 
 
         return this.#pool.connect()
             .then(client => {
-                client.query("CREATE TABLE IF NOT EXISTS users(id SERIAL, email VARCHAR, content JSONB)",)
+                Promise.all([
+                    client.query("CREATE TABLE IF NOT EXISTS users(id SERIAL, email VARCHAR, content JSONB)"),
+                    client.query("CREATE TABLE IF NOT EXISTS jobs(id SERIAL, pluginId VARCHAR UNIQUE, created_at TIMESTAMP default current_timestamp)"),
+                ])
                     .then(() => client.release())
             })
     }
@@ -79,7 +71,7 @@ module.exports = class PgDatastore extends Datastore {
     getUserPlugins = (email) => {
         return this.getUser(email)
             .then(user => user ? user.plugins : [])
-            .catch(err => log.error(err))
+            .catch(err => logger.error(err))
     }
 
     createUserIfNotExists = async (email) => {
@@ -127,7 +119,46 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     putWasmInformationsToS3 = (email, pluginId, newHash, generateWasmName) => {
-        return this.#sourcesDatastore.putWasmInformationsToS3(email, pluginId, newHash, generateWasmName);
+        return this.getUser(email)
+            .then(data => {
+                const newPlugins = data.plugins.map(plugin => {
+                    if (plugin.pluginId !== pluginId) {
+                        return plugin;
+                    }
+                    let versions = plugin.versions || [];
+
+                    // convert legacy array
+                    if (versions.length > 0 && isAString(versions[0])) {
+                        versions = versions.map(name => ({ name }))
+                    }
+
+                    const index = versions.findIndex(item => item.name === generateWasmName);
+                    if (index === -1)
+                        versions.push({
+                            name: generateWasmName,
+                            updated_at: Date.now(),
+                            creator: email
+                        })
+                    else {
+                        versions[index] = {
+                            ...versions[index],
+                            updated_at: Date.now(),
+                            creator: email
+                        }
+                    }
+
+                    return {
+                        ...plugin,
+                        last_hash: newHash,
+                        wasm: generateWasmName,
+                        versions
+                    }
+                });
+                return this.updateUser(email, {
+                    ...data,
+                    plugins: newPlugins
+                })
+            })
     }
 
     getWasm = (wasmId) => {
@@ -158,8 +189,8 @@ module.exports = class PgDatastore extends Datastore {
             })
     }
 
-    getConfigurations = (email, pluginId) => {
-        const plugin = this.#getPlugin(email, pluginId);
+    getConfigurations = async (email, pluginId) => {
+        const plugin = await this.#getPlugin(email, pluginId);
 
         const files = [{
             ext: 'json',
@@ -287,5 +318,57 @@ module.exports = class PgDatastore extends Datastore {
                     }
                 })
             }))
+    }
+
+    isJobRunning = pluginId => {
+        return this.#pool.connect()
+            .then(client => {
+                return client.query("INSERT INTO jobs(pluginId) VALUES($1) on conflict (pluginId) do nothing", [pluginId])
+                    .then(res => {
+                        client.release()
+
+                        return res.rowCount === 0;
+                    })
+            })
+    }
+
+    cleanJobs = () => {
+        cron.schedule('0 */1 * * * *', this.cleanJobsRunner);
+        this.cleanJobsRunner()
+    }
+
+    cleanJobsRunner = () => {
+        return this.#pool.connect()
+            .then(client => {
+                return client.query(`DELETE from jobs WHERE created_at < NOW() - make_interval(mins => 1)`)
+                    .then(() => {
+                        client.release()
+                    })
+            })
+    }
+
+    removeJob = pluginId => {
+        return this.#pool.connect()
+            .then(client => {
+                return client.query("DELETE FROM jobs WHERE pluginId = $1", [pluginId])
+                    .then(() => client.release());
+            });
+    }
+
+    waitingTimeBeforeNextRun = pluginId => {
+        return this.#pool.connect()
+            .then(client => {
+                return client.query("SELECT created_at FROM jobs WHERE pluginId = $1", [pluginId])
+                    .then(res => {
+                        client.release();
+
+                        if (res.rowCount === 0)
+                            return null
+
+                        const interval =  5 * 60 * 1000 - new Date() - new Date(res.rows[0]?.created_at);
+
+                        return interval > 0 ? interval : 0;
+                    });
+            });
     }
 };

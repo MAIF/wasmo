@@ -9,7 +9,7 @@ let datastore;
 
 if ([STORAGE.S3, STORAGE.DOCKER_S3].includes(ENV.STORAGE)) {
     datastore = new S3Datastore();
-} else if (STORAGE.DOCKER_S3_POSTGRES, STORAGE.S3_POSTGRES) {
+} else if ([STORAGE.DOCKER_S3_POSTGRES, STORAGE.S3_POSTGRES].includes(ENV.STORAGE)) {
     datastore = new PgDatastore(new S3Datastore());
 } else {
     datastore = new Datastore()

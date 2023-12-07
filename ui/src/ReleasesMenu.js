@@ -26,11 +26,21 @@ export default function ReleasesMenu({ files }) {
                     style={{ marginLeft: 12, cursor: 'pointer' }}
                     key={key}
                     onClick={() => {
+                        const anchorElement = document.createElement('a');
+                        document.body.appendChild(anchorElement);
+                        anchorElement.style.display = 'none';
+
                         Service.getWasmRelease(key)
                             .then(res => res.blob())
                             .then(blob => {
-                                const file = URL.createObjectURL(blob);
-                                window.location.assign(file);
+                                const url = window.URL.createObjectURL(blob);
+
+                                anchorElement.href = url;
+                                anchorElement.download = `${key}.wasm`;
+                                anchorElement.click();
+
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(anchorElement);
                             })
                     }}>
                     <div style={{ minWidth: 30 }}>

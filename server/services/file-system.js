@@ -2,6 +2,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const { INFORMATIONS_FILENAME } = require('../utils');
 const AdmZip = require('adm-zip');
+const logger = require('../logger');
 
 const createBuildFolder = (type, name) => {
   if (['rust', 'js', 'ts'].includes(type)) {
@@ -11,7 +12,7 @@ const createBuildFolder = (type, name) => {
         path.join(process.cwd(), 'build', name),
         err => {
           if (err) {
-            console.log('An error occured while copying the folder.')
+            logger.error('An error occured while copying the folder.')
             throw err
           }
           resolve(name)
@@ -48,10 +49,17 @@ const cleanBuildsAndLogsFolders = async () => {
     path.join(process.cwd(), "build"),
     path.join(process.cwd(), "logs"),
   ].map((folder, i) => {
-    return fs.readdir(folder, (_, files) => {
+    return fs.readdir(folder, async (_, files) => {
       const deletedFiles = (files || []).filter(file => !file.startsWith('.'));
 
-      return cleanFolders(...deletedFiles.map(file => path.join(process.cwd(), i === 0 ? "build" : "logs", file)));
+      const out = await Promise.all(deletedFiles.map(async file => {
+        const filepath = path.join(process.cwd(), i === 0 ? "build" : "logs", file)
+        if (Date.now() - (await fs.stat(filepath)).birthtimeMs > 120000)
+          return filepath
+        return undefined
+      })).then(data => data.filter(f => f))
+
+      return cleanFolders(...out);
     });
   }))
 }

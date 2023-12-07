@@ -1,4 +1,4 @@
-const { GenericContainer, Network } = require("testcontainers");
+const { GenericContainer, Network, Wait } = require("testcontainers");
 
 let instance;
 let container;
@@ -7,9 +7,6 @@ beforeAll(async () => {
   const network = await new Network().start();
 
   container = await new GenericContainer("wasmo")
-    // .withLogConsumer(stream => {
-    //   stream.on('data', chunk => console.log(Buffer.from(chunk).toString().replace('\n', '')))
-    // })
     .withNetwork(network)
     .withNetworkAliases("foo")
     .withExposedPorts(5001)
@@ -20,14 +17,16 @@ beforeAll(async () => {
       WASMO_CLIENT_ID: "id",
       WASMO_CLIENT_SECRET: "secret"
     })
+    .withWaitStrategy(Wait.forHttp("/_/healthcheck", 5001)
+      .forStatusCodeMatching(statusCode => statusCode === 200))
     .start()
-    .catch(err => console.log(err))
 
   instance = `http://localhost:${container.getFirstMappedPort()}`;
-  await new Promise(resolve => {
-    setTimeout(resolve, 10000);
-  })
-}, 60000);
+});
+
+afterAll(() => {
+  container?.stop()
+})
 
 test('/health', async () => {
   return fetch(`${instance}/health`)

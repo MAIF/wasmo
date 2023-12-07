@@ -1,21 +1,25 @@
-const { GenericContainer, Network } = require("testcontainers");
+const { GenericContainer, Network, Wait } = require("testcontainers");
 
 let instance;
+let s3;
+let pg;
+let container;
 
 beforeAll(async () => {
     const network = await new Network().start();
 
-    const s3 = await new GenericContainer("scality/s3server:latest")
+    s3 = await new GenericContainer("scality/s3server:latest")
         .withNetwork(network)
-        .withName("s3")
         .withExposedPorts(8000)
         .withEnvironment({
             SCALITY_ACCESS_KEY_ID: 'access_key',
             SCALITY_SECRET_ACCESS_KEY: 'secret'
         })
+        .withWaitStrategy(Wait.forHttp("/_/healthcheck", 8000)
+            .forStatusCodeMatching(statusCode => statusCode === 403))
         .start();
 
-    const pg = await new GenericContainer("postgres:13")
+    pg = await new GenericContainer("postgres:13")
         .withNetwork(network)
         .withExposedPorts(5432)
         .withEnvironment({
@@ -24,25 +28,25 @@ beforeAll(async () => {
         })
         .start()
 
-    const container = await new GenericContainer("wasmo")
+    container = await new GenericContainer("wasmo")
         .withNetwork(network)
         .withExposedPorts(5004)
         .withEnvironment({
             MANAGER_PORT: 5004,
             AUTH_MODE: "NO_AUTH",
             STORAGE: "DOCKER_S3_POSTGRES",
-            
+
             CHECK_DOMAINS: false,
-            
+
             WASMO_CLIENT_ID: "id",
             WASMO_CLIENT_SECRET: "secret",
-            
+
             AWS_ACCESS_KEY_ID: "access_key",
             AWS_SECRET_ACCESS_KEY: "secret",
             S3_ENDPOINT: `http://host.docker.internal:${s3.getFirstMappedPort()}`,
             S3_FORCE_PATH_STYLE: true,
             S3_BUCKET: "wasmo",
-            
+
             PG_HOST: "host.docker.internal",
             PG_PORT: pg.getFirstMappedPort(),
             PG_DATABASE: "wasmo",
@@ -52,14 +56,23 @@ beforeAll(async () => {
             PG_IDLE_TIMEOUT_MILLIS: 30000,
             PG_CONNECTION_TIMEOUT_MILLIS: 2000
         })
+        .withWaitStrategy(Wait.forHttp("/_/healthcheck", 5004)
+            .forStatusCodeMatching(statusCode => statusCode === 200))
         .start();
 
     instance = `http://localhost:${container.getFirstMappedPort()}`;
 
-    await new Promise(resolve => {
-        setTimeout(resolve, 10000);
-    })
+    // await new Promise(resolve => {
+    //     setTimeout(resolve, 10000);
+    // })
 }, 60000);
+
+
+afterAll(() => {
+    s3?.stop()
+    pg?.stop()
+    container?.stop()
+})
 
 test('/api/plugins', () => {
     return fetch(`${instance}/api/plugins`)
