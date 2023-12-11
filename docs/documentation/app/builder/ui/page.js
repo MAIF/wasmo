@@ -16,7 +16,7 @@ export default function Home() {
     }}
     next={{
       href: "/cli/getting-started",
-      title: "Wasmo CLI"
+      title: "Getting started"
     }}>
     <Page />
   </Layout>

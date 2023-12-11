@@ -1,4 +1,5 @@
 import Badges from '../../../components/Badges'
+import Warning from '../../../components/Warning'
 
 # Environment variables
 
@@ -10,18 +11,28 @@ Wasmo Builder is fully configurable and the only way to configure it is to use t
 - [Using the CLI](#using-the-cli)
 - [Miscellaneous](#miscellaneous)
 
-## Storage <Badges values={['S3', 'DOCKER_S3']} raw />
+## Storage <Badges values={['S3', 'DOCKER_S3', 'S3_POSTGRES', 'DOCKER_S3_POSTGRES']} raw />
 
 Wasmo Builder can be run on three differents ways:
+
+- `STORAGE=`: in this configuration, the Wasmo UI will not be available and you will only be able to create plugin using the oneshot process.
+The generated Wasm binaries will be stored on the file system.
 
 - `STORAGE=S3`: Use a remote S3 to store generated Wasm binaries. Can use the Builder UI for editing plugins.
 
 - `STORAGE=DOCKER_S3`: Use a Docker remote S3 to store generated Wasm binaries. Can use the Builder UI for editing plugins.
 
-Both `S3` and `DOCKER_S3` configuration must used the related variables :
+- `STORAGE=S3_POSTGRES`: Use a remote S3 to store the generated Wasm binaries and use the Postgres instance for user management.
+
+- `STORAGE=DOCKER_S3_POSTGRES`: Use both remote Docker S3 and Postgres instance
+
+<Warning title="Scalability" message="Wasmo must be used with a Postgres instance to be scalable" />
+
+`S3`, `DOCKER_S3`, `S3_POSTGRES`, `DOCKER_S3_POSTGRES` configurations must used the related variables :
+
 ```
 # required
-STORAGE=<S3|DOCKER_S3>
+STORAGE=<S3|DOCKER_S3|S3_POSTGRES|DOCKER_S3_POSTGRES>
 S3_ENDPOINT=<value should start with scheme>
 S3_BUCKET=
 AWS_ACCESS_KEY_ID=
@@ -31,7 +42,18 @@ AWS_DEFAULT_REGION=<DEFAULT 'us-east-1'>
 # optional
 S3_FORCE_PATH_STYLE=<DEFAULT false>
 
+# only for S3_POSTGRES and DOCKER_S3_POSTGRES configurations
 
+PG_HOST=<DEFAULT  'localhost'>
+PG_PORT=<DEFAULT  5432>
+PG_DATABASE=<DEFAULT  'wasmo'>
+PG_USER=<DEFAULT  'postgres'>
+PG_PASSWORD=<DEFAULT  'password'>
+PG_POOL_SIZE=<DEFAULT  20>
+PG_IDLE_TIMEOUT_MILLIS=<DEFAULT  30000>
+PG_CONNECTION_TIMEOUT_MILLIS=<DEFAULT  2000>
+
+# cron job used to clean local wasm binary folder
 LOCAL_WASM_JOB_CLEANING=<DEFAULT 60 * 60 * 1000> # 1 hour
 ```
 
@@ -96,6 +118,20 @@ S3_BUCKET=
 GITHUB_PERSONAL_TOKEN=
 # A repository cannot be pull if it exceeds this limit
 GITHUB_MAX_REPO_SIZE=
+
+# Postgres host
+PG_HOST=<DEFAULT  'localhost'>
+PG_PORT=<DEFAULT  5432>
+PG_DATABASE=<DEFAULT  'wasmo'>
+# This optional environment variable is used in conjunction with POSTGRES_PASSWORD to set a user and its password. This variable will create the specified user with superuser power and a database with the same name
+PG_USER=<DEFAULT  'postgres'>
+#  It must not be empty or undefined. This environment variable sets the superuser password for PostgreSQL
+PG_PASSWORD=<DEFAULT  'password'>
+PG_POOL_SIZE=<DEFAULT  20>
+# Number of milliseconds a client must sit idle in the pool and not be checked out before it is disconnected from the backend and discarded
+PG_IDLE_TIMEOUT_MILLIS=<DEFAULT  30000>
+# Number of milliseconds to wait before timing out when connecting a new client by default this is 0 which means no timeout
+PG_CONNECTION_TIMEOUT_MILLIS=<DEFAULT  2000>
 
 # Manager
 
