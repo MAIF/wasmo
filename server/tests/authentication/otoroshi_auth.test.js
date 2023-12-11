@@ -41,10 +41,10 @@ beforeAll(async () => {
 
   instance = `http://localhost:${container.getFirstMappedPort()}`;
 
-  // await new Promise(resolve => {
-  //   setTimeout(resolve, 10000);
-  // })
-}, 15000);
+  await new Promise(resolve => {
+    setTimeout(resolve, 10000);
+  })
+}, 30000);
 
 
 afterAll(() => {

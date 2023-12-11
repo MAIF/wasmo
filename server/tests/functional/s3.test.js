@@ -7,15 +7,11 @@ let container;
 beforeAll(async () => {
   const network = await new Network().start();
 
-  s3 = await new GenericContainer("scality/s3server:latest")
+  s3 = await new GenericContainer("scireum/s3-ninja:latest")
     .withNetwork(network)
-    .withExposedPorts(8000)
-    .withEnvironment({
-      SCALITY_ACCESS_KEY_ID: 'access_key',
-      SCALITY_SECRET_ACCESS_KEY: 'secret'
-    })
-    .withWaitStrategy(Wait.forHttp("/_/healthcheck", 8000)
-      .forStatusCodeMatching(statusCode => statusCode === 403))
+    .withExposedPorts(9000)
+    .withWaitStrategy(Wait.forHttp("/", 9000)
+      .forStatusCodeMatching(statusCode => statusCode === 200))
     .start();
 
   container = await new GenericContainer("wasmo")
@@ -27,8 +23,8 @@ beforeAll(async () => {
       CHECK_DOMAINS: false,
       WASMO_CLIENT_ID: "id",
       WASMO_CLIENT_SECRET: "secret",
-      AWS_ACCESS_KEY_ID: "access_key",
-      AWS_SECRET_ACCESS_KEY: "secret",
+      AWS_ACCESS_KEY_ID: "AKIAIOSFODNN7EXAMPLE",
+      AWS_SECRET_ACCESS_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
       S3_ENDPOINT: `http://host.docker.internal:${s3.getFirstMappedPort()}`,
       S3_FORCE_PATH_STYLE: true,
       STORAGE: "DOCKER_S3",
@@ -39,6 +35,10 @@ beforeAll(async () => {
     .start();
 
   instance = `http://localhost:${container.getFirstMappedPort()}`;
+
+  await new Promise(resolve => {
+    setTimeout(resolve, 10000);
+  })
 }, 60000);
 
 afterAll(() => {

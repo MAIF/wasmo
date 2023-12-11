@@ -22,7 +22,11 @@ beforeAll(async () => {
     .start()
 
   instance = `http://localhost:${container.getFirstMappedPort()}`;
-});
+
+  await new Promise(resolve => {
+    setTimeout(resolve, 10000);
+  })
+}, 60000);
 
 afterAll(() => {
   container?.stop()
