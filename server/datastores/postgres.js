@@ -48,14 +48,13 @@ module.exports = class PgDatastore extends Datastore {
             .on('error', err => logger.error(err));
 
 
-        return this.#pool.connect()
-            .then(client => {
-                Promise.all([
-                    client.query("CREATE TABLE IF NOT EXISTS users(id SERIAL, email VARCHAR, content JSONB)"),
-                    client.query("CREATE TABLE IF NOT EXISTS jobs(id SERIAL, pluginId VARCHAR UNIQUE, created_at TIMESTAMP default current_timestamp)"),
-                ])
-                    .then(() => client.release())
-            })
+        const client = await this.#pool.connect();
+
+        await Promise.all([
+            client.query("CREATE TABLE IF NOT EXISTS users(id SERIAL, email VARCHAR, content JSONB)"),
+            client.query("CREATE TABLE IF NOT EXISTS jobs(id SERIAL, plugin_id VARCHAR UNIQUE, created_at TIMESTAMP default current_timestamp)"),
+        ]);
+        client.release()
     }
 
     getUser = (email) => {
@@ -323,9 +322,9 @@ module.exports = class PgDatastore extends Datastore {
     isJobRunning = pluginId => {
         return this.#pool.connect()
             .then(client => {
-                return client.query("INSERT INTO jobs(pluginId) VALUES($1) on conflict (pluginId) do nothing", [pluginId])
+                return client.query("INSERT INTO jobs(plugin_id) VALUES($1) on conflict (plugin_id) do nothing", [pluginId])
                     .then(res => {
-                        client.release()
+                        client.release();
 
                         return res.rowCount === 0;
                     })
@@ -347,25 +346,25 @@ module.exports = class PgDatastore extends Datastore {
             })
     }
 
-    removeJob = pluginId => {
-        return this.#pool.connect()
-            .then(client => {
-                return client.query("DELETE FROM jobs WHERE pluginId = $1", [pluginId])
-                    .then(() => client.release());
-            });
+    removeJob = async pluginId => {
+        const client = await this.#pool.connect();
+
+        await client.query("DELETE FROM jobs WHERE plugin_id = $1", [pluginId]);
+        
+        client.release();
     }
 
     waitingTimeBeforeNextRun = pluginId => {
         return this.#pool.connect()
             .then(client => {
-                return client.query("SELECT created_at FROM jobs WHERE pluginId = $1", [pluginId])
+                return client.query("SELECT created_at FROM jobs WHERE plugin_id = $1", [pluginId])
                     .then(res => {
                         client.release();
 
                         if (res.rowCount === 0)
                             return null
 
-                        const interval =  5 * 60 * 1000 - new Date() - new Date(res.rows[0]?.created_at);
+                        const interval = 5 * 60 * 1000 - new Date() - new Date(res.rows[0]?.created_at);
 
                         return interval > 0 ? interval : 0;
                     });

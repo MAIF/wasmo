@@ -340,7 +340,7 @@ router.post('/:id/build', async (req, res) => {
             .update(sources.toString())
             .digest('hex');
 
-          if (release || plugin['last_hash'] !== zipHash) {
+          if (release || plugin['last_hash'] !== zipHash || req.query.force) {
             addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, undefined, pluginId)
           } else {
             FileSystem.removeFolder('build', folder)

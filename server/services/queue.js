@@ -82,9 +82,11 @@ module.exports = {
     addBuildToQueue,
     isJobRunning: pluginId => {
       return FileSystem.buildFolderAlreadyExits('build', pluginId)
-        .then(() => {
+        .then(exists => {
           if (ENV.STORAGE.includes("POSTGRES")) {
             return Datastore.isJobRunning(pluginId)
+          } else {
+            return exists;
           }
         })
     }
