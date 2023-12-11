@@ -2,7 +2,7 @@ const express = require('express');
 const { ENV } = require('../configuration');
 const { FileSystem } = require('../services/file-system');
 const Datastore = require('../datastores');
-const { copySync } = require('fs-extra');
+const logger = require('../logger');
 
 const router = express.Router()
 
