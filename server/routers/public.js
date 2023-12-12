@@ -49,7 +49,7 @@ function getWasm(wasmId, res) {
       if (error) {
         res.status(status).json({ error, status })
       } else {
-        res.attachment(Key);
+        res.attachment(id);
         res.send(content);
       }
     })
