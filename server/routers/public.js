@@ -36,11 +36,15 @@ router.use((req, res, next) => {
 });
 
 router.get('/local/wasm/:id', (req, res) => {
-  FileSystem.getLocalWasm(`${req.params.id}.wasm`, res)
+  const id = req.params.id.endsWith('.wasm') ? req.params.id : `${req.params.id}.wasm`;
+
+  FileSystem.getLocalWasm(id, res);
 })
 
 function getWasm(wasmId, res) {
-  Datastore.getWasm(wasmId)
+  const id = wasmId.endsWith('.wasm') ? wasmId : `${wasmId}.wasm`;
+
+  Datastore.getWasm(id)
     .then(({ content, error, status }) => {
       if (error) {
         res.status(status).json({ error, status })
