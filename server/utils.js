@@ -27,8 +27,11 @@ const unzip = (isRustBuild, zipString, outputFolder, rules = []) => {
           filePath = entry.entryName === 'Cargo.toml' ? '' : 'src';
         }
 
+        console.log(entry.entryName)
+
         fs.writeFile(
-          path.join(process.cwd(), 'build', outputFolder, filePath, entry.entryName.split('/').slice(-1).join('/')),
+          // path.join(process.cwd(), 'build', outputFolder, filePath, entry.entryName.split('/').slice(-1).join('/')),
+          path.join(process.cwd(), 'build', outputFolder, filePath, entry.entryName),
           rules.reduce((acc, rule) => {
             return acc.replace(new RegExp(rule.key, "g"), rule.value)
           }, content)
