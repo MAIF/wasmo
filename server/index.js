@@ -43,33 +43,70 @@ if (AUTHENTICATION.BASIC_AUTH === ENV.AUTH_MODE &&
   return;
 }
 
+function rewriteStaticPaths(baseURL) {
+  const indexHTMLPath = path.join(__dirname, '..', 'ui/build/index.html');
+  const indexHTMLContent = fs.readFileSync(indexHTMLPath).toString();
+  fs.writeFileSync(indexHTMLPath,
+    indexHTMLContent
+      .replace(/src="(.*?)\/static/g, `src=\"${baseURL}/static`)
+      .replace(/href="(.*?)\/static/g, `href=\"${baseURL}/static`)
+      // .replace(/\/static/g, `${baseURL}/static`)
+      .replace(/\/static\/static/g, "/static")
+      .replace(/\/{2}/g, "/")
+  );
+  logger.info('The baseURL value has been applied')
+}
+
 function createServer(appVersion) {
   const app = express();
-  app.use(express.static(path.join(__dirname, '..', 'ui/build')));
-  app.use(compression());
-  app.use(bodyParser.raw({
+
+  let router;
+
+  if (process.env.BASE_URL) {
+    const baseURL = process.env.BASE_URL;
+
+    console.log(`has baseURL ${baseURL}`)
+    router = express.Router();
+
+    rewriteStaticPaths(baseURL);
+
+    app.use('/', (req, _res, next) => {
+      if (!req.path.startsWith(baseURL))
+        req.url = `${baseURL}${req.path}`;
+      next()
+    })
+    app.use(baseURL, router);
+  } else {
+    rewriteStaticPaths("");
+    router = express.Router();
+    app.use('/', router);
+  }
+
+  router.use(express.static(path.join(__dirname, '..', 'ui/build')));
+  router.use(compression());
+  router.use(bodyParser.raw({
     type: 'application/octet-stream',
     limit: '10mb'
   }));
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: true }));
-  app.use(bodyParser.text());
+  router.use(bodyParser.json());
+  router.use(bodyParser.urlencoded({ extended: true }));
+  router.use(bodyParser.text());
 
-  app.use('/_/healthcheck', (_, res) => {
+  router.use('/_/healthcheck', (_, res) => {
     return res.status(200).json()
   });
 
-  app.use('/', Security.extractUserFromQuery);
-  app.use('/', publicRouter);
-  app.use('/api/plugins', pluginsRouter);
-  app.use('/api/templates', templatesRouter);
-  app.use('/api/wasm', wasmRouter);
-  app.use('/api/version', (_, res) => res.json(appVersion));
-  app.use('/api/development', (_, res) => res.json(process.env.NODE_ENV === "development"));
+  router.use('/', Security.extractUserFromQuery);
+  router.use('/', publicRouter);
+  router.use('/api/plugins', pluginsRouter);
+  router.use('/api/templates', templatesRouter);
+  router.use('/api/wasm', wasmRouter);
+  router.use('/api/version', (_, res) => res.json(appVersion));
+  router.use('/api/development', (_, res) => res.json(process.env.NODE_ENV === "development"));
 
-  app.use('/health', (_, res) => res.json({ status: true }))
+  router.use('/health', (_, res) => res.json({ status: true }))
 
-  app.get('/', (_, res) => res.sendFile(path.join(__dirname, '..', 'ui/build', '/index.html')));
+  router.get('/', (_, res) => res.sendFile(path.join(__dirname, '..', 'ui/build', '/index.html')));
 
   return http.createServer(app);
 }

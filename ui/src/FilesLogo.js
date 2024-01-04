@@ -20,7 +20,7 @@ const LOGOS = {
   go: <Go style={{ height: 22, width: 22 }} />,
   opa: <OPA style={{ height: 22, width: 22 }} />,
   github: <Github style={{ height: 22, width: 22 }} />,
-  logo: <img src={window.location.origin + "/wasmo.png"}
+  logo: <img src={window.location.origin + "/icon-512x512.png"}
     style={{ width: 42, userSelect: 'none' }} />,
   release: <Release style={{ height: 22, width: 22 }} />
 };
