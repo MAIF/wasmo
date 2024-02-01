@@ -48,13 +48,12 @@ function rewriteStaticPaths(baseURL) {
   const indexHTMLContent = fs.readFileSync(indexHTMLPath).toString();
   fs.writeFileSync(indexHTMLPath,
     indexHTMLContent
-      .replace(/src="(.*?)\/static/g, `src=\"${baseURL}/static`)
-      .replace(/href="(.*?)\/static/g, `href=\"${baseURL}/static`)
-      // .replace(/\/static/g, `${baseURL}/static`)
-      .replace(/\/static\/static/g, "/static")
+      .replace(/src=((?!src=).)*?static/g, `src=\"${baseURL}/static`)
+      .replace(/href=((?!src=).)*?\/static/g, `href=\"${baseURL}/static`)
+      // .replace(/\/static\/static/g, "/static")
       .replace(/\/{2}/g, "/")
   );
-  logger.info('The baseURL value has been applied')
+  logger.info('The baseURL has been applied')
 }
 
 function createServer(appVersion) {
