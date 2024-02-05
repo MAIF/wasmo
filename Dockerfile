@@ -32,11 +32,11 @@ ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
         wget https://github.com/tinygo-org/tinygo/releases/download/v0.27.0/tinygo_0.27.0_arm64.deb; \
         dpkg -i tinygo_0.27.0_arm64.deb; \
-        curl -L -O "https://github.com/extism/js-pdk/releases/download/v0.5.0/extism-js-aarch64-linux-v0.5.0.gz"; \
+        curl -L -O "https://github.com/extism/js-pdk/releases/download/v0.3.4/extism-js-aarch64-linux-v0.5.0.gz"; \
     else \
         wget https://github.com/tinygo-org/tinygo/releases/download/v0.27.0/tinygo_0.27.0_amd64.deb; \
         dpkg -i tinygo_0.27.0_amd64.deb; \
-        curl -L -O "https://github.com/extism/js-pdk/releases/download/v0.5.0/extism-js-x86_64-linux-v0.5.0.gz"; \
+        curl -L -O "https://github.com/extism/js-pdk/releases/download/v0.3.4/extism-js-x86_64-linux-v0.5.0.gz"; \
     fi
 
 RUN gunzip extism-js*.gz
