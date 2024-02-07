@@ -150,7 +150,7 @@ export class Run extends React.Component {
         </div>
         <div className='mb-3'>
           <button type="button" className='btn btn-success btn-sm' onClick={this.run} disabled={!selectedPlugin}>
-            <i className='fas fa-play me-1' />
+            <i className='fa-solid fa-play me-1' />
             Run
           </button>
         </div>

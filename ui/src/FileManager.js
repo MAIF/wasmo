@@ -10,7 +10,7 @@ function File({ newFilename, filename, content, ext, onClick, ...props }) {
     onClick={onClick}
     type="button" >
     {props.new ? <div>
-      <i className='fas fa-file' />
+      <i className='fa-solid fa-file' />
       <input type='text'
         autoFocus
         value={newFilename}
@@ -33,7 +33,7 @@ function File({ newFilename, filename, content, ext, onClick, ...props }) {
           'main.go',
           'esbuild.js',
           'config.js'
-        ].includes(filename) && < i className='fas fa-times me-2'
+        ].includes(filename) && < i className='fa-solid fa-times me-2'
           onClick={e => {
             e.stopPropagation()
             props.removeFile(filename)
@@ -169,7 +169,7 @@ function Header({ onNewFile, readOnly }) {
       pointerEvents: readOnly ? 'none' : 'initial'
     }} onClick={onNewFile}>
     <div className='d-flex align-items-center'>
-      <i className='fas fa-file-circle-plus p-1 me-1' />
+      <i className='fa-solid fa-file-circle-plus p-1 me-1' />
       <span className='fw-bold'>New File</span>
     </div>
   </div>

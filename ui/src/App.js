@@ -36,11 +36,11 @@ class App extends React.Component {
     const params = new URLSearchParams(window.location.search);
     const pluginId = params.get('plugin');
 
-    if (selectedPlugin && selectedPlugin.pluginId !== pluginId) {
-      window.history.replaceState(null, "", '?plugin=' + selectedPlugin.pluginId);
-    } else if (!selectedPlugin) {
-      window.history.replaceState(null, null, '/');
-    }
+    // if (selectedPlugin && selectedPlugin.pluginId !== pluginId) {
+    //   window.history.replaceState(null, "", '?plugin=' + selectedPlugin.pluginId);
+    // } else if (!selectedPlugin) {
+    //   window.history.replaceState(null, null, '/');
+    // }
   }
 
   reloadPlugins = () => {

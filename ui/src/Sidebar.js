@@ -58,7 +58,7 @@ function ButtonWhenHidden({ onClick }) {
     background: '#ddd',
     border: 'none'
   }} onClick={onClick}>
-    <i className="fa fa-bars" />
+    <i className="fa-solid fa-bars" />
   </button>
 }
 

@@ -304,6 +304,7 @@ router.post('/:id/build', async (req, res) => {
 
   const data = await Datastore.getUser(req.user.email)
   let plugin = (data.plugins || []).find(p => p.pluginId === pluginId);
+  
   if (plugin.type === 'github') {
     plugin.type = req.query.plugin_type;
   }

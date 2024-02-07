@@ -43,68 +43,93 @@ if (AUTHENTICATION.BASIC_AUTH === ENV.AUTH_MODE &&
   return;
 }
 
-function rewriteStaticPaths(baseURL) {
+async function rewriteStaticPaths(baseURL) {
   const indexHTMLPath = path.join(__dirname, '..', 'ui/build/index.html');
   const indexHTMLContent = fs.readFileSync(indexHTMLPath).toString();
   fs.writeFileSync(indexHTMLPath,
     indexHTMLContent
       .replace(/src=((?!src=).)*?static/g, `src=\"${baseURL}/static`)
       .replace(/href=((?!src=).)*?\/static/g, `href=\"${baseURL}/static`)
+      .replace(/href=((?!href=).)*?\"\/favicon/g, `href=\"${baseURL}/favicon`)
+      .replace(/href=((?!href=).)*?\"\/fontawesome.min.css/g, `href=\"${baseURL}/fontawesome.min.css`)
+      .replace(/src=((?!src=).)*?\"\/fontawesome.min.js/g, `href=\"${baseURL}/fontawesome.min.js`)
+      .replace(/href=((?!href=).)*?\"\/solid.min.css/g, `href=\"${baseURL}/solid.min.css`)
+      .replace(/src=((?!src=).)*?\"\/solid.min.js/g, `href=\"${baseURL}/solid.min.js`)
       .replace(/\/{2}/g, "/")
   );
+
+  // media
+  const directory = path.join(__dirname, "..", "ui", "build", "static", "css");
+  const files = fs
+    .readdirSync(directory)
+    .filter(file => file.endsWith(".css"))
+    .map(fileName => path.join(directory, fileName));
+
+  for (const path of files) {
+    const content = fs.readFileSync(path).toString();
+    fs.writeFileSync(path, content
+      .replace(/url((?!url).)*?\(\/static/g, `url=(${baseURL}/static`))
+  }
+
+  const solidHTMLPath = path.join(__dirname, '..', 'ui/build/solid.min.css');
+  const solidHTMLContent = fs.readFileSync(solidHTMLPath).toString();
+  fs.writeFileSync(solidHTMLPath,
+    solidHTMLContent
+      .replace(/url((?!url).)*?\(\/webfonts/g, `url(${baseURL}/webfonts`))
+
+  // /api in UI folder
+  const jsDirectory = path.join(__dirname, "..", "ui", "build", "static", "js");
+  const jsFiles = fs
+    .readdirSync(jsDirectory)
+    .filter(file => file.endsWith(".js"))
+    .map(fileName => path.join(jsDirectory, fileName));
+
+  for (const path of jsFiles) {
+    const content = fs.readFileSync(path).toString();
+    fs.writeFileSync(path, content
+      .replace(/\"\/api\"/g, `"${baseURL}/api"`)
+      .replace(/"\/icon-512x512.png"/g, `"${baseURL}/icon-512x512.png"`)
+      .replace(/".\/icon-512x512.png"/g, `"${baseURL}/icon-512x512.png"`))
+  }
+
   logger.info('The baseURL has been applied')
 }
 
 function createServer(appVersion) {
   const app = express();
 
-  let router;
-
-  if (process.env.BASE_URL) {
-    const baseURL = process.env.BASE_URL;
-
-    console.log(`has baseURL ${baseURL}`)
-    router = express.Router();
-
+  let baseURL = process.env.BASE_URL;
+  if (baseURL && baseURL !== "" && baseURL !== '/') {
+    console.log(`loaded baseURL : ${baseURL}`)
     rewriteStaticPaths(baseURL);
+  } else
+    baseURL = ""
 
-    app.use('/', (req, _res, next) => {
-      if (!req.path.startsWith(baseURL))
-        req.url = `${baseURL}${req.path}`;
-      next()
-    })
-    app.use(baseURL, router);
-  } else {
-    rewriteStaticPaths("");
-    router = express.Router();
-    app.use('/', router);
-  }
-
-  router.use(express.static(path.join(__dirname, '..', 'ui/build')));
-  router.use(compression());
-  router.use(bodyParser.raw({
+  app.use(compression());
+  app.use(bodyParser.raw({
     type: 'application/octet-stream',
     limit: '10mb'
   }));
-  router.use(bodyParser.json());
-  router.use(bodyParser.urlencoded({ extended: true }));
-  router.use(bodyParser.text());
+  app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: true }));
+  app.use(bodyParser.text());
 
-  router.use('/_/healthcheck', (_, res) => {
+  app.use(`${baseURL}/_/healthcheck`, (_, res) => {
     return res.status(200).json()
   });
 
-  router.use('/', Security.extractUserFromQuery);
-  router.use('/', publicRouter);
-  router.use('/api/plugins', pluginsRouter);
-  router.use('/api/templates', templatesRouter);
-  router.use('/api/wasm', wasmRouter);
-  router.use('/api/version', (_, res) => res.json(appVersion));
-  router.use('/api/development', (_, res) => res.json(process.env.NODE_ENV === "development"));
+  app.use(`${baseURL}/`, Security.extractUserFromQuery);
+  app.use(`${baseURL}/`, publicRouter);
+  app.use(`${baseURL}/api/plugins`, pluginsRouter);
+  app.use(`${baseURL}/api/templates`, templatesRouter);
+  app.use(`${baseURL}/api/wasm`, wasmRouter);
+  app.use(`${baseURL}/api/version`, (_, res) => res.json(appVersion));
+  app.use(`${baseURL}/api/development`, (_, res) => res.json(process.env.NODE_ENV === "development"));
 
-  router.use('/health', (_, res) => res.json({ status: true }))
+  app.use(`${baseURL}/health`, (_, res) => res.json({ status: true }))
 
-  router.get('/', (_, res) => res.sendFile(path.join(__dirname, '..', 'ui/build', '/index.html')));
+  app.get(`${baseURL ? baseURL : '/'}`, (_, res) => res.sendFile(path.join(__dirname, '..', 'ui/build', '/index.html')));
+  app.use(baseURL, express.static(path.join(__dirname, '..', 'ui/build'), { redirect: false }));
 
   return http.createServer(app);
 }

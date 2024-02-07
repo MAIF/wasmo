@@ -55,7 +55,7 @@ function Save({ onSave }) {
     style={{ border: 'none', background: 'none' }}
     className="pe-2"
     onClick={onSave}>
-    <i className='fas fa-save' />
+    <i className='fa-solid fa-save' />
   </button>
 }
 
@@ -66,7 +66,7 @@ function Build({ onBuild }) {
     style={{ border: 'none', background: 'none' }}
     className="pe-2"
     onClick={() => onBuild(false)}>
-    <i className='fas fa-hammer' />
+    <i className='fa-solid fa-hammer' />
   </button>
 }
 
@@ -77,7 +77,7 @@ function Release({ onBuild }) {
     style={{ border: 'none', background: 'none' }}
     className="pe-2"
     onClick={() => onBuild(true)}>
-    <i className='fas fa-rocket' />
+    <i className='fa-solid fa-rocket' />
   </button>
 }
 
@@ -87,7 +87,7 @@ function Download({ onDownload }) {
     style={{ border: 'none', background: 'none' }}
     className="pe-2"
     onClick={onDownload}>
-    <i className='fas fa-download' />
+    <i className='fa-solid fa-download' />
   </button>
 }
 
@@ -98,6 +98,6 @@ function Play({ showPlaySettings }) {
     className="pe-2"
     onClick={showPlaySettings}
   >
-    <i className='fas fa-play' />
+    <i className='fa-solid fa-play' />
   </button>
 }

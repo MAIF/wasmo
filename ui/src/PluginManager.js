@@ -20,7 +20,7 @@ class PluginManager extends React.Component {
             cursor: 'pointer'
           }} onClick={() => props.setSelectedPlugin(undefined)}>
           <div className='d-flex align-items-center'>
-            <i className='fas fa-chevron-left me-1' />
+            <i className='fa-solid fa-chevron-left me-1' />
             <span className='fw-bold'>Change current plugin</span>
           </div>
         </div>}
@@ -102,7 +102,7 @@ function NewPluginModal({ onNewPlugin, setProjectSelector, reloadPlugins, active
               borderRadius: 6
             }}
             onClick={() => setStatus(!isPrivate)} >
-            <i className='fas fa-shield-alt mb-2' style={{ color: "#f9b000", fontSize: 32 }} />
+            <i className='fa-solid fa-shield-alt mb-2' style={{ color: "#f9b000", fontSize: 32 }} />
             <span style={{
               fontWeight: 'bold', color: '#f9b000', fontSize: 12, letterSpacing: 3, background: '#f9b0005e',
               padding: '.1rem .75rem', borderRadius: 12
@@ -225,7 +225,7 @@ function Header({ onNewPlugin, reloadPlugins }) {
       cursor: 'pointer'
     }}>
     <div className='d-flex align-items-center'>
-      <i className='fas fa-chess-rook fa-sm me-1' />
+      <i className='fa-solid fa-chess-rook fa-sm me-1' />
       <span className='fw-bold'>Plugins</span>
     </div>
 
@@ -233,7 +233,7 @@ function Header({ onNewPlugin, reloadPlugins }) {
       background: '#eee',
       borderRadius: 4
     }}>
-      <i className='fas fa-plus p-1' />
+      <i className='fa-solid fa-plus p-1' />
     </div>
 
 

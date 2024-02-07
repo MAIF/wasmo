@@ -91,7 +91,7 @@ function TabsManager({ plugins, ...props }) {
                 background: '#ddd',
                 border: 'none'
               }} onClick={() => setSidebarContext({ ...sidebarContext, open: false })}>
-                <i className="fa fa-chevron-left" />
+                <i className="fa-solid fa-chevron-left" />
               </button>}
 
               {props.selectedPlugin && <button type="button" className='btn btn-outline-danger m-3 my-2' style={{ fontSize: '.8rem' }}
@@ -227,7 +227,7 @@ function TabButton({ filename, onClick, selected, closeTab }) {
     }}
     onClick={onClick}>
     {filename}
-    <i className='fa fa-times fa-sm ms-1' onClick={e => {
+    <i className='fa-solid fa-times fa-sm ms-1' onClick={e => {
       e.stopPropagation();
       closeTab(filename)
     }} />

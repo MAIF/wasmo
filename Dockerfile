@@ -30,13 +30,13 @@ RUN rustup target add wasm32-unknown-unknown
 
 ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
-        wget https://github.com/tinygo-org/tinygo/releases/download/v0.27.0/tinygo_0.27.0_arm64.deb; \
+        wget https://github.com/tinygo-org/tinygo/releases/download/v0.30.0/tinygo_0.30.0_arm64.deb; \
         dpkg -i tinygo_0.27.0_arm64.deb; \
-        curl -L -O "https://github.com/extism/js-pdk/releases/download/v0.5.0/extism-js-aarch64-linux-v0.5.0.gz"; \
+        curl -L -O "https://github.com/extism/js-pdk/releases/download/v1.0.0-rc6/extism-js-aarch64-linux-v1.0.0-rc6.gz"; \
     else \
-        wget https://github.com/tinygo-org/tinygo/releases/download/v0.27.0/tinygo_0.27.0_amd64.deb; \
+        wget https://github.com/tinygo-org/tinygo/releases/download/v0.30.0/tinygo_0.30.0_amd64.deb; \
         dpkg -i tinygo_0.27.0_amd64.deb; \
-        curl -L -O "https://github.com/extism/js-pdk/releases/download/v0.5.0/extism-js-x86_64-linux-v0.5.0.gz"; \
+        curl -L -O "https://github.com/extism/js-pdk/releases/download/v1.0.0-rc6/extism-js-x86_64-linux-v1.0.0-rc6.gz"; \
     fi
 
 RUN gunzip extism-js*.gz
@@ -48,9 +48,9 @@ RUN apt-get install binaryen
 RUN curl https://get.wasmer.io -sSfL | sh
 
 RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
-curl -L -o opa https://openpolicyagent.org/downloads/v0.58.0/opa_linux_ard64_static; \
+curl -L -o opa https://openpolicyagent.org/downloads/v0.61.0/opa_linux_ard64_static; \
 else \
-curl -L -o opa https://openpolicyagent.org/downloads/v0.58.0/opa_linux_amd64_static; \
+curl -L -o opa https://openpolicyagent.org/downloads/v0.61.0/opa_linux_amd64_static; \
 fi
 RUN chmod 755 ./opa
 RUN mv opa /usr/local/bin

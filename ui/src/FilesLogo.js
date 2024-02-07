@@ -13,9 +13,9 @@ const LOGOS = {
   json: <div className='d-flex justify-content-center'>
     <Json style={{ height: 18 }} />
   </div>,
-  log: <i className='fas fa-file' style={{ fontSize: '.9em' }} />,
+  log: <i className='fa-solid fa-file' style={{ fontSize: '.9em' }} />,
   rs: <Rust style={{ height: 30, width: 30, marginLeft: -4, transform: 'scale(.85)' }} />,
-  toml: <i className='fas fa-file' />,
+  toml: <i className='fa-solid fa-file' />,
   ts: <Ts style={{ height: 22, width: 22, marginBottom: 2 }} />,
   go: <Go style={{ height: 22, width: 22 }} />,
   opa: <OPA style={{ height: 22, width: 22 }} />,
