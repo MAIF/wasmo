@@ -6,5 +6,5 @@ module.exports = options => new Compiler({
   commands: [
     "npm install",
     "node esbuild.js",
-    options => `extism-js dist/index.js -o ${options.wasmName}.wasm`]
+    options => `extism-js dist/index.js -i plugin.d.ts -o ${options.wasmName}.wasm`]
 });

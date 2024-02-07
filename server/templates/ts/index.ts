@@ -1,4 +1,4 @@
-import { WasmAccessValidatorContext, WasmAccessValidatorResponse, WasmAccessValidatorError } from './types';
+import { WasmAccessValidatorContext, WasmAccessValidatorResponse } from './types';
 
 export declare var Host: any;
 

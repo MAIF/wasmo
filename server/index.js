@@ -50,7 +50,6 @@ function rewriteStaticPaths(baseURL) {
     indexHTMLContent
       .replace(/src=((?!src=).)*?static/g, `src=\"${baseURL}/static`)
       .replace(/href=((?!src=).)*?\/static/g, `href=\"${baseURL}/static`)
-      // .replace(/\/static\/static/g, "/static")
       .replace(/\/{2}/g, "/")
   );
   logger.info('The baseURL has been applied')

@@ -67,14 +67,16 @@ class App extends React.Component {
             .files
             .filter(f => f.new ? (f.newFilename && f.newFilename.length > 0) : true)
             .map(f => {
-              if (f.new)
+              if (f.new) {
+                const extensionsParts = f.newFilename.split('.');
                 return {
                   ...f,
                   filename: f.newFilename,
-                  ext: f.newFilename.split('.')[1],
+                  ext: extensionsParts[extensionsParts.length - 1],
                   content: " ",
                   new: false
                 }
+              }
               return f
             })
         }
@@ -264,10 +266,11 @@ class App extends React.Component {
                   const parts = r.name.split('/');
                   const name = parts.length > 1 ? parts[parts.length - 1] : parts[0];
                   try {
+                    const extensionsParts = name.split('.');
                     return {
                       filename: name,
                       content: Pako.inflateRaw(r._data.compressedContent, { to: 'string' }),
-                      ext: name.split('.')[1]
+                      ext: extensionsParts[extensionsParts.length - 1]
                     }
                   } catch (err) {
                     console.log(err)

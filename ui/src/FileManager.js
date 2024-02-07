@@ -65,7 +65,7 @@ function Group({ items, folder, onFileClick, component, ...props }) {
 
 const GROUPS = [
   {
-    filter: item => ['go', 'rust', 'rs', 'ts', 'js', 'rego'].includes(item.ext) || item.new,
+    filter: item => ['go', 'rust', 'rs', 'ts', 'js', 'rego', 'd.ts'].includes(item.ext) || item.new,
     folder: 'Sources'
   },
   {
