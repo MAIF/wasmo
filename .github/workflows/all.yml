@@ -20,6 +20,20 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
 
+      - name: Update server package.json version
+        uses: jossef/action-set-json-field@v2.1
+        with:
+          file: server/package.json
+          field: version
+          value: ${{ inputs.version }}
+
+      - name: Update ui package.json version
+        uses: jossef/action-set-json-field@v2.1
+        with:
+          file: ui/package.json
+          field: version
+          value: ${{ inputs.version }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       
@@ -71,7 +85,14 @@ jobs:
         toolchain:
           - stable
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Edit Toml
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          working-directory: "./cli"
+          file: "Cargo.toml"
+          key: "version"
+          value: ${{ inputs.version }}
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v0
         with:
@@ -103,7 +124,14 @@ jobs:
         run:
           working-directory: ./cli
       steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      - name: Edit Toml
+        uses: ciiiii/toml-editor@1.0.0
+        with:
+          working-directory: "./cli"
+          file: "Cargo.toml"
+          key: "version"
+          value: ${{ inputs.version }}
       - name: Build
         run: cargo build --verbose --release
       - name: Run tests
