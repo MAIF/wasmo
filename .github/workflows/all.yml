@@ -14,16 +14,16 @@ jobs:
             - uses: actions/checkout@v4
             
             - name: Release Wasmo Docker Images
-              uses: ./action-docker
+              uses: ./actions/action-docker
               with:
                 version: ${{ inputs.version }}
 
             - name: Build Wasmo CLI binaries
-              uses: ./action-cli
+              uses: ./actions/action-cli
               with:
                 version: ${{ inputs.version }}
-                
+
             - name: Push on crates.io
-              uses: ./action-cratesio
+              uses: ./actions/action-cratesio
     
         
