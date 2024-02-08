@@ -9,17 +9,21 @@ on:
 jobs:
     all:
         runs-on: ubuntu-latest
+        name: Build Wasmo & CLI binaries
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
+            
             - name: Release Wasmo Docker Images
-              uses: ./dockerimages
+              uses: ./action-docker
               with:
                 version: ${{ inputs.version }}
+
             - name: Build Wasmo CLI binaries
-              uses: ./cli
+              uses: ./action-cli
               with:
                 version: ${{ inputs.version }}
+                
             - name: Push on crates.io
-              uses: ./cratesio
+              uses: ./action-cratesio
     
         
