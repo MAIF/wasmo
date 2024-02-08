@@ -1,20 +1,17 @@
 name: Push on crates.io
 
-on: [workflow_dispatch]
-
 env:
   CARGO_TERM_COLOR: always
 
 permissions:
   contents: write
 
-jobs:
-  cratesio:
-    runs-on: ubuntu-latest
-    defaults:
+runs:
+  using: composite
+  defaults:
       run:
         working-directory: ./cli
-    steps:
+  steps:
     - uses: actions/checkout@v3
     - name: Build
       run: cargo build --verbose --release
