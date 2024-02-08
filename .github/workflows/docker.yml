@@ -14,6 +14,20 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
 
+      - name: Update server package.json version
+        uses: jossef/action-set-json-field@v2.1
+        with:
+          file: server/package.json
+          field: version
+          value: ${{ inputs.version }}
+
+      - name: Update ui package.json version
+        uses: jossef/action-set-json-field@v2.1
+        with:
+          file: ui/package.json
+          field: version
+          value: ${{ inputs.version }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       

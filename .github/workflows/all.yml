@@ -1,0 +1,33 @@
+name: Build Wasmo & CLI binaries
+
+on: 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number"
+
+jobs:
+    build-and-upload-to-docker-hub:
+        runs-on: ubuntu-latest
+        name: Release Wasmo Docker Images
+        steps:
+        - name: Build docker images
+          uses: ./docker
+          with:
+            version: ${{ inputs.version }}
+    build-cli:
+        runs-on: ubuntu-latest
+        name: build-cli
+        steps:
+        - name: Build Wasmo CLI binaries
+          uses: ./cli
+          with:
+            version: ${{ inputs.version }}
+    push-to-crates-io:
+        runs-on: ubuntu-latest
+        name: Push on crates.io
+        steps:
+        - name: Build Wasmo CLI binaries
+          uses: ./cratesio
+    
+        
