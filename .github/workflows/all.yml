@@ -7,27 +7,19 @@ on:
         description: "Version number"
 
 jobs:
-    build-and-upload-to-docker-hub:
+    all:
         runs-on: ubuntu-latest
-        name: Release Wasmo Docker Images
         steps:
-        - name: Build docker images
-          uses: ./docker
-          with:
-            version: ${{ inputs.version }}
-    build-cli:
-        runs-on: ubuntu-latest
-        name: build-cli
-        steps:
-        - name: Build Wasmo CLI binaries
-          uses: ./cli
-          with:
-            version: ${{ inputs.version }}
-    push-to-crates-io:
-        runs-on: ubuntu-latest
-        name: Push on crates.io
-        steps:
-        - name: Build Wasmo CLI binaries
-          uses: ./cratesio
+            - uses: actions/checkout@v3
+            - name: Release Wasmo Docker Images
+              uses: ./docker
+              with:
+                version: ${{ inputs.version }}
+            - name: Build Wasmo CLI binaries
+              uses: ./cli
+              with:
+                version: ${{ inputs.version }}
+            - name: Push on crates.io
+              uses: ./cratesio
     
         
