@@ -1,10 +1,7 @@
 name: Build Wasmo CLI binaries
-
-on: 
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Version number"
+inputs:
+  version:
+    description: "Version number"
 
 jobs:
   build-and-upload:
