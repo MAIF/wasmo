@@ -118,13 +118,6 @@ jobs:
           working-directory: ./cli
       steps:
       - uses: actions/checkout@v4
-      - name: Edit Toml
-        uses: ciiiii/toml-editor@1.0.0
-        with:
-          working-directory: "./cli"
-          file: "Cargo.toml"
-          key: "version"
-          value: ${{ inputs.version }}
       - name: Build
         run: cargo build --verbose --release
       - name: Run tests
