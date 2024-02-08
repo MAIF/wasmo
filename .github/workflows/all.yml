@@ -18,12 +18,12 @@ jobs:
               with:
                 version: ${{ inputs.version }}
 
-            - name: Build Wasmo CLI binaries
-              uses: ./actions/action-cli
-              with:
-                version: ${{ inputs.version }}
+            # - name: Build Wasmo CLI binaries
+            #   uses: ./actions/action-cli
+            #   with:
+            #     version: ${{ inputs.version }}
 
-            - name: Push on crates.io
-              uses: ./actions/action-cratesio
+            # - name: Push on crates.io
+            #   uses: ./actions/action-cratesio
     
         
