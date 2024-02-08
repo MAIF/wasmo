@@ -3,7 +3,8 @@ inputs:
   version:
     description: "Version number"
 
-jobs:
+runs:
+  using: composite
   build-and-upload:
     name: ${{ matrix.platform.os_name }} with rust ${{ matrix.toolchain }}
     runs-on: ${{ matrix.platform.os }}
