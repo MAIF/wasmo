@@ -28,22 +28,25 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Add wasm-unknown-unknown target
 RUN rustup target add wasm32-unknown-unknown
 
+# RUN apt-get install binaryen
+
 ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
         wget https://github.com/tinygo-org/tinygo/releases/download/v0.30.0/tinygo_0.30.0_arm64.deb; \
-        dpkg -i tinygo_0.27.0_arm64.deb; \
-        curl -L -O "https://github.com/extism/js-pdk/releases/download/v1.0.0-rc6/extism-js-aarch64-linux-v1.0.0-rc6.gz"; \
+        dpkg -i tinygo_0.30.0_arm64.deb; \
+        # curl -L -O "https://github.com/extism/js-pdk/releases/download/v1.0.0-rc6/extism-js-aarch64-linux-v1.0.0-rc6.gz"; \
     else \
         wget https://github.com/tinygo-org/tinygo/releases/download/v0.30.0/tinygo_0.30.0_amd64.deb; \
-        dpkg -i tinygo_0.27.0_amd64.deb; \
-        curl -L -O "https://github.com/extism/js-pdk/releases/download/v1.0.0-rc6/extism-js-x86_64-linux-v1.0.0-rc6.gz"; \
+        dpkg -i tinygo_0.30.0_amd64.deb; \
+        # curl -L -O "https://github.com/extism/js-pdk/releases/download/v1.0.0-rc6/extism-js-x86_64-linux-v1.0.0-rc6.gz"; \
     fi
 
-RUN gunzip extism-js*.gz
-RUN mv extism-js-* /usr/local/bin/extism-js
-RUN chmod +x /usr/local/bin/extism-js
+# RUN gunzip extism-js*.gz
+# RUN mv extism-js-* /usr/local/bin/extism-js
+# RUN chmod +x /usr/local/bin/extism-js
 
-RUN apt-get install binaryen
+COPY install.sh install.sh
+RUN sh install.sh
 
 RUN curl https://get.wasmer.io -sSfL | sh
 

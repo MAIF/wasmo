@@ -1,7 +1,6 @@
 mod types;
 
 use extism_pdk::*;
-use std::collections::HashMap;
 
 #[plugin_fn]
 pub fn execute(Json(_context): Json<types::WasmAccessValidatorContext>) -> FnResult<Json<types::WasmAccessValidatorResponse>> {

@@ -103,10 +103,14 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
         <span>Terminal</span>
       </div>
       <div className='d-flex align-items-center'>
-        <i className='fa-solid ban fa-sm me-3' style={{ cursor: 'pointer' }}
-          onClick={() => setContent('')} />
-        <i className='fa-solid fa-times fa-sm' style={{ cursor: 'pointer' }}
-          onClick={() => changeTerminalSize(0)} />
+        <span className='me-3' onClick={() => setContent('')} >
+          <i className='fa-solid fa-ban fa-sm' style={{ cursor: 'pointer' }}
+          />
+        </span>
+        <span onClick={() => changeTerminalSize(0)} >
+          <i className='fa-solid fa-times fa-sm' style={{ cursor: 'pointer' }}
+          />
+        </span>
       </div>
     </div>
 

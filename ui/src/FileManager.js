@@ -32,12 +32,16 @@ function File({ newFilename, filename, content, ext, onClick, ...props }) {
           'lib.rs',
           'main.go',
           'esbuild.js',
-          'config.js'
-        ].includes(filename) && < i className='fa-solid fa-times me-2'
-          onClick={e => {
-            e.stopPropagation()
-            props.removeFile(filename)
-          }} />}
+          'config.js',
+          'stderr.log',
+          'stdout.log'
+        ].includes(filename) && <span className='me-2' onClick={e => {
+          e.stopPropagation()
+          props.removeFile(filename)
+        }} >
+          <i className='fa-solid fa-times'
+          />
+        </span>}
     </div>}
   </button>
 }

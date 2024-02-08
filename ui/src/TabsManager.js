@@ -227,10 +227,12 @@ function TabButton({ filename, onClick, selected, closeTab }) {
     }}
     onClick={onClick}>
     {filename}
-    <i className='fa-solid fa-times fa-sm ms-1' onClick={e => {
+    <span className='ms-1' onClick={e => {
       e.stopPropagation();
       closeTab(filename)
-    }} />
+    }} >
+      <i className='fa-solid fa-times fa-sm' />
+    </span>
   </button>
 }
 
