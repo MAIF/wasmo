@@ -12,14 +12,14 @@ jobs:
         steps:
             - uses: actions/checkout@v3
             - name: Release Wasmo Docker Images
-              uses: ./workflows/docker
+              uses: ./dockerimages
               with:
                 version: ${{ inputs.version }}
             - name: Build Wasmo CLI binaries
-              uses: ./workflows/cli
+              uses: ./cli
               with:
                 version: ${{ inputs.version }}
             - name: Push on crates.io
-              uses: ./workflows/cratesio
+              uses: ./cratesio
     
         
