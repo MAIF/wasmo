@@ -115,13 +115,14 @@ router.post('/', async (req, res) => {
 
   const out = await Datastore.createEmptyPlugin(req.user.email, req.body.metadata || {
     name: req.body.plugin,
-    type: req.body.type
+    type: req.body.type,
+    template: req.body.template || 'empty'
   });
 
   if (out.status !== 201 || !req.body.files) {
     return res.status(out.status).json(out.body);
   } else {
-    const templatesFiles = await FileSystem.templatesFilesToJSON(req.body.metadata.type, req.body.metadata.name.replace(/ /g, '-'));
+    const templatesFiles = await FileSystem.templatesFilesToJSON(req.body.metadata.type, req.body.metadata.template || 'empty', req.body.metadata.name.replace(/ /g, '-'));
     const zip = await FileSystem.createZipFromJSONFiles(req.body.files, templatesFiles);
     const pluginId = out.body.plugins[out.body.plugins.length - 1].pluginId;
     Datastore.updatePlugin(pluginId, zip)

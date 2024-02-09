@@ -15,8 +15,10 @@ router.get('/', (req, res) => {
       })
   } else {
     const { type } = req.query;
+    const template = req.query.template || 'empty';
+
     if (['rust', 'js', 'go', 'ts', 'opa'].includes(type)) {
-      getTemplates(type, res);
+      getTemplates(type, template, res);
     } else {
       res
         .status(404)
@@ -27,19 +29,22 @@ router.get('/', (req, res) => {
   }
 });
 
-function getTemplatesFromPath(type, res) {
-  return res.sendFile(path.join(__dirname, '../templates', `${type}.zip`))
+function getTemplatesFromPath(type, template, res) {
+  if (template !== 'empty')
+    return res.sendFile(path.join(__dirname, '../templates', template, `${type}.zip`))
+  else
+    return res.sendFile(path.join(__dirname, '../templates', `${type}.zip`))
 }
 
-function getTemplates(type, res) {
+function getTemplates(type, template, res) {
   const source = ENV.MANAGER_TEMPLATES;
   const zipName = `${type}.zip`;
 
   if (!source) {
-    return getTemplatesFromPath(type, res);
+    return getTemplatesFromPath(type, template, res);
   } else if (source.startsWith('file://')) {
-    const paths = [source.replace('file://', ''), zipName];
-    
+    const paths = template !== 'empty' ? [source.replace('file://', ''), template, zipName] : [source.replace('file://', ''), zipName];
+
     FileSystem.existsFile(...paths)
       .then(() => {
         res.download(FileSystem.pathsToPath(...paths), zipName)
@@ -50,7 +55,7 @@ function getTemplates(type, res) {
           .json({ error: err })
       })
   } else if (source.startsWith('http')) {
-    fetch(`${source}/${zipName}`, {
+    fetch(template !== 'empty' ? `${source}/${template}/${zipName}` : `${source}/${zipName}`, {
       redirect: 'follow'
     })
       .then(r => r.json())

@@ -5,5 +5,5 @@
   DO NOT DELETE THIS FILE
 */
 declare module 'main' {
-    export function execute(): I32;
+    export function greet(): I32;
 }

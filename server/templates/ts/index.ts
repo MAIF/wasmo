@@ -1,25 +1,9 @@
-import { WasmAccessValidatorContext, WasmAccessValidatorResponse } from './types';
-
 export declare var Host: any;
 
-export function execute() {
-    let context = JSON.parse(Host.inputString()) as WasmAccessValidatorContext;
+export function greet() {
+    let name = Host.inputString() as String;
 
-    if (context.request.headers["foo"] === "bar") {
-        const out: WasmAccessValidatorResponse = {
-            result: true
-        };
-        Host.outputString(JSON.stringify(out));
-    } else {
-        const error: WasmAccessValidatorResponse = {
-            result: false,
-            error: {
-                message: "you're not authorized",
-                status: 401
-            }
-        };
-        Host.outputString(JSON.stringify(error));
-    }
+    Host.outputString(`Hello, ${name}`);
 
     return 0;
 }

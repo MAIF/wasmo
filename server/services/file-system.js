@@ -120,8 +120,8 @@ const createZipFromJSONFiles = (jsonFiles, templatesFiles) => {
   return zip.toBuffer()
 }
 
-const templatesFilesToJSON = (type, name) => {
-  const folder = path.join(process.cwd(), 'templates', `${type}.zip`);
+const templatesFilesToJSON = (type, template, name) => {
+  const folder = template === 'empty' ? path.join(process.cwd(), 'templates', `${type}.zip`) : path.join(process.cwd(), 'templates', template, `${type}.zip`);
 
   const zip = new AdmZip(folder);
 

@@ -544,7 +544,8 @@ module.exports = class S3Datastore extends Datastore {
                                 } : {
                                     filename: metadata.name.replace(/ /g, '-'),
                                     type: metadata.type,
-                                    pluginId: pluginId
+                                    pluginId: pluginId,
+                                    template: metadata.template
                                 }
 
                             ]
