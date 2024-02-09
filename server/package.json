@@ -1,6 +1,6 @@
 {
   "name": "wasmo",
-  "version": "1.0.3",
+  "version": "1.0.5-dev",
   "main": "index.js",
   "license": "MIT",
   "scripts": {
