@@ -5,6 +5,7 @@ import Pako from 'pako'
 import * as Service from './services'
 import TabsManager from './TabsManager';
 import { toast } from 'react-toastify';
+import { withRouter } from './withRouter';
 
 class App extends React.Component {
   state = {
@@ -22,7 +23,7 @@ class App extends React.Component {
     this.reloadPlugins().then(() => {
       if (window.location.search) {
         const params = new URLSearchParams(window.location.search);
-        const pluginId = params.get('plugin');
+        const pluginId = params.get('pluginId');
         if (pluginId && pluginId !== "undefined") {
           this.onPluginClick(pluginId);
         }
@@ -30,17 +31,25 @@ class App extends React.Component {
     })
   }
 
-  componentDidUpdate() {
-    const { selectedPlugin } = this.state;
+  // componentDidUpdate() {
+  //   const { selectedPlugin } = this.state;
 
-    const params = new URLSearchParams(window.location.search);
-    const pluginId = params.get('plugin');
+  //   const params = new URLSearchParams(window.location.search);
+  //   const pluginId = params.get('plugin');
 
-    // if (selectedPlugin && selectedPlugin.pluginId !== pluginId) {
-    //   window.history.replaceState(null, "", '?plugin=' + selectedPlugin.pluginId);
-    // } else if (!selectedPlugin) {
-    //   window.history.replaceState(null, null, '/');
-    // }
+  //   if (selectedPlugin && selectedPlugin.pluginId !== pluginId) {
+  //     window.history.replaceState(null, "", '?plugin=' + selectedPlugin.pluginId);
+  //   } else if (!selectedPlugin) {
+  //     window.history.replaceState(null, null, '/');
+  //   }
+  // }
+
+  updateSelectedPlugin = (newValue, callback) => {
+    console.log(newValue)
+    if (newValue.selectedPlugin)
+      this.props.navigate(`?pluginId=${newValue.selectedPlugin.pluginId}`)
+
+    this.setState(newValue, callback);
   }
 
   reloadPlugins = () => {
@@ -60,7 +69,7 @@ class App extends React.Component {
     const { editorState, selectedPlugin, plugins } = this.state;
 
     if (editorState === 'onNewFile') {
-      this.setState({
+      this.updateSelectedPlugin({
         selectedPlugin: {
           ...selectedPlugin,
           files: selectedPlugin
@@ -123,7 +132,7 @@ class App extends React.Component {
                 })
               }, () => {
                 if (selectedPlugin) {
-                  this.setState({
+                  this.updateSelectedPlugin({
                     selectedPlugin: {
                       ...selectedPlugin,
                       filename: newPlugin.newFilename
@@ -166,7 +175,7 @@ class App extends React.Component {
   }
 
   onNewFile = () => {
-    this.setState({
+    this.updateSelectedPlugin({
       editorState: 'onNewFile',
       selectedPlugin: {
         ...this.state.selectedPlugin,
@@ -186,7 +195,7 @@ class App extends React.Component {
     this.setState({
       plugins: this.state.plugins.filter(p => !p.new)
     }, () => {
-      this.setState({
+      this.updateSelectedPlugin({
         editorState: 'onNewPlugin',
         selectedPlugin: undefined,
         plugins: [
@@ -202,7 +211,7 @@ class App extends React.Component {
   }
 
   onFileChange = (newFilename) => {
-    this.setState({
+    this.updateSelectedPlugin({
       selectedPlugin: {
         ...this.state.selectedPlugin,
         files: this.state.selectedPlugin.files.map(f => {
@@ -241,7 +250,7 @@ class App extends React.Component {
     }, () => {
       const { selectedPlugin } = this.state;
       if (selectedPlugin && selectedPlugin.pluginId === pluginId) {
-        this.setState({
+        this.updateSelectedPlugin({
           selectedPlugin: {
             ...selectedPlugin,
             new: true,
@@ -257,7 +266,7 @@ class App extends React.Component {
     return new Promise(resolve => {
       jsZip.loadAsync(res)
         .then(data => {
-          this.setState({
+          this.updateSelectedPlugin({
             selectedPlugin: {
               ...plugin,
               files: Object.values(data.files)
@@ -297,7 +306,7 @@ class App extends React.Component {
       opa: "package.json"
     };
 
-    this.setState({
+    this.updateSelectedPlugin({
       selectedPlugin: {
         ...selectedPlugin,
         files: selectedPlugin.files.map(file => {
@@ -316,7 +325,7 @@ class App extends React.Component {
   }
 
   onPluginClick = newSelectedPlugin => {
-    this.setState({
+    this.updateSelectedPlugin({
       configFiles: [],
       selectedPlugin: undefined
     }, () => {
@@ -413,7 +422,7 @@ class App extends React.Component {
   handleContent = (filename, newContent) => {
     const { selectedPlugin } = this.state;
 
-    this.setState({
+    this.updateSelectedPlugin({
       selectedPlugin: {
         ...selectedPlugin,
         files: selectedPlugin.files.map(file => {
@@ -509,9 +518,11 @@ class App extends React.Component {
         Service.removePlugin(pluginId)
           .then(res => {
             if (res.status === 204)
-              this.setState({
+              this.updateSelectedPlugin({
                 plugins: this.state.plugins.filter(f => f.pluginId !== pluginId),
                 selectedPlugin: undefined
+              }, () => {
+                this.props.navigate('/')
               })
           })
       }
@@ -520,17 +531,13 @@ class App extends React.Component {
 
   removeFile = filename => {
     if (window.confirm(`Delete the ${filename} file ?`)) {
-      this.setState({
+      this.updateSelectedPlugin({
         selectedPlugin: {
           ...this.state.selectedPlugin,
           files: this.state.selectedPlugin.files.filter(file => file.filename !== filename)
         }
       }, this.onSave)
     }
-  }
-
-  setSelectedPlugin = selectedPlugin => {
-    this.setState({ selectedPlugin });
   }
 
   createManifest = () => {
@@ -540,7 +547,7 @@ class App extends React.Component {
         .then(r => r.blob())
         .then(file => new File([file], "").text())
         .then(content => {
-          this.setState({
+          this.updateSelectedPlugin({
             selectedPlugin: {
               ...this.state.selectedPlugin,
               files: [
@@ -560,7 +567,7 @@ class App extends React.Component {
   createReadme = () => {
     if (!this.state.selectedPlugin.files
       .find(f => f.filename === "README.md")) {
-      this.setState({
+      this.updateSelectedPlugin({
         selectedPlugin: {
           ...this.state.selectedPlugin,
           files: [
@@ -606,7 +613,11 @@ class App extends React.Component {
         showPlaySettings={this.showPlaySettings}
         removeFile={this.removeFile}
         onLoadConfigurationFile={this.onLoadConfigurationFile}
-        setSelectedPlugin={this.setSelectedPlugin}
+        backToHome={() => {
+          this.setState({ selectedPlugin: undefined }, () => {
+            this.props.navigate('/')
+          })
+        }}
         createManifest={this.createManifest}
         createReadme={this.createReadme}
       />
@@ -614,4 +625,4 @@ class App extends React.Component {
   }
 }
 
-export default App;
+export default withRouter(App);

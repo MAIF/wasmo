@@ -63,7 +63,7 @@ function TabsManager({ plugins, ...props }) {
             {({ open, ButtonWhenHidden }) => !open ? ButtonWhenHidden() : <>
               <PluginManager
                 plugins={plugins}
-                setSelectedPlugin={props.setSelectedPlugin}
+                backToHome={props.backToHome}
                 selectedPlugin={props.selectedPlugin}
                 reloadPlugins={props.reloadPlugins}
                 onPluginClick={props.onPluginClick}

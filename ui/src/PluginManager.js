@@ -18,7 +18,7 @@ class PluginManager extends React.Component {
         {selectedPlugin && <div className='d-flex justify-content-between align-items-center sidebar-header'
           style={{
             cursor: 'pointer'
-          }} onClick={() => props.setSelectedPlugin(undefined)}>
+          }} onClick={() => props.backToHome(undefined)}>
           <div className='d-flex align-items-center'>
             <i className='fa-solid fa-chevron-left me-1' />
             <span className='fw-bold'>Change current plugin</span>
