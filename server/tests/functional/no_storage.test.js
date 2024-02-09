@@ -47,6 +47,32 @@ test('/api/development', () => {
     .then(r => expect(r.status).toBe(200))
 });
 
+test('/api/plugins/build with invalid template', () => {
+  return fetch(`${instance}/api/plugins/build`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      "metadata": {
+        "name": "foobar",
+        "type": "js",
+        "template": "thoth"
+      },
+      "files": [
+        {
+          "name": "index.js",
+          "content": "export default function execute() { Host.outputString(\"FOOBAR\") }"
+        }
+      ]
+    })
+  })
+    .then(r => {
+      expect(r.status).toBe(400)
+      return r.json()
+    })
+});
+
 test('/api/plugins/build', () => {
   return fetch(`${instance}/api/plugins/build`, {
     method: 'POST',

@@ -93,13 +93,14 @@ class App extends React.Component {
     } else if (editorState === 'onNewPlugin') {
       const newPlugin = plugins.find(plugin => plugin.new && plugin.newFilename && plugin.newFilename.length > 0)
       if (newPlugin) {
-        Service.createPlugin(newPlugin.newFilename, newPlugin.type)
+        const { newFilename, type, template } = newPlugin;
+        Service.createPlugin(newFilename, type, template)
           .then(res => {
             if (!res.error) {
               this.setState({
                 plugins: res.plugins
               }, () => {
-                const plugin = res.plugins.find(p => p.filename === newPlugin.newFilename)
+                const plugin = res.plugins.find(p => p.filename === newFilename)
                 if (plugin) {
                   this.onPluginClick(plugin.pluginId);
                 }
@@ -191,7 +192,7 @@ class App extends React.Component {
     })
   }
 
-  onNewPlugin = type => {
+  onNewPlugin = (type, template) => {
     this.setState({
       plugins: this.state.plugins.filter(p => !p.new)
     }, () => {
@@ -203,7 +204,8 @@ class App extends React.Component {
           {
             new: true,
             filename: '',
-            type
+            type,
+            template
           }
         ]
       })
@@ -357,7 +359,7 @@ class App extends React.Component {
           .then(res => {
             // first case match the creation of a new plugin
             if (res.error && res.status === 404) {
-              Service.getPluginTemplate(plugin.type)
+              Service.getPluginTemplate(plugin.type, plugin.template || 'empty')
                 .then(template => {
                   if (template.status !== 200) {
                     template.json().then(window.alert)
@@ -540,30 +542,6 @@ class App extends React.Component {
     }
   }
 
-  createManifest = () => {
-    if (!this.state.selectedPlugin.files
-      .find(f => f.filename === "wapm.toml")) {
-      Service.getWapmManifest()
-        .then(r => r.blob())
-        .then(file => new File([file], "").text())
-        .then(content => {
-          this.updateSelectedPlugin({
-            selectedPlugin: {
-              ...this.state.selectedPlugin,
-              files: [
-                ...this.state.selectedPlugin.files,
-                {
-                  filename: 'wapm.toml',
-                  content,
-                  ext: 'toml'
-                }
-              ]
-            }
-          })
-        })
-    }
-  }
-
   createReadme = () => {
     if (!this.state.selectedPlugin.files
       .find(f => f.filename === "README.md")) {
@@ -618,7 +596,6 @@ class App extends React.Component {
             this.props.navigate('/')
           })
         }}
-        createManifest={this.createManifest}
         createReadme={this.createReadme}
       />
     </div>

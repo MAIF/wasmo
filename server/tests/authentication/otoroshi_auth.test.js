@@ -14,7 +14,7 @@ const WASMO_CLIENT_SECRET = "secret";
 beforeAll(async () => {
   const network = await new Network().start();
 
-  otoroshi = await new GenericContainer("maif/otoroshi:16.11.2")
+  otoroshi = await new GenericContainer("maif/otoroshi:16.14.0")
     .withNetwork(network)
     .withExposedPorts(8080)
     .withEnvironment({

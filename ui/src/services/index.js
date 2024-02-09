@@ -25,12 +25,13 @@ const rawFetch = (url, init = {}) => {
 
 const jsonFetch = (url, init) => f(url, init).then(r => r.json())
 
-export const createPlugin = (plugin, type) => {
+export const createPlugin = (plugin, type, template) => {
   return jsonFetch('/plugins', {
     method: 'POST',
     body: JSON.stringify({
       plugin,
-      type
+      type,
+      template
     })
   })
 }
@@ -52,9 +53,7 @@ export const getPlugin = plugin => rawFetch(`/plugins/${plugin}`)
 
 export const getPluginConfig = plugin => jsonFetch(`/plugins/${plugin}/configurations`)
 
-export const getPluginTemplate = type => f(`/templates?type=${type}`);
-
-export const getWapmManifest = () => f('/templates/wapm');
+export const getPluginTemplate = (type, template) => f(`/templates?type=${type}&template=${template}`);
 
 const buildZip = plugin => {
   const jsZip = new JSZip()

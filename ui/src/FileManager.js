@@ -85,7 +85,7 @@ const GROUPS = [
     folder: 'Logs'
   },
   {
-    filter: item => ['README.md', 'wapm.toml'].includes(item.filename),
+    filter: item => ['README.md'].includes(item.filename),
     folder: 'Deploy'
   },
   {

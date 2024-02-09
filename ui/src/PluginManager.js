@@ -5,6 +5,8 @@ import { ReactComponent as Ts } from './assets/ts.svg';
 import { ReactComponent as Go } from './assets/go.svg';
 import { ReactComponent as Github } from './assets/github.svg';
 import { ReactComponent as OPA } from './assets/opa.svg';
+import Otoroshi from './assets/otoroshi.png';
+import Izanami from './assets/izanami.png';
 import { createGithubRepo } from './services';
 import { LOGOS } from './FilesLogo';
 
@@ -42,7 +44,8 @@ class PluginManager extends React.Component {
 }
 
 function NewPluginModal({ onNewPlugin, setProjectSelector, reloadPlugins, active }) {
-  const [showGithubModal, setGithubModal] = useState(false)
+  const [showGithubModal, setGithubModal] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const [repo, setRepo] = useState("");
   const [owner, setOwner] = useState("");
@@ -139,54 +142,134 @@ function NewPluginModal({ onNewPlugin, setProjectSelector, reloadPlugins, active
     </div>
   }
 
+  return <>
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 255,
+      zIndex: 100,
+      width: active ? 225 : 0,
+      background: '#eee',
+      gap: '.5rem',
+      transition: 'width .25s'
+    }} onClick={e => e.stopPropagation()}>
+      {active && <div className='d-flex flex-column h-100'>
+        <h3 style={{ fontSize: '1.25rem', textAlign: 'center', fontWeight: 'bold', background: '#000', color: '#fff', height: 42, margin: 0 }}
+          className='d-flex align-items-center justify-content-center'>Languages</h3>
+        <div className='d-flex flex-column' style={{ flex: 1, padding: '.5rem 1rem' }}>
+          {[
+            {
+              icon: <Rust style={{ height: 30, width: 32, marginLeft: -4, transform: 'scale(1.5)' }} />,
+              title: 'Rust',
+              value: 'rust'
+            },
+            {
+              icon: <Js style={{ height: 32, width: 32 }} />,
+              title: 'Javascript',
+              value: 'js'
+            },
+            {
+              icon: <Ts style={{ height: 32, width: 32 }} />,
+              title: 'Typescript',
+              value: 'ts'
+            },
+            {
+              icon: <Go style={{ height: 32, width: 32 }} />,
+              title: 'Golang',
+              value: 'go'
+            },
+            {
+              icon: <OPA style={{ height: 32, width: 32 }} />,
+              title: 'Open Policy Agent',
+              value: 'opa'
+            },
+            {
+              icon: <Github style={{ height: 32, width: 32 }} />,
+              title: 'Github',
+              onClick: e => {
+                e.stopPropagation()
+                setGithubModal(true)
+              }
+            }
+          ].map(({ icon, onClick, title, value }, i) => {
+            return <button
+              type="button"
+              key={`action-${i}`}
+              className='btn btn-sm btn-light d-flex align-items-center mb-2'
+              onClick={onClick ? onClick : () => setShowTemplates(value)}
+              style={{
+                border: value === showTemplates ? '1px solid #2ecc71' : 'none',
+                gap: '.5rem',
+                padding: '.5rem 1rem',
+                borderRadius: 0,
+                minHeight: 46
+              }}>
+              {icon}
+              {title}
+
+              <span className='ms-auto btn btn-sm' style={{
+                borderRadius: '50%',
+                background: '#eee',
+                width: 30,
+                height: 30,
+                background: 'rgb(46 204 113 / 27%)',
+                display: value === showTemplates ? 'block' : 'none'
+              }}>
+                <i className='fa-solid fa-check' color='#2ecc71' style={{ fontWeight: 'bold' }} />
+              </span>
+            </button>
+          })}
+        </div>
+
+        <div className='mt-auto d-flex' style={{ margin: '.5rem 1rem' }}>
+          <button type="button" className='btn btn-secondary'
+            style={{ border: 'none', borderRadius: 6, padding: '.5rem 1rem', background: '#000', flex: 1 }}
+            onClick={e => {
+              e.stopPropagation();
+              setShowTemplates(false)
+              setProjectSelector(false)
+            }}>Cancel</button>
+        </div>
+      </div>}
+    </div>
+
+    {active && showTemplates && <TemplatesSelector language={showTemplates} onNewPlugin={onNewPlugin} />}
+  </>
+}
+
+function TemplatesSelector({ language, onNewPlugin }) {
+
   return <div style={{
     position: 'absolute',
     top: 0,
     bottom: 0,
-    left: 250,
+    left: 485,
     zIndex: 100,
-    width: active ? 225 : 0,
+    width: 225,
     background: '#eee',
     gap: '.5rem',
     transition: 'width .25s'
   }}>
-    {active && <div className='d-flex flex-column h-100'>
+    <div className='d-flex flex-column h-100'>
       <h3 style={{ fontSize: '1.25rem', textAlign: 'center', fontWeight: 'bold', background: '#000', color: '#fff', height: 42, margin: 0 }}
-        className='d-flex align-items-center justify-content-center'>Languages</h3>
+        className='d-flex align-items-center justify-content-center'>Templates</h3>
       <div className='d-flex flex-column' style={{ flex: 1, padding: '.5rem 1rem' }}>
         {[
           {
-            icon: <Rust style={{ height: 30, width: 32, marginLeft: -4, transform: 'scale(1.5)' }} />,
-            title: 'Rust',
-            onClick: () => onNewPlugin('rust')
+            icon: <span style={{ minWidth: 32 }}><i className='fa-solid fa-map fa-xl' /></span>,
+            title: 'Empty',
+            onClick: () => onNewPlugin(language, 'empty')
           },
           {
-            icon: <Js style={{ height: 32, width: 32 }} />,
-            title: 'Javascript',
-            onClick: () => onNewPlugin('js')
+            icon: <img src={Otoroshi} style={{ height: 34, width: 32 }} />,
+            title: 'Otoroshi',
+            onClick: () => onNewPlugin(language, 'otoroshi')
           },
           {
-            icon: <Ts style={{ height: 32, width: 32 }} />,
-            title: 'Typescript',
-            onClick: () => onNewPlugin('ts')
-          },
-          {
-            icon: <Go style={{ height: 32, width: 32 }} />,
-            title: 'Golang',
-            onClick: () => onNewPlugin('go')
-          },
-          {
-            icon: <OPA style={{ height: 32, width: 32 }} />,
-            title: 'Open Policy Agent',
-            onClick: () => onNewPlugin('opa')
-          },
-          {
-            icon: <Github style={{ height: 32, width: 32 }} />,
-            title: 'Github',
-            onClick: e => {
-              e.stopPropagation()
-              setGithubModal(true)
-            }
+            icon: <img src={Izanami} style={{ height: 38, width: 32 }} />,
+            title: 'Izanami',
+            onClick: () => onNewPlugin(language, 'izanami')
           }
         ].map(({ icon, onClick, title }, i) => {
           return <button
@@ -200,16 +283,7 @@ function NewPluginModal({ onNewPlugin, setProjectSelector, reloadPlugins, active
           </button>
         })}
       </div>
-
-      <div className='mt-auto d-flex' style={{ margin: '.5rem 1rem' }}>
-        <button type="button" className='btn btn-secondary'
-          style={{ border: 'none', borderRadius: 6, padding: '.5rem 1rem', background: '#000', flex: 1 }}
-          onClick={e => {
-            e.stopPropagation();
-            setProjectSelector(false)
-          }} >Cancel </button>
-      </div>
-    </div>}
+    </div>
   </div>
 }
 
@@ -231,12 +305,12 @@ function Header({ onNewPlugin, reloadPlugins }) {
 
     <div style={{
       background: '#eee',
-      borderRadius: 4
+      borderRadius: 4,
+      display: 'flex',
+      alignItems: 'center'
     }}>
       <i className='fa-solid fa-plus p-1' />
     </div>
-
-
 
     <NewPluginModal
       active={showProjectSelector}

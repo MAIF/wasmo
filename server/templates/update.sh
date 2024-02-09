@@ -1,3 +1,4 @@
+rm -v **/.DS_Store
 rm -rf *.zip
 rm -rf izanami/*.zip
 rm -rf otoroshi/*.zip

@@ -175,7 +175,7 @@ router.post('/build', async (req, res) => {
 
   const isRustBuild = kind === 'rust';
 
-  const zip = await fetch(`http://localhost:${ENV.PORT}/api/templates?type=${kind}`)
+  const zip = await fetch(`http://localhost:${ENV.PORT}/api/templates?type=${kind}&template=${metadata.template}`)
     .then(res => res.blob())
     .then(res => res.arrayBuffer());
 
@@ -305,7 +305,7 @@ router.post('/:id/build', async (req, res) => {
 
   const data = await Datastore.getUser(req.user.email)
   let plugin = (data.plugins || []).find(p => p.pluginId === pluginId);
-  
+
   if (plugin.type === 'github') {
     plugin.type = req.query.plugin_type;
   }

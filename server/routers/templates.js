@@ -15,7 +15,9 @@ router.get('/', (req, res) => {
       })
   } else {
     const { type } = req.query;
-    const template = req.query.template || 'empty';
+    const template = !req.query.template || req.query.template === 'undefined' ? 'empty' : req.query.template;
+
+    console.log(req.query, template)
 
     if (['rust', 'js', 'go', 'ts', 'opa'].includes(type)) {
       getTemplates(type, template, res);
