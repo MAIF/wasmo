@@ -267,7 +267,8 @@ function addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, saveI
                     pluginType: plugin.type,
                     metadata: opaMetadata ? opaMetadata : (metadata ? metadata : {}),
                     release,
-                    saveInLocal
+                    saveInLocal,
+                    pluginName
                   });
 
                   res.json({

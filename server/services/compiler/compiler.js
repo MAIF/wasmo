@@ -37,7 +37,8 @@ class BuildOptions {
     metadata,
     isReleaseBuild,
     wasi,
-    saveInLocal
+    saveInLocal,
+    pluginName
   }) {
     this.folderPath = folderPath;
     this.userEmail = userEmail;
@@ -50,6 +51,7 @@ class BuildOptions {
     this.isReleaseBuild = isReleaseBuild;
     this.wasi = wasi;
     this.saveInLocal = saveInLocal;
+    this.pluginName = pluginName;
   }
 }
 

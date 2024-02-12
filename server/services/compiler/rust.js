@@ -23,7 +23,7 @@ module.exports = options => new Compiler({
   name: 'RUST',
   options,
   commands: [
-    `cargo build --manifest-path ./Cargo.toml ${options.isReleaseBuild ? '--release ' : ''}--target ${options.wasi ? "wasm32-wasi" : "wasm32-unknown-unknown"}`
+    `cargo build --manifest-path ./Cargo.toml ${options.isReleaseBuild ? '--release ' : ''}--target ${options.wasi ? "wasm32-wasi" : "wasm32-unknown-unknown"}`,
   ],
   outputWasmFolder
 });

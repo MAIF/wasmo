@@ -31,21 +31,7 @@ class App extends React.Component {
     })
   }
 
-  // componentDidUpdate() {
-  //   const { selectedPlugin } = this.state;
-
-  //   const params = new URLSearchParams(window.location.search);
-  //   const pluginId = params.get('plugin');
-
-  //   if (selectedPlugin && selectedPlugin.pluginId !== pluginId) {
-  //     window.history.replaceState(null, "", '?plugin=' + selectedPlugin.pluginId);
-  //   } else if (!selectedPlugin) {
-  //     window.history.replaceState(null, null, '/');
-  //   }
-  // }
-
   updateSelectedPlugin = (newValue, callback) => {
-    console.log(newValue)
     if (newValue.selectedPlugin)
       this.props.navigate(`?pluginId=${newValue.selectedPlugin.pluginId}`)
 
