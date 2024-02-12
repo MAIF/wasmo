@@ -7,9 +7,17 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update --fix-missing -y
 RUN apt-get install -y build-essential git curl software-properties-common ca-certificates gnupg wget
 
+ARG TARGETPLATFORM
+
 # install go 1.21
-RUN wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
-RUN tar -xvf go1.21.6.linux-amd64.tar.gz -C /usr/local
+RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
+        wget https://go.dev/dl/go1.21.6.linux-arm64.tar.gz; \
+        tar -xvf go1.21.6.linux-arm64.tar.gz -C /usr/local; \
+    else \
+        wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz; \
+        tar -xvf go1.21.6.linux-amd64.tar.gz -C /usr/local; \
+    fi
+
 ENV PATH="/usr/local/go/bin:${PATH}"
 
 RUN go install github.com/extism/cli/extism@latest
@@ -34,7 +42,7 @@ RUN rustup target add wasm32-unknown-unknown
 
 # RUN apt-get install binaryen
 
-ARG TARGETPLATFORM
+
 RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
         wget https://github.com/tinygo-org/tinygo/releases/download/v0.30.0/tinygo_0.30.0_arm64.deb; \
         dpkg -i tinygo_0.30.0_arm64.deb; \
