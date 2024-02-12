@@ -26,11 +26,23 @@ const WASMO_PATH: &str = "WASMO_PATH";
 const WASMO_CLIENT_ID: &str = "WASMO_CLIENT_ID";
 const WASMO_CLIENT_SECRET: &str = "WASMO_CLIENT_SECRET";
 
-const ZIP_GO: &[u8] = include_bytes!("../templates/go.zip");
-const ZIP_JS: &[u8] = include_bytes!("../templates/js.zip");
-const ZIP_OPA: &[u8] = include_bytes!("../templates/opa.zip");
-const ZIP_RUST: &[u8] = include_bytes!("../templates/rust.zip");
-const ZIP_TS: &[u8] = include_bytes!("../templates/ts.zip");
+const EMPTY_ZIP_GO: &[u8] = include_bytes!("../templates/go.zip");
+const EMPTY_ZIP_JS: &[u8] = include_bytes!("../templates/js.zip");
+const EMPTY_ZIP_OPA: &[u8] = include_bytes!("../templates/opa.zip");
+const EMPTY_ZIP_RUST: &[u8] = include_bytes!("../templates/rust.zip");
+const EMPTY_ZIP_TS: &[u8] = include_bytes!("../templates/ts.zip");
+
+const IZANAMI_ZIP_GO: &[u8] = include_bytes!("../templates/izanami/go.zip");
+const IZANAMI_ZIP_JS: &[u8] = include_bytes!("../templates/izanami/js.zip");
+const IZANAMI_ZIP_OPA: &[u8] = include_bytes!("../templates/izanami/opa.zip");
+const IZANAMI_ZIP_RUST: &[u8] = include_bytes!("../templates/izanami/rust.zip");
+const IZANAMI_ZIP_TS: &[u8] = include_bytes!("../templates/izanami/ts.zip");
+
+const OTOROSHI_ZIP_GO: &[u8] = include_bytes!("../templates/otoroshi/go.zip");
+const OTOROSHI_ZIP_JS: &[u8] = include_bytes!("../templates/otoroshi/js.zip");
+const OTOROSHI_ZIP_OPA: &[u8] = include_bytes!("../templates/otoroshi/opa.zip");
+const OTOROSHI_ZIP_RUST: &[u8] = include_bytes!("../templates/otoroshi/rust.zip");
+const OTOROSHI_ZIP_TS: &[u8] = include_bytes!("../templates/otoroshi/ts.zip");
 
 
 #[derive(Debug, PartialEq)]
@@ -92,7 +104,25 @@ enum Commands {
             value_name = "TEMPLATE", 
             short = 't',
             long = "template",
-            value_parser = ["js", "go", "rust", "opa", "ts"], 
+            value_parser = [
+                "js", 
+                "go", 
+                "rust", 
+                "opa", 
+                "ts",
+
+                "izanami_js", 
+                "izanami_go", 
+                "izanami_rust", 
+                "izanami_opa", 
+                "izanami_ts",
+
+                "otoroshi_js", 
+                "otoroshi_go", 
+                "otoroshi_rust", 
+                "otoroshi_opa", 
+                "otoroshi_ts"
+            ], 
             require_equals = true, 
         )]
         template: String,
@@ -257,28 +287,43 @@ fn initialize(template: String, name: String, path: Option<String>) -> WasmoResu
     let manifest_dir = std::env::temp_dir();
 
     let zip_bytes = match template.as_str() {
-        "go" => ZIP_GO,
-        "js" => ZIP_JS,
-        "opa" => ZIP_OPA,
-        "rust" => ZIP_RUST,
-        "ts" => ZIP_TS,
-        _ => ZIP_JS
-    };
-    let zip_path = Path::new(&manifest_dir).join(format!("{}.zip", template));
+        "go" => EMPTY_ZIP_GO,
+        "js" => EMPTY_ZIP_JS,
+        "opa" => EMPTY_ZIP_OPA,
+        "rust" => EMPTY_ZIP_RUST,
+        "ts" => EMPTY_ZIP_TS,
 
-    match std::path::Path::new(&zip_path).exists() {
-        true => (),
-        false => {
-            logger::indent_println(format!("turn template bytes to zip file, {}", &zip_path.to_string_lossy()));
-            match fs::File::create(&zip_path) {
-                Ok(mut file) => match file.write_all(zip_bytes) {
-                    Err(err) => return Err(WasmoError::FileSystem(err.to_string())),
-                    Ok(()) => ()
-                },
-                Err(e) => return Err(WasmoError::FileSystem(e.to_string()))
-            };
-        }
+        "izanami_go"    => IZANAMI_ZIP_GO,
+        "izanami_js"    => IZANAMI_ZIP_JS,
+        "izanami_opa"   => IZANAMI_ZIP_OPA,
+        "izanami_rust"  => IZANAMI_ZIP_RUST,
+        "izanami_ts"    => IZANAMI_ZIP_TS,
+
+        "otoroshi_go"   => OTOROSHI_ZIP_GO,
+        "otoroshi_js"   => OTOROSHI_ZIP_JS,
+        "otoroshi_opa"  => OTOROSHI_ZIP_OPA,
+        "otoroshi_rust" => OTOROSHI_ZIP_RUST,
+        "otoroshi_ts"   => OTOROSHI_ZIP_TS,
+
+        _ => EMPTY_ZIP_JS
+    };
+
+    let language_used = template.replace("izanami_", "").replace("otoroshi_", "");
+
+    let zip_path = Path::new(&manifest_dir).join(format!("{}.zip", &language_used));
+
+    if std::path::Path::new(&zip_path).exists() {
+        let _ = fs::remove_file(&zip_path);
     }
+        
+    logger::indent_println(format!("turn template bytes to zip file, {}", &zip_path.to_string_lossy()));
+    match fs::File::create(&zip_path) {
+        Ok(mut file) => match file.write_all(zip_bytes) {
+            Err(err) => return Err(WasmoError::FileSystem(err.to_string())),
+            Ok(()) => ()
+        },
+        Err(e) => return Err(WasmoError::FileSystem(e.to_string()))
+    };
 
     logger::indent_println("<yellow>Unzipping</> the template ...".to_string());
     let zip_action = zip_extensions::read::zip_extract(
@@ -287,7 +332,7 @@ fn initialize(template: String, name: String, path: Option<String>) -> WasmoResu
     );
 
     match zip_action {
-        Ok(()) => rename_plugin(template, name, path),
+        Ok(()) => rename_plugin(language_used, name, path),
         Err(er) => Err(WasmoError::FileSystem(er.to_string())),
     }
 }
