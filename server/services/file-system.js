@@ -97,7 +97,13 @@ const writeFiles = (files, folder, isRustBuild) => {
 
 
 const storeWasm = fromFolder => {
-  return fs.move(fromFolder, pathsToPath(`/wasm/${fromFolder.split('/').slice(-1)[0]}.wasm`))
+  return fs.move(
+    fromFolder,
+    pathsToPath(`/wasm/${fromFolder.split('/').slice(-1)[0]}.wasm`),
+    {
+      overwrite: true
+    }
+  )
 };
 
 const getLocalWasm = (id, res) => {

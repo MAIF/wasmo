@@ -455,7 +455,7 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, client_
 
             match build_result {
                 websocket::BuildResult::Success => {
-                    get_wasm(&configuration, &result.queue_id, &complete_path, &plugin).await;
+                    get_wasm(&configuration, &complete_path, &plugin).await;
                 }
                 _ => logger::println(format!("Build failed")),
             }
@@ -471,14 +471,13 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, client_
 
 async fn get_wasm(
     configuration: &HashMap<String, String>,
-    id: &str,
     output_path: &str,
     plugin: &plugin::Plugin,
 ) {
     let url = format!(
         "{}/local/wasm/{}",
         &configuration.get(WASMO_SERVER).unwrap(),
-        id
+        format!("{}-{}-dev", &plugin.metadata.name, &plugin.metadata.version)
     );
 
     logger::loading("<yellow>Fetch</> wasm file".to_string());
