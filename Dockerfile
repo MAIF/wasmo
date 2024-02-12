@@ -4,8 +4,15 @@ WORKDIR /code
 
 ENV DEBIAN_FRONTEND=noninteractive 
 
-RUN apt-get update -y 
-RUN apt-get install -y build-essential git curl software-properties-common ca-certificates gnupg golang-1.20 wget
+RUN apt-get update --fix-missing -y
+RUN apt-get install -y build-essential git curl software-properties-common ca-certificates gnupg wget
+
+# install go 1.21
+RUN wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz
+RUN tar -xvf go1.21.6.linux-amd64.tar.gz -C /usr/local
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+RUN go install github.com/extism/cli/extism@latest
 
 # install node
 RUN mkdir -p /etc/apt/keyrings
@@ -13,9 +20,6 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg -
 RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 RUN apt-get update -y 
 RUN apt-get install -y nodejs 
-
-ENV PATH="/usr/lib/go-1.20/bin:${PATH}"
-RUN go install github.com/extism/cli/extism@latest
 
 # RUN python3.9 -m pip install --upgrade pip
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3 get-pip.py
