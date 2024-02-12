@@ -112,7 +112,7 @@ pub fn read_plugin(path: &String) -> Plugin {
 fn read_files_contents(files: &Vec<DirEntry>) -> Vec<PluginFile> {
     let r = files
         .into_iter()
-        // .filter(|file| file.file != ".DS_Store")
+        .filter(|file| !file.file_name().into_string().unwrap().eq(".DS_Store"))
         .map(|file| PluginFile {
             content: fs::read_to_string(file.path()).unwrap(),
             name: file.file_name().into_string().unwrap(),
