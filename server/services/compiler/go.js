@@ -7,7 +7,6 @@ module.exports = options => new Compiler({
     "go get github.com/extism/go-pdk",
     "go get github.com/buger/jsonparser",
     "go mod tidy",
-    options => `tinygo build ${options.isReleaseBuild ? '--no-debug ' : ''}-o ${options.wasmName}.wasm `
-  ],
-  withWasi: "-target=wasi"
+    options => `tinygo build ${options.isReleaseBuild ? '--no-debug ' : ''}-o ${options.wasmName}.wasm -target=wasi `
+  ]
 })
