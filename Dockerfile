@@ -86,6 +86,9 @@ RUN npm install
 RUN mkdir /.pm2
 RUN chmod 777 /.pm2
 
+RUN chmod 777 -R $HOME/ui
+RUN chmod 777 -R $HOME/server
+
 RUN chmod -R a+rwX .
 
 EXPOSE 5001
