@@ -78,16 +78,15 @@ WORKDIR $HOME/ui
 RUN npm install
 RUN npm run build
 RUN rm -rf node_modules
+RUN chmod -R 777 .
 
 WORKDIR $HOME/server
 RUN npm install pm2@latest -g
 RUN npm install
+RUN chmod -R 777 .
 
 RUN mkdir /.pm2
 RUN chmod 777 /.pm2
-
-RUN chmod -R 777 $HOME/ui
-RUN chmod -R 777 $HOME/server
 
 RUN chmod -R a+rwX .
 
