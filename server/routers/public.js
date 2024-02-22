@@ -76,7 +76,8 @@ router.get('/plugins', (req, res) => {
             .then(pluginsByUser => {
               res.json(pluginsByUser
                 .map(user => user.plugins)
-                .flat())
+                .flat()
+                .filter(f => f))
             })
         } else {
           res.json([])
