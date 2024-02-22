@@ -1,6 +1,6 @@
 [package]
 name = "wasmo"
-version = "1.0.11"
+version = "1.0.12"
 edition = "2021"
 authors = ["Zwiterrion <etienne.anne@icloud.com>"]
 license = "MIT OR Apache-2.0"
