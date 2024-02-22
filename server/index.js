@@ -125,6 +125,7 @@ function createServer(appVersion) {
   app.use(`${baseURL}/api/wasm`, wasmRouter);
   app.use(`${baseURL}/api/version`, (_, res) => res.json(appVersion));
   app.use(`${baseURL}/api/development`, (_, res) => res.json(process.env.NODE_ENV === "development"));
+  app.use(`${baseURL}/api/websocket`, (_, res) => res.json(process.env.WSS === "true"));
 
   app.use(`${baseURL}/health`, (_, res) => res.json({ status: true }))
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { solarizedDark } from '@uiw/codemirror-theme-solarized';
-import { isDevelopmentMode } from './services';
+import { isDevelopmentMode, isWSS } from './services';
 
 import { SidebarContext } from './Sidebar';
 
@@ -17,13 +17,19 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
     }
   }, [loadConfigurationFile]);
 
-  const connect = (isDevelopment) => {
+  const connect = (isDevelopment, isWSS) => {
     let socket;
 
+    let protocol = 'ws';
+
+    if (isWSS) {
+      protocol = 'wss';
+    }
+
     if (isDevelopment) {
-      socket = new WebSocket(`ws://${window.location.hostname}:5001/${selectedPlugin.pluginId}`);
+      socket = new WebSocket(`${protocol}://${window.location.hostname}:5001/${selectedPlugin.pluginId}`);
     } else {
-      socket = new WebSocket(`ws://${window.location.host}/${selectedPlugin.pluginId}`);
+      socket = new WebSocket(`${protocol}://${window.location.host}/${selectedPlugin.pluginId}`);
     }
 
     socket.onopen = () => {
@@ -64,9 +70,9 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
 
   useEffect(() => {
     if (selectedPlugin) {
-      isDevelopmentMode()
-        .then(isDevelopment => {
-          connect(isDevelopment)
+      Promise.all([isDevelopmentMode(), isWSS()])
+        .then(([isDevelopment, isWSS]) => {
+          connect(isDevelopment, isWSS)
         })
     }
   }, [selectedPlugin?.pluginId]);
