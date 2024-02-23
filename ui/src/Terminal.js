@@ -58,7 +58,7 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
       console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
 
       setTimeout(function () {
-        connect(isDevelopment);
+        connect(isDevelopment, isWSS);
       }, 5000);
     };
 
