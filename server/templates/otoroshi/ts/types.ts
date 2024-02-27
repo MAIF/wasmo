@@ -14,7 +14,7 @@ export interface Apikey {
   clientId: string;
   clientName: string;
   metadata: Map<string, string>;
-  tags: [String];
+  tags: string[];
 }
 
 export interface User {
@@ -22,7 +22,7 @@ export interface User {
   email: string;
   profile: any;
   metadata: Map<string, string>;
-  tags: [string];
+  tags: string[];
 }
 
 export interface RawRequest {
@@ -40,12 +40,12 @@ export interface RawRequest {
 }
 
 export interface Frontend {
-  domains: [string];
+  domains: string[];
   strict_path?: string;
   exact: boolean;
   headers: Map<string, string>;
   query: Map<string, string>;
-  methods: [string];
+  methods: string[];
 }
 
 export interface HealthCheck {
@@ -54,7 +54,7 @@ export interface HealthCheck {
 }
 
 export interface RouteBackend {
-  targets: [Backend];
+  targets: Backend[];
   root: string;
   rewrite: boolean;
   load_balancing: any;
@@ -66,15 +66,15 @@ export interface Route {
   id: string;
   name: string;
   description: string;
-  tags: [string];
+  tags: string[];
   metadata: Map<string, string>;
   enabled: boolean;
   debug_flow: boolean;
   export_reporting: boolean;
   capture: boolean;
-  groups: [string];
-  frontend: Frontend,
-  backend: RouteBackend,
+  groups: string[];
+  frontend: Frontend;
+  backend: RouteBackend;
   backend_ref?: string;
   plugins: any;
 }
@@ -91,71 +91,66 @@ export interface OtoroshiRequest {
   headers: Map<string, string>;
   version: string;
   client_cert_chain: any;
-  backend?: [Backend];
+  backend?: Backend;
   cookies: any;
 }
-
 
 export interface WasmQueryContext {
   snowflake?: string;
   backend: Backend;
-  apikey?: [Apikey];
-  user?: [User];
-  raw_request: RawRequest,
+  apikey?: Apikey;
+  user?: User;
+  raw_request: RawRequest;
   config: any;
   global_config: any;
   attrs: any;
-  route: Route,
-  raw_request_body?: string;
-  request: OtoroshiRequest,
+  route: Route;
+  request_body_bytes?: number[];
+  request: OtoroshiRequest;
 }
-
 
 export interface WasmAccessValidatorContext {
   snowflake?: string;
-  apikey?: [Apikey];
-  user?: [User];
-  request: RawRequest,
+  apikey?: Apikey;
+  user?: User;
+  request: RawRequest;
   config: any;
   global_config: any;
   attrs: any;
-  route: Route,
+  route: Route;
 }
-
 
 export interface WasmRequestTransformerContext {
   snowflake?: string;
-  raw_request: OtoroshiRequest,
-  otoroshi_request: OtoroshiRequest,
-  backend: Backend,
-  apikey?: [Apikey];
-  user?: [User];
-  request: RawRequest,
+  raw_request: OtoroshiRequest;
+  otoroshi_request: OtoroshiRequest;
+  backend: Backend;
+  apikey?: Apikey;
+  user?: User;
+  request: RawRequest;
   config: any;
   global_config: any;
   attrs: any;
-  route: Route,
+  route: Route;
 }
-
 
 export interface WasmResponseTransformerContext {
   snowflake?: string;
-  raw_response: OtoroshiResponse,
-  otoroshi_response: OtoroshiResponse,
-  apikey?: [Apikey];
-  user?: [User];
-  request: RawRequest,
+  raw_response: OtoroshiResponse;
+  otoroshi_response: OtoroshiResponse;
+  apikey?: Apikey;
+  user?: User;
+  request: RawRequest;
   config: any;
   global_config: any;
   attrs: any;
-  route: Route,
+  route: Route;
   body?: string;
 }
 
-
 export interface WasmSinkContext {
   snowflake?: string;
-  request: RawRequest,
+  request: RawRequest;
   config: any;
   global_config: any;
   attrs: any;
