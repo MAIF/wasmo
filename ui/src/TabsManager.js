@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react'
 import FileManager from './FileManager';
 import Tab from './Tab'
 import PluginManager from './PluginManager'
-import Terminal from './Terminal';
-import { Run } from './Run';
 import { TabsHeader } from './TabsHeader';
 import { Sidebar, SidebarContext } from './Sidebar';
 import { LOGOS } from './FilesLogo';
@@ -122,11 +120,6 @@ function TabsManager({ plugins, ...props }) {
                     setTabs={setTabs}
                     currentTab={currentTab} />
                 </TabsHeader>
-                {currentTab === 'Runner' &&
-                  <Run
-                    onClose={props.onEditorStateReset}
-                    plugins={plugins}
-                    selectedPlugin={props.selectedPlugin} />}
                 {props.selectedPlugin ? <Contents
                   tabs={tabs}
                   configFiles={props.configFiles}

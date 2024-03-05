@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../index.js"],
+  "sourcesContent": ["function greet() {\n    const name = Host.inputString()\n    Host.outputString(`Hello, ${name}`)\n}\n\nmodule.exports = { greet }"],
+  "mappings": ";AAAA,SAAS,QAAQ;AACb,QAAM,OAAO,KAAK,YAAY;AAC9B,OAAK,aAAa,UAAU,MAAM;AACtC;AAEA,OAAO,UAAU,EAAE,MAAM;",
+  "names": []
+}

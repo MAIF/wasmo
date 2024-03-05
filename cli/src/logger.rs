@@ -31,11 +31,6 @@ pub fn check_loading() {
     }
 }
 
-pub fn log(_: String) {
-    // let mut logger = Logger::new();
-    // logger.log(str);
-}
-
 pub fn error(str: String) {
     check_loading();
     let mut logger = Logger::new();

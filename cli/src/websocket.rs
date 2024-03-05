@@ -1,7 +1,7 @@
 use futures_util::StreamExt;
 use std::fmt;
 use tokio::io::AsyncReadExt;
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
+use tokio_tungstenite::{connect_async, tungstenite::{client::IntoClientRequest, protocol::Message}};
 
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum BuildResult {
@@ -41,20 +41,27 @@ async fn read_stdin(tx: futures_channel::mpsc::UnboundedSender<Message>) {
     }
 }
 
-pub async fn ws_listen(url: &String, channel: &String) -> BuildResult {
+pub async fn ws_listen(url: &String, channel: &String, authorization: &String) -> BuildResult {
     crate::logger::loading(format!("<yellow>Listening</> websocket from {}", url));
 
     let (stdin_tx, _) = futures_channel::mpsc::unbounded();
     tokio::spawn(read_stdin(stdin_tx));
 
-    let (ws_stream, _) = connect_async(format!(
+    let mut request = format!(
         "{}/{}",
         url.replace("http://", "ws://")
             .replace("https://", "wss://"),
         channel
-    ))
-    .await
-    .expect("Failed to connect");
+    )
+        .into_client_request()
+        .unwrap();
+
+    let headers = request.headers_mut();
+    headers.insert("Authorization", authorization.parse().unwrap());
+
+    let (ws_stream, _) = connect_async(request)
+        .await
+        .expect("Failed to connect");
 
     let (_write, mut read) = ws_stream.split();
 

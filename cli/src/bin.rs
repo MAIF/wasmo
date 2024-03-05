@@ -457,6 +457,11 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, client_
     
     let plugin = plugin::read_plugin(&complete_path);
 
+    let authorization = format!("Basic {}", 
+        general_purpose::STANDARD_NO_PAD.encode(format!("{}:{}", 
+        configuration.get(WASMO_CLIENT_ID).unwrap_or(&"".to_string()), 
+        configuration.get(WASMO_CLIENT_SECRET).unwrap_or(&"".to_string()))));
+
     let request = Request::builder()
         .method(Method::POST)
         .uri(format!(
@@ -464,10 +469,7 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, client_
             configuration.get(WASMO_SERVER).unwrap()
         ))
         .header("Content-Type", "application/json")
-        .header("Authorization",
-         general_purpose::STANDARD_NO_PAD.encode(format!("{}:{}", 
-         configuration.get(WASMO_CLIENT_ID).unwrap_or(&"".to_string()), 
-         configuration.get(WASMO_CLIENT_SECRET).unwrap_or(&"".to_string()))))
+        .header("Authorization", &authorization)
         .body(Body::from(serde_json::to_string(&plugin).unwrap()))
         .unwrap();
 
@@ -480,7 +482,7 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, client_
     match resp {
         Err(e) => panic!("{:#?}", e),
         Ok(k) => {
-            logger::log(format!("Build call status: {}", k.status()));
+            logger::indent_println(format!("Build call status: {}", k.status()));
 
             if k.status() == 403 || k.status() == 401 {
                 return Err(WasmoError::BuildInterrupt("unauthorized".to_string()));
@@ -495,7 +497,9 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, client_
             .unwrap();
 
             let build_result =
-                websocket::ws_listen(&configuration.get(WASMO_SERVER).unwrap(), &result.queue_id)
+                websocket::ws_listen(&configuration.get(WASMO_SERVER).unwrap(), 
+                &result.queue_id,
+                        &authorization)
                     .await;
 
             match build_result {

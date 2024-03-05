@@ -485,12 +485,6 @@ class App extends React.Component {
       })
   }
 
-  onEditorStateReset = () => {
-    this.setState({
-      editorState: undefined
-    })
-  }
-
   showPlaySettings = () => {
     this.setState({
       editorState: 'play',
@@ -573,7 +567,6 @@ class App extends React.Component {
         onSave={this.onSave}
         onBuild={this.onBuild}
         onDownload={this.onDownload}
-        onEditorStateReset={this.onEditorStateReset}
         showPlaySettings={this.showPlaySettings}
         removeFile={this.removeFile}
         onLoadConfigurationFile={this.onLoadConfigurationFile}
