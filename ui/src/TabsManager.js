@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import FileManager from './FileManager';
 import Tab from './Tab'
 import PluginManager from './PluginManager'
+import Terminal from './Terminal';
 import { TabsHeader } from './TabsHeader';
 import { Sidebar, SidebarContext } from './Sidebar';
 import { LOGOS } from './FilesLogo';
