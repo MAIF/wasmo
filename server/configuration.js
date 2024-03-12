@@ -58,7 +58,8 @@ module.exports = {
 
         LOGGER: {
             FILE: process.env.LOGGER_FILE || false,
-            LEVEL: process.env.LOGGER_LEVEL || 'info'
+            LEVEL: process.env.LOGGER_LEVEL || 'info',
+            TIMESTAMP: process.env.LOGGER_TIMESTAMP || false
         }
     }
 }
