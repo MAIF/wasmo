@@ -97,9 +97,15 @@ const writeFiles = (files, folder, isRustBuild) => {
 
 
 const storeWasm = fromFolder => {
+  let finalName = fromFolder.split('/').slice(-1)[0];
+
+  if (!finalName.endsWith(".wasm")) {
+    finalName = `${finalName}.wasm`
+  }
+
   return fs.move(
     fromFolder,
-    pathsToPath(`/wasm/${fromFolder.split('/').slice(-1)[0]}.wasm`),
+    pathsToPath(`/wasm/${finalName}`),
     {
       overwrite: true
     }
