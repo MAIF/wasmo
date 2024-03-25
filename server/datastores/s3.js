@@ -133,36 +133,26 @@ module.exports = class S3Datastore extends Datastore {
     #addUser = async (email) => {
         const { instance, Bucket } = this.#state;
 
-        try {
-            const data = await instance.send(new GetObjectCommand({
-                Bucket,
-                Key: 'users.json'
-            }));
+        // try {
+        const users = await this.getUsers();
 
-            let users = []
-            try {
-                users = JSON.parse(data.Body.toString('utf-8'))
-            } catch (err) {
-                users = [];
-            }
-
-            await instance.send(new PutObjectCommand({
-                Bucket,
-                Key: 'users.json',
-                Body: fromUtf8(JSON.stringify([
-                    ...users,
-                    email
-                ])),
-                ContentType: 'application/json',
-            }))
-        } catch (err) {
-            await instance.send(new PutObjectCommand({
-                Bucket,
-                Key: 'users.json',
-                Body: fromUtf8(JSON.stringify([email])),
-                ContentType: 'application/json'
-            }))
-        }
+        await instance.send(new PutObjectCommand({
+            Bucket,
+            Key: 'users.json',
+            Body: fromUtf8(JSON.stringify([
+                ...users,
+                email
+            ])),
+            ContentType: 'application/json',
+        }))
+        // } catch (err) {
+        // await instance.send(new PutObjectCommand({
+        //     Bucket,
+        //     Key: 'users.json',
+        //     Body: fromUtf8(JSON.stringify([email])),
+        //     ContentType: 'application/json'
+        // }))
+        // }
     }
 
     createUserIfNotExists = async (email) => {
