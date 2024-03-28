@@ -133,8 +133,9 @@ module.exports = class S3Datastore extends Datastore {
     #addUser = async (email) => {
         const { instance, Bucket } = this.#state;
 
-        // try {
         const users = await this.getUsers();
+
+        console.log("retrieved users : " + users)
 
         await instance.send(new PutObjectCommand({
             Bucket,
@@ -145,25 +146,20 @@ module.exports = class S3Datastore extends Datastore {
             ])),
             ContentType: 'application/json',
         }))
-        // } catch (err) {
-        // await instance.send(new PutObjectCommand({
-        //     Bucket,
-        //     Key: 'users.json',
-        //     Body: fromUtf8(JSON.stringify([email])),
-        //     ContentType: 'application/json'
-        // }))
-        // }
     }
 
     createUserIfNotExists = async (email) => {
         const { instance, Bucket } = this.#state;;
 
+        console.log("attempt to create user : " + email)
         try {
-            await instance.send(new HeadObjectCommand({
+            const res = await instance.send(new HeadObjectCommand({
                 Bucket,
                 Key: `${format(email)}.json`
             }))
+            console.log('user file has been retrieved : ' + email);
         } catch (err) {
+            console.log('user file not found : ' + email);
             await this.#addUser(format(email))
         }
     }

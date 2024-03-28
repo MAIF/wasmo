@@ -38,7 +38,8 @@ const checkApikey = (header) => {
 
 const extractUserFromQuery = (req, res, next) => {
   if (ENV.AUTH_MODE === AUTHENTICATION.NO_AUTH) {
-    req.user = { email: 'admin@otoroshi.io' }
+    // req.user = { email: 'admin@otoroshi.io' }
+    req.user = { email: 'fifou@otoroshi.io' }
     next()
   } else if (ENV.AUTH_MODE === AUTHENTICATION.OTOROSHI) {
     otoroshiAuthentication(req, res, next);
