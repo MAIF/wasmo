@@ -21,6 +21,8 @@ const { ENV, STORAGE } = require("../configuration");
 const logger = require("../logger");
 const consumers = require('node:stream/consumers');
 const AdmZip = require("adm-zip");
+const { Console } = require('console');
+const CustomStream = require('./CustomStream');
 
 /**
  * Class representing S3.
@@ -315,32 +317,66 @@ module.exports = class S3Datastore extends Datastore {
     run = (wasm, { input, functionName, wasi }) => {
         const { instance, Bucket } = this.#state;
 
+        function proxy_log(cp, kOffs, vOffs) {
+            const buffer = cp.read(kOffs)
+
+            console.log(kOffs)
+
+            return BigInt(0)
+        }
+
         return instance.send(new GetObjectCommand({
             Bucket,
-            Key: wasm
+            Key: wasm.endsWith('.wasm') ? wasm : `${wasm}.wasm`
         }))
             .then(data => new fetch.Response(data.Body).buffer())
             .then(async data => {
-                const { Context } = require('@extism/extism');
-                const ctx = new Context();
-                const plugin = ctx.plugin(data, wasi);
+                const { newPlugin } = require('@extism/extism');
 
-                const buf = await plugin.call(functionName, input)
-                const output = buf.toString()
-                plugin.free()
+                const stdout = new CustomStream()
+                const stderr = new CustomStream()
+
+                const plugin = await newPlugin(new Uint8Array(data).buffer, {
+                    useWasi: wasi,
+                    functions: {
+                        "extism:host/user": {
+                            proxy_log
+                        }
+                    },
+                    logger: new Console(stdout, stderr)
+                });
+
+                let output = ""
+                try {
+                    const buf = await plugin.call(functionName, input)
+                    output = buf.text()
+                } catch (err) {
+                    stderr._write(err.toString(), undefined, () => { })
+                }
+                
+                await plugin.close()
+
+                const stdoutOutput = stdout.contents();
+                const stderrOutput = stderr.contents();
+
+                stdout.destroy()
+                stderr.destroy()
 
                 return {
                     status: 200,
                     body: {
-                        data: output
+                        data: output,
+                        stdout: stdoutOutput,
+                        stderr: stderrOutput
                     }
-                }
+                };
             })
             .catch(err => {
+                console.log(err)
                 return {
                     status: 400,
                     body: {
-                        error: err
+                        error: err.toString()
                     }
                 }
             })

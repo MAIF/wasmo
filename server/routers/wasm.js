@@ -6,6 +6,29 @@ const router = express.Router()
 
 router.get('/runtime', (_, res) => res.json(ENV.EXTISM_RUNTIME_ENVIRONMENT === 'true'));
 
+router.get('/:id/exports', (req, res) => {
+  Datastore.getWasm(req.params.id)
+    .then(async ({ content, error, status }) => {
+      if (error || status === 404) {
+        res.status(status).json({ error, status })
+      } else {
+        const { newPlugin } = require('@extism/extism');
+
+        const plugin = await newPlugin(new Uint8Array(content).buffer, {
+          useWasi: true
+        });
+
+        await plugin.close()
+
+        res.json(
+          (await plugin.getExports())
+            .filter(f => !["memory"].includes(f.name) && !f.name.startsWith("__"))
+            .map(value => ({ value: value.name, label: value.name }))
+        )
+      }
+    })
+});
+
 router.get('/:id', (req, res) => {
   const Key = `${req.params.id}.wasm`;
 
@@ -28,29 +51,16 @@ router.post('/:pluginId', (req, res) => {
         error: 'Missing plugin id'
       })
   } else {
-    const { pluginId } = req.params;
-
-    Datastore.getUser(req.user.email)
-      .then(data => {
-        const plugin = data.plugins.find(plugin => plugin.pluginId === pluginId);
-
-        if (!ENV.EXTISM_RUNTIME_ENVIRONMENT) {
-          res
-            .status(400)
-            .json({
-              error: 'Runtime environment is not enabled.'
-            })
-        } else if (plugin) {
-          Datastore.run(plugin.wasm, req.body, res)
-            .then(out => res.status(out.status).json(out.body))
-        } else {
-          res
-            .status(404)
-            .json({
-              error: 'Plugin not found'
-            })
-        }
-      })
+    if (!ENV.EXTISM_RUNTIME_ENVIRONMENT) {
+      res
+        .status(400)
+        .json({
+          error: 'Runtime environment is not enabled.'
+        })
+    } else {
+      Datastore.run(req.params.pluginId, req.body, res)
+        .then(out => res.status(out.status).json(out.body))
+    }
   }
 });
 

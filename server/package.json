@@ -11,7 +11,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.427.0",
     "@aws-sdk/util-utf8-node": "^3.259.0",
-    "@extism/extism": "^0.2.0",
+    "@extism/extism": "^1.0.2",
     "adm-zip": "^0.5.10",
     "body-parser": "^1.20.1",
     "compression": "^1.7.4",

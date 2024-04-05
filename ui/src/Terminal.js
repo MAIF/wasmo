@@ -10,6 +10,8 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
   const [loadConfigurationFile, setLoadConfigurationFile] = useState(false);
   const ref = useRef();
 
+  const [wsState, setWsState] = useState({})
+
   useEffect(() => {
     if (loadConfigurationFile) {
       onLoadConfigurationFile()
@@ -18,6 +20,7 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
   }, [loadConfigurationFile]);
 
   const connect = (isDevelopment, isWSS) => {
+    console.log("connect ws")
     let socket;
 
     let protocol = 'ws';
@@ -72,6 +75,7 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
     if (selectedPlugin) {
       Promise.all([isDevelopmentMode(), isWSS()])
         .then(([isDevelopment, isWSS]) => {
+          setWsState({ isDevelopment, isWSS })
           connect(isDevelopment, isWSS)
         })
     }
@@ -105,7 +109,10 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
         borderBottom: '2px solid #f9b000', textTransform: 'uppercase',
         userSelect: 'none',
         width: 'fit-content'
-      }} className='p-1' onClick={() => changeTerminalSize(0.3)}>
+      }} className='p-1' onClick={() => {
+        changeTerminalSize(0.3)
+        connect(wsState.isDevelopment, wsState.isWSS)
+      }}>
         <span>Terminal</span>
       </div>
       <div className='d-flex align-items-center'>

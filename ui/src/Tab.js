@@ -5,10 +5,14 @@ import { json } from '@codemirror/lang-json';
 import { markdown } from '@codemirror/lang-markdown';
 import { go } from '@codemirror/legacy-modes/mode/go';
 import { StreamLanguage } from '@codemirror/language';
-import { javascript } from '@codemirror/lang-javascript';
+import { javascript, esLint } from '@codemirror/lang-javascript';
 import { autocompletion } from '@codemirror/autocomplete';
 import { marked } from "marked";
 import { SidebarContext } from './Sidebar';
+import { indentationMarkers } from '@replit/codemirror-indentation-markers';
+import { linter, lintGutter } from "@codemirror/lint";
+
+import * as eslint from "eslint-linter-browserify";
 
 function Tab({ content, ext, handleContent, selected, readOnly }) {
   const ref = useRef()
@@ -33,6 +37,31 @@ function Tab({ content, ext, handleContent, selected, readOnly }) {
     }
   }
 
+  let extensions = [
+    getLanguageExtension(),
+    autocompletion(),
+    indentationMarkers(),
+    lintGutter()
+  ]
+
+  if (ext === 'js')
+    extensions = [
+      ...extensions,
+      linter(esLint(new eslint.Linter(), {
+        parserOptions: {
+          ecmaVersion: "latest",
+          sourceType: "module",
+        },
+        env: {
+          browser: true,
+          node: true,
+        },
+        rules: {
+          semi: ["error", "never"],
+        }
+      }))
+    ]
+
   const renderCodeMirror = () => {
     return <SidebarContext.Consumer>
       {({ open, sidebarSize }) => (
@@ -49,10 +78,7 @@ function Tab({ content, ext, handleContent, selected, readOnly }) {
           readOnly={readOnly}
           maxWidth={`calc(100vw - ${open ? `${sidebarSize}px` : '52px'})`}
           value={content}
-          extensions={[
-            getLanguageExtension(),
-            autocompletion(),
-          ]}
+          extensions={extensions}
           onChange={value => {
             handleContent(value)
           }}

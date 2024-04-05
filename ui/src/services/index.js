@@ -100,9 +100,13 @@ export const removePlugin = plugin => rawFetch(`/plugins/${plugin}`, {
 export const launchPlugin = (pluginId, input, functionName, pluginType) => jsonFetch(`/wasm/${pluginId}`, {
   method: 'POST',
   body: JSON.stringify({
-    input, functionName, wasi: ['ts', 'js', 'go'].includes(pluginType)
+    input, functionName,
+    wasi: true
+    //wasi: ['ts', 'js', 'go',].includes(pluginType)
   })
 });
+
+export const getExports = (pluginId) => jsonFetch(`/wasm/${pluginId}/exports`);
 
 export const createGithubRepo = (owner, repo, ref, isPrivate) => jsonFetch(`/plugins/github/repo`, {
   method: 'POST',

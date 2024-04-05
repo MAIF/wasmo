@@ -6,6 +6,7 @@ import Terminal from './Terminal';
 import { TabsHeader } from './TabsHeader';
 import { Sidebar, SidebarContext } from './Sidebar';
 import { LOGOS } from './FilesLogo';
+import { Run } from './Run';
 
 function TabsManager({ plugins, ...props }) {
   const [tabs, setTabs] = useState([])
@@ -128,6 +129,7 @@ function TabsManager({ plugins, ...props }) {
                   handleContent={newContent => props.handleContent(currentTab, newContent)}
                   setCurrentTab={setCurrentTab}
                   currentTab={currentTab} /> : null}
+                {currentTab === "Runner" && <Run plugins={plugins} configFiles={props.configFiles} />}
               </div>
               {props.selectedPlugin && <Terminal
                 selectedPlugin={props.selectedPlugin}
@@ -191,6 +193,10 @@ function Tabs({ tabs, setCurrentTab, setTabs, currentTab, selectedPlugin, config
 }
 
 function Contents({ tabs, setCurrentTab, currentTab, handleContent, selectedPlugin, configFiles }) {
+
+  if (currentTab === "Runner")
+    return null
+
   return <div style={{ flex: 1, marginTop: 42, display: 'flex', flexDirection: 'column', position: 'relative' }}>
     {tabs
       .filter(tab => [...selectedPlugin.files, ...configFiles].find(f => f.filename === tab))

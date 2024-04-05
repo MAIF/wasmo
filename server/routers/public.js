@@ -63,6 +63,7 @@ router.get('/wasm/:id', (req, res) => {
   getWasm(req.params.id, res);
 });
 
+
 router.get('/plugins', (req, res) => {
   const reg = req.headers['kind'] || '*';
 

@@ -54,7 +54,7 @@ const cleanBuildsAndLogsFolders = async () => {
 
       const out = await Promise.all(deletedFiles.map(async file => {
         const filepath = path.join(process.cwd(), i === 0 ? "build" : "logs", file)
-        if (Date.now() - (await fs.stat(filepath)).birthtimeMs > 120000)
+        if (Date.now() - (await fs.stat(filepath)).birthtimeMs > 5000)
           return filepath
         return undefined
       })).then(data => data.filter(f => f))
