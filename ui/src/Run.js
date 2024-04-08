@@ -106,16 +106,27 @@ export class Run extends React.Component {
             }))
     }
 
+    getConfigurationFile = () => {
+        try {
+            return JSON.parse(this.props.configFiles.find(configFile => configFile.filename === "config")?.content)
+        } catch (err) {
+            return { versions: [] }
+        }
+    }
+
     render() {
         const { selectedPlugin, input, functionName, output, stdout, stderr, functions, version } = this.state;
         const { plugins } = this.props;
 
         const selectedPluginContents = this.props.plugins.find(p => p.pluginId === selectedPlugin?.value);
 
+        const configurationFile = this.getConfigurationFile()
+
         return (
             <div style={{ flex: 1, marginTop: 75, maxWidth: 800 }} className="px-3"
                 onKeyDown={e => e.stopPropagation()}>
                 <SelectorStep
+                    noOptionsMessageText="no plugin"
                     id="selectedPlugin"
                     title="Plugin"
                     value={selectedPlugin}
@@ -124,15 +135,17 @@ export class Run extends React.Component {
                         .map(plugin => ({ value: plugin.pluginId, label: plugin.filename }))}
                     onChange={e => {
                         this.setState({
-                            selectedPlugin: e
+                            selectedPlugin: e,
+                            version: undefined
                         })
                     }}
                 />
                 <SelectorStep
+                    noOptionsMessageText="no version"
                     title="Version"
                     id="selectedVersion"
                     value={version}
-                    options={selectedPluginContents?.versions?.map(v => ({ label: v.name, value: v.name }))}
+                    options={(selectedPluginContents?.versions || configurationFile?.versions)?.map(v => ({ label: v.name, value: v.name }))}
                     onChange={version => {
                         this.setState({ version }, this.fetchExports)
                     }}
@@ -241,7 +254,7 @@ export class Run extends React.Component {
     }
 }
 
-function SelectorStep({ id, title, value, options, onChange, button = () => null }) {
+function SelectorStep({ id, title, value, options, onChange, noOptionsMessageText, button = () => null }) {
     const Button = button
     return <div className='mb-3 bg-light p-2 ps-3 d-flex align-items-center gap-2'>
         <div className='d-flex align-items-center gap-2' style={{ minWidth: 100 }}>
@@ -254,6 +267,13 @@ function SelectorStep({ id, title, value, options, onChange, button = () => null
             value={value}
             options={options}
             onChange={onChange}
+            components={{
+                NoOptionsMessage: () => {
+                    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center ' }}>
+                        <span>{noOptionsMessageText}</span>
+                    </div>
+                }
+            }}
         />
     </div>
 }

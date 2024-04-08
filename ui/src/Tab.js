@@ -1,14 +1,17 @@
 import React, { useRef } from 'react';
+
+import { marked } from "marked";
+import { SidebarContext } from './Sidebar';
+
 import CodeMirror from '@uiw/react-codemirror';
 import { rust } from '@codemirror/lang-rust';
 import { json } from '@codemirror/lang-json';
 import { markdown } from '@codemirror/lang-markdown';
 import { go } from '@codemirror/legacy-modes/mode/go';
-import { StreamLanguage } from '@codemirror/language';
 import { javascript, esLint } from '@codemirror/lang-javascript';
+import { StreamLanguage } from '@codemirror/language';
 import { autocompletion } from '@codemirror/autocomplete';
-import { marked } from "marked";
-import { SidebarContext } from './Sidebar';
+
 import { indentationMarkers } from '@replit/codemirror-indentation-markers';
 import { linter, lintGutter } from "@codemirror/lint";
 
@@ -44,23 +47,21 @@ function Tab({ content, ext, handleContent, selected, readOnly }) {
     lintGutter()
   ]
 
-  if (ext === 'js')
+  if (ext === 'js') {
+    const lints = linter(esLint(new eslint.Linter(), {
+      languageOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module"
+      },
+      rules: {
+        semi: ["error", "never"]
+      }
+    }));
     extensions = [
       ...extensions,
-      linter(esLint(new eslint.Linter(), {
-        parserOptions: {
-          ecmaVersion: "latest",
-          sourceType: "module",
-        },
-        env: {
-          browser: true,
-          node: true,
-        },
-        rules: {
-          semi: ["error", "never"],
-        }
-      }))
+      lints
     ]
+  }
 
   const renderCodeMirror = () => {
     return <SidebarContext.Consumer>

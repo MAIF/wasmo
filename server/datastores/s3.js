@@ -317,13 +317,13 @@ module.exports = class S3Datastore extends Datastore {
     run = (wasm, { input, functionName, wasi }) => {
         const { instance, Bucket } = this.#state;
 
-        function proxy_log(cp, kOffs, vOffs) {
-            const buffer = cp.read(kOffs)
+        // function proxy_log(cp, kOffs) {
+        //     const buffer = cp.read(kOffs).text()
 
-            console.log(kOffs)
+        //     console.log({ kOffs, buffer })
 
-            return BigInt(0)
-        }
+        //     return BigInt(0)
+        // }
 
         return instance.send(new GetObjectCommand({
             Bucket,
@@ -331,45 +331,55 @@ module.exports = class S3Datastore extends Datastore {
         }))
             .then(data => new fetch.Response(data.Body).buffer())
             .then(async data => {
-                const { newPlugin } = require('@extism/extism');
-
-                const stdout = new CustomStream()
-                const stderr = new CustomStream()
-
-                const plugin = await newPlugin(new Uint8Array(data).buffer, {
-                    useWasi: wasi,
-                    functions: {
-                        "extism:host/user": {
-                            proxy_log
-                        }
-                    },
-                    logger: new Console(stdout, stderr)
-                });
-
-                let output = ""
                 try {
-                    const buf = await plugin.call(functionName, input)
-                    output = buf.text()
-                } catch (err) {
-                    stderr._write(err.toString(), undefined, () => { })
-                }
-                
-                await plugin.close()
+                    const { newPlugin } = require('@extism/extism');
 
-                const stdoutOutput = stdout.contents();
-                const stderrOutput = stderr.contents();
+                    const stdout = new CustomStream()
+                    const stderr = new CustomStream()
 
-                stdout.destroy()
-                stderr.destroy()
+                    const plugin = await newPlugin(new Uint8Array(data).buffer, {
+                        useWasi: wasi,
+                        // functions: {
+                        //     "extism:host/user": {
+                        //         proxy_log
+                        //     }
+                        // },
+                        logger: new Console(stdout, stderr)
+                    });
 
-                return {
-                    status: 200,
-                    body: {
-                        data: output,
-                        stdout: stdoutOutput,
-                        stderr: stderrOutput
+                    let output = ""
+
+                    try {
+                        const buf = await plugin.call(functionName, input)
+                        output = buf.text()
+                    } catch (err) {
+                        stderr._write(err.toString(), undefined, () => { })
                     }
-                };
+
+                    await plugin.close()
+
+                    const stdoutOutput = stdout.contents();
+                    const stderrOutput = stderr.contents();
+
+                    stdout.destroy()
+                    stderr.destroy()
+
+                    return {
+                        status: 200,
+                        body: {
+                            data: output,
+                            stdout: stdoutOutput,
+                            stderr: stderrOutput
+                        }
+                    };
+                } catch (err) {
+                    return {
+                        status: 400,
+                        body: {
+                            error: err.toString()
+                        }
+                    }
+                }
             })
             .catch(err => {
                 console.log(err)

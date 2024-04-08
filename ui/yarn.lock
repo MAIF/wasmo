@@ -1233,10 +1233,23 @@
     "@lezer/css" "^1.1.0"
     "@lezer/html" "^1.3.0"
 
-"@codemirror/lang-javascript@^6.0.0", "@codemirror/lang-javascript@^6.1.2":
+"@codemirror/lang-javascript@^6.0.0":
   version "6.2.1"
   resolved "https://registry.yarnpkg.com/@codemirror/lang-javascript/-/lang-javascript-6.2.1.tgz#8068d44365d13cdb044936fb4e3483301c12ef95"
   integrity sha512-jlFOXTejVyiQCW3EQwvKH0m99bUYIw40oPmFjSX2VS78yzfe0HELZ+NEo9Yfo1MkGRpGlj3Gnu4rdxV1EnAs5A==
+  dependencies:
+    "@codemirror/autocomplete" "^6.0.0"
+    "@codemirror/language" "^6.6.0"
+    "@codemirror/lint" "^6.0.0"
+    "@codemirror/state" "^6.0.0"
+    "@codemirror/view" "^6.17.0"
+    "@lezer/common" "^1.0.0"
+    "@lezer/javascript" "^1.0.0"
+
+"@codemirror/lang-javascript@^6.2.2":
+  version "6.2.2"
+  resolved "https://registry.yarnpkg.com/@codemirror/lang-javascript/-/lang-javascript-6.2.2.tgz#7141090b22994bef85bcc5608a3bc1257f2db2ad"
+  integrity sha512-VGQfY+FCc285AhWuwjYxQyUQcYurWlxdKYT4bqwr3Twnd5wP5WSeu52t4tvvuWmljT4EmgEgZCqSieokhtY8hg==
   dependencies:
     "@codemirror/autocomplete" "^6.0.0"
     "@codemirror/language" "^6.6.0"
@@ -4598,10 +4611,10 @@ eslint-import-resolver-node@^0.3.9:
     is-core-module "^2.13.0"
     resolve "^1.22.4"
 
-eslint-linter-browserify@^8.57.0:
-  version "8.57.0"
-  resolved "https://registry.yarnpkg.com/eslint-linter-browserify/-/eslint-linter-browserify-8.57.0.tgz#1cb6cde0676e23ad730018fe03360b47a7e6cba9"
-  integrity sha512-/idNlk9+YK55RTUnH/ZFpos0QsVgK2poNCczSH5jyjeqKHQ96nYDugpDrDpqPNfI+i414IddxDDwspVKzBPQ2A==
+eslint-linter-browserify@^9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/eslint-linter-browserify/-/eslint-linter-browserify-9.0.0.tgz#f31eff35f4cfee8301d88a0d1bc2f4695baa32f0"
+  integrity sha512-Gb8B98D5gy7jZyWZd6Qdj11/tLuVGulZvdutFBfOQeIcreFpBLv7npar9nhH8Bvr3BsvFdClqaIjcEMwCunHMw==
 
 eslint-module-utils@^2.8.0:
   version "2.8.0"

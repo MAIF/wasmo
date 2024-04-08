@@ -41,8 +41,6 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN rustup target add wasm32-unknown-unknown
 
 # RUN apt-get install binaryen
-
-
 RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
         wget https://github.com/tinygo-org/tinygo/releases/download/v0.30.0/tinygo_0.30.0_arm64.deb; \
         dpkg -i tinygo_0.30.0_arm64.deb; \

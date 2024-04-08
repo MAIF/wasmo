@@ -12,19 +12,40 @@ router.get('/:id/exports', (req, res) => {
       if (error || status === 404) {
         res.status(status).json({ error, status })
       } else {
-        const { newPlugin } = require('@extism/extism');
+        try {
+          const { newPlugin } = require('@extism/extism');
 
-        const plugin = await newPlugin(new Uint8Array(content).buffer, {
-          useWasi: true
-        });
+          // function proxy_log(cp, kOffs, vOffs) {
+          //   const buffer = cp.read(kOffs)
 
-        await plugin.close()
+          //   console.log({ kOffs, buffer, vOffs })
 
-        res.json(
-          (await plugin.getExports())
-            .filter(f => !["memory"].includes(f.name) && !f.name.startsWith("__"))
-            .map(value => ({ value: value.name, label: value.name }))
-        )
+          //   return BigInt(0)
+          // }
+
+          const plugin = await newPlugin(new Uint8Array(content).buffer, {
+            useWasi: true,
+            // functions: {
+            //   "extism:host/user": {
+            //     proxy_log
+            //   }
+            // },
+          });
+
+          const exports = await plugin.getExports();
+
+          await plugin.close()
+
+          res.json(
+            exports
+              .filter(f => !["memory"].includes(f.name) && !f.name.startsWith("__"))
+              .map(value => ({ value: value.name, label: value.name }))
+          )
+        } catch (err) {
+          res.status(400).json({
+            error: err.toString()
+          })
+        }
       }
     })
 });
