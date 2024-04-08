@@ -129,7 +129,7 @@ function TabsManager({ plugins, ...props }) {
                   handleContent={newContent => props.handleContent(currentTab, newContent)}
                   setCurrentTab={setCurrentTab}
                   currentTab={currentTab} /> : null}
-                {currentTab === "Runner" && <Run plugins={plugins} configFiles={props.configFiles} />}
+                {currentTab === "Runner" && <Run plugins={plugins} configFiles={props.configFiles} selectedPlugin={props.selectedPlugin} />}
               </div>
               {props.selectedPlugin && <Terminal
                 selectedPlugin={props.selectedPlugin}

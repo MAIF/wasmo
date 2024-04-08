@@ -120,7 +120,7 @@ export class Run extends React.Component {
 
         const selectedPluginContents = this.props.plugins.find(p => p.pluginId === selectedPlugin?.value);
 
-        const configurationFile = this.getConfigurationFile()
+        const configurationFile = this.props.selectedPlugin?.pluginId === selectedPlugin?.value ? this.getConfigurationFile() : selectedPluginContents?.versions
 
         return (
             <div style={{ flex: 1, marginTop: 75, maxWidth: 800 }} className="px-3"
@@ -136,21 +136,24 @@ export class Run extends React.Component {
                     onChange={e => {
                         this.setState({
                             selectedPlugin: e,
-                            version: undefined
+                            version: undefined,
+                            functionName: "",
+                            functions: []
                         })
                     }}
                 />
                 <SelectorStep
-                    noOptionsMessageText="no version"
+                    noOptionsMessageText="You need to build a first version of this plugin to use it"
                     title="Version"
                     id="selectedVersion"
                     value={version}
-                    options={(selectedPluginContents?.versions || configurationFile?.versions)?.map(v => ({ label: v.name, value: v.name }))}
+                    options={(configurationFile?.versions || [])?.map(v => ({ label: v.name, value: v.name }))}
                     onChange={version => {
                         this.setState({ version }, this.fetchExports)
                     }}
                 />
                 <SelectorStep
+                    noOptionsMessageText="You need to select a version"
                     title="Function"
                     id="function"
                     value={functionName}
