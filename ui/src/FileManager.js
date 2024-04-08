@@ -8,9 +8,9 @@ function File({ newFilename, filename, content, ext, onClick, ...props }) {
     border: 'none'
   }}
     onClick={onClick}
-    type="button" >
+    type="button">
     {props.new ? <div>
-      <i className='fa-solid fa-file' />
+      <i className='fa-solid fa-file mx-2' />
       <input type='text'
         autoFocus
         value={newFilename}
@@ -38,9 +38,8 @@ function File({ newFilename, filename, content, ext, onClick, ...props }) {
         ].includes(filename) && <span className='me-2' onClick={e => {
           e.stopPropagation()
           props.removeFile(filename)
-        }} >
-          <i className='fa-solid fa-times'
-          />
+        }}>
+          <i className='fa-solid fa-times' />
         </span>}
     </div>}
   </button>
