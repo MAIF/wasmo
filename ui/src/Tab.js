@@ -49,9 +49,9 @@ function Tab({ content, ext, handleContent, selected, readOnly }) {
 
   if (ext === 'js') {
     const lints = linter(esLint(new eslint.Linter(), {
+      files: ["**/*.js"],
       languageOptions: {
-        ecmaVersion: "latest",
-        sourceType: "module"
+        ecmaVersion: "latest"
       },
       rules: {
         semi: ["error", "never"]

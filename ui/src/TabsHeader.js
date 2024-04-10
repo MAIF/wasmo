@@ -40,8 +40,8 @@ function Header({
             <Build onBuild={onBuild} />
             <Release onBuild={onBuild} />
             <Download onDownload={onDownload} />
+            {runtimeState && <Play showPlaySettings={showPlaySettings} />}
           </>}
-          {runtimeState && <Play showPlaySettings={showPlaySettings} />}
         </div>
       </div>
     )}

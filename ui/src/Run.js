@@ -18,7 +18,6 @@ import {
 export class Run extends React.Component {
 
     state = {
-        selectedPlugin: this.props.selectedPlugin ? { value: this.props.selectedPlugin.pluginId, label: this.props.selectedPlugin.filename } : undefined,
         version: undefined,
         input: JSON.stringify({}, null, 4),
         functionName: 'execute',
@@ -57,8 +56,8 @@ export class Run extends React.Component {
     }
 
     run = () => {
-        const { selectedPlugin, input, functionName, version } = this.state;
-        const plugin = this.props.plugins.find(p => p.pluginId === selectedPlugin.value);
+        const { input, functionName, version } = this.state;
+        const plugin = this.props.plugins.find(p => p.pluginId === this.props.selectedPlugin.value);
 
         if (!version) {
             toast.error("You need to build your plugin before using the runner");
@@ -99,11 +98,12 @@ export class Run extends React.Component {
     }
 
     fetchExports = () => {
-        getExports(this.state.version.value)
-            .then(functions => this.setState({
-                functions,
-                functionName: functions[0]
-            }))
+        if (this.state.version)
+            getExports(this.state.version.value)
+                .then(functions => this.setState({
+                    functions,
+                    functionName: functions[0]
+                }))
     }
 
     getConfigurationFile = () => {
@@ -115,33 +115,17 @@ export class Run extends React.Component {
     }
 
     render() {
-        const { selectedPlugin, input, functionName, output, stdout, stderr, functions, version } = this.state;
+        const { input, functionName, output, stdout, stderr, functions, version } = this.state;
         const { plugins } = this.props;
 
-        const selectedPluginContents = this.props.plugins.find(p => p.pluginId === selectedPlugin?.value);
+        if (!this.props.selectedPlugin)
+            return null
 
-        const configurationFile = this.props.selectedPlugin?.pluginId === selectedPlugin?.value ? this.getConfigurationFile() : selectedPluginContents?.versions
+        const configurationFile = this.getConfigurationFile()
 
         return (
             <div style={{ flex: 1, marginTop: 75, maxWidth: 800 }} className="px-3"
                 onKeyDown={e => e.stopPropagation()}>
-                <SelectorStep
-                    noOptionsMessageText="no plugin"
-                    id="selectedPlugin"
-                    title="Plugin"
-                    value={selectedPlugin}
-                    options={plugins
-                        .filter(plugin => plugin.type !== 'opa')
-                        .map(plugin => ({ value: plugin.pluginId, label: plugin.filename }))}
-                    onChange={e => {
-                        this.setState({
-                            selectedPlugin: e,
-                            version: undefined,
-                            functionName: "",
-                            functions: []
-                        })
-                    }}
-                />
                 <SelectorStep
                     noOptionsMessageText="You need to build a first version of this plugin to use it"
                     title="Version"
@@ -205,7 +189,7 @@ export class Run extends React.Component {
                     />
                 </div>
                 <div className='mb-3'>
-                    <button type="button" className='btn btn-success btn-sm' onClick={this.run} disabled={!selectedPlugin}>
+                    <button type="button" className='btn btn-success btn-sm' onClick={this.run} >
                         <i className='fas fa-play me-1' />
                         Run
                     </button>
@@ -270,6 +254,7 @@ function SelectorStep({ id, title, value, options, onChange, noOptionsMessageTex
             value={value}
             options={options}
             onChange={onChange}
+            isClearable
             components={{
                 NoOptionsMessage: () => {
                     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center ' }}>

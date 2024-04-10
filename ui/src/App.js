@@ -319,6 +319,11 @@ class App extends React.Component {
     }, () => {
       const plugin = this.state.plugins.find(f => f.pluginId === newSelectedPlugin)
 
+      if (!plugin) {
+        window.location.href = '/'
+        return
+      }
+
       if (plugin.type === "github") {
         const { filename, owner, ref } = plugin;
         Service.getGithubSources(filename, owner, ref, plugin.private)
