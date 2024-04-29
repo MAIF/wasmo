@@ -1,4 +1,4 @@
-import { WasmAccessValidatorContext, WasmAccessValidatorResponse } from './types';
+import { WasmAccessValidatorContext, WasmAccessValidatorResponse } from 'otoroshi-ts-types';
 
 export declare var Host: any;
 

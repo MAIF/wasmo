@@ -3,6 +3,7 @@ package main
 import (
     "github.com/extism/go-pdk"
     "github.com/buger/jsonparser"
+    // "github.com/MAIF/otoroshi-go-types"
 )
 
 //export execute

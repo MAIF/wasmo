@@ -1,15 +1,18 @@
-mod types;
+mod main;
 
 use extism_pdk::*;
+use otoroshi_rust_types::*;
 
 #[plugin_fn]
-pub fn execute(Json(_context): Json<types::WasmAccessValidatorContext>) -> FnResult<Json<types::WasmAccessValidatorResponse>> {
-    let out = types::WasmAccessValidatorResponse { 
-        result: false, 
-        error: Some(types::WasmAccessValidatorError { 
-            message: "you're not authorized".to_owned(),  
-            status: 401
-        })  
+pub fn execute(
+    Json(_context): Json<WasmAccessValidatorContext>,
+) -> FnResult<Json<WasmAccessValidatorResponse>> {
+    let out = WasmAccessValidatorResponse {
+        result: false,
+        error: Some(WasmAccessValidatorError {
+            message: "you're not authorized".to_owned(),
+            status: 401,
+        }),
     };
     Ok(Json(out))
 }
@@ -19,7 +22,7 @@ pub fn execute(Json(_context): Json<types::WasmAccessValidatorContext>) -> FnRes
 // WasmRouteMatcher
 
 #[plugin_fn]
-pub fn matches_route(Json(_context): Json<types::WasmMatchRouteContext>) -> FnResult<Json<types::WasmMatchRouteResponse>> {
+pub fn matches_route(Json(_context): Json<WasmMatchRouteContext>) -> FnResult<Json<WasmMatchRouteResponse>> {
     ///
 }
 
@@ -28,7 +31,7 @@ pub fn matches_route(Json(_context): Json<types::WasmMatchRouteContext>) -> FnRe
 // WasmPreRoute
 
 #[plugin_fn]
-pub fn pre_route(Json(_context): Json<types::WasmPreRouteContext>) -> FnResult<Json<types::WasmPreRouteResponse>> {
+pub fn pre_route(Json(_context): Json<WasmPreRouteContext>) -> FnResult<Json<WasmPreRouteResponse>> {
     ///
 }
 
@@ -37,7 +40,7 @@ pub fn pre_route(Json(_context): Json<types::WasmPreRouteContext>) -> FnResult<J
 // WasmAccessValidator
 
 #[plugin_fn]
-pub fn can_access(Json(_context): Json<types::WasmAccessValidatorContext>) -> FnResult<Json<types::WasmAccessValidatorResponse>> {
+pub fn can_access(Json(_context): Json<WasmAccessValidatorContext>) -> FnResult<Json<WasmAccessValidatorResponse>> {
     ///
 }
 
@@ -47,7 +50,7 @@ pub fn can_access(Json(_context): Json<types::WasmAccessValidatorContext>) -> Fn
 
 
 #[plugin_fn]
-pub fn transform_request(Json(_context): Json<types::WasmRequestTransformerContext>) -> FnResult<Json<types::WasmTransformerResponse>> {
+pub fn transform_request(Json(_context): Json<WasmRequestTransformerContext>) -> FnResult<Json<WasmTransformerResponse>> {
     ///
 }
 
@@ -56,7 +59,7 @@ pub fn transform_request(Json(_context): Json<types::WasmRequestTransformerConte
 // WasmBackend
 
 #[plugin_fn]
-pub fn call_backend(Json(_context): Json<types::WasmQueryContext>) -> FnResult<Json<types::WasmQueryResponse>> {
+pub fn call_backend(Json(_context): Json<WasmQueryContext>) -> FnResult<Json<WasmQueryResponse>> {
     ///
 }
 
@@ -65,7 +68,7 @@ pub fn call_backend(Json(_context): Json<types::WasmQueryContext>) -> FnResult<J
 // WasmResponseTransformer
 
 #[plugin_fn]
-pub fn transform_response(Json(_context): Json<types::WasmResponseTransformerContext>) -> FnResult<Json<types::WasmTransformerResponse>> {
+pub fn transform_response(Json(_context): Json<WasmResponseTransformerContext>) -> FnResult<Json<WasmTransformerResponse>> {
     ///
 }
 
@@ -74,12 +77,12 @@ pub fn transform_response(Json(_context): Json<types::WasmResponseTransformerCon
 // WasmSink
 
 #[plugin_fn]
-pub fn sink_matches(Json(_context): Json<types::WasmSinkContext>) -> FnResult<Json<types::WasmSinkMatchesResponse>> {
+pub fn sink_matches(Json(_context): Json<WasmSinkContext>) -> FnResult<Json<WasmSinkMatchesResponse>> {
     ///
 }
 
 #[plugin_fn]
-pub fn sink_handle(Json(_context): Json<types::WasmSinkContext>) -> FnResult<Json<types::WasmSinkHandleResponse>> {
+pub fn sink_handle(Json(_context): Json<WasmSinkContext>) -> FnResult<Json<WasmSinkHandleResponse>> {
     ///
 }
 
@@ -88,7 +91,7 @@ pub fn sink_handle(Json(_context): Json<types::WasmSinkContext>) -> FnResult<Jso
 // WasmRequestHandler
 
 #[plugin_fn]
-pub fn handle_request(Json(_context): Json<types::WasmRequestHandlerContext>) -> FnResult<Json<types::WasmRequestHandlerResponse>> {
+pub fn handle_request(Json(_context): Json<WasmRequestHandlerContext>) -> FnResult<Json<WasmRequestHandlerResponse>> {
     ///
 }
 
@@ -97,7 +100,7 @@ pub fn handle_request(Json(_context): Json<types::WasmRequestHandlerContext>) ->
 // WasmJob
 
 #[plugin_fn]
-pub fn job_run(Json(_context): Json<types::WasmJobContext>) -> FnResult<Json<types::WasmJobResult>> {
+pub fn job_run(Json(_context): Json<WasmJobContext>) -> FnResult<Json<WasmJobResult>> {
     ///
 }
 
