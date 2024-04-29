@@ -1,7 +1,5 @@
-mod main;
-
 use extism_pdk::*;
-use otoroshi_rust_types::*;
+use otoroshi_rust_types::types::*;
 
 #[plugin_fn]
 pub fn execute(
