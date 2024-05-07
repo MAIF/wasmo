@@ -34,7 +34,7 @@ function Header({
         style={{ position: 'fixed', height: 42, zIndex: 10, width: `calc(100vw - ${open ? `${sidebarSize}px` : '52px'})` }}>
         {children}
 
-        <div className='d-flex align-items-center'>
+        <div className='d-flex align-items-center me-2'>
           {showActions && <>
             <Save onSave={onSave} />
             <Build onBuild={onBuild} />
@@ -52,8 +52,7 @@ function Save({ onSave }) {
   return <button
     type="button"
     tooltip="Save plugin"
-    style={{ border: 'none', background: 'none' }}
-    className="pe-2"
+    className="navbar-item"
     onClick={onSave}>
     <i className='fa-solid fa-save' />
   </button>
@@ -63,8 +62,7 @@ function Build({ onBuild }) {
   return <button
     type="button"
     tooltip="Build"
-    style={{ border: 'none', background: 'none' }}
-    className="pe-2"
+    className="navbar-item"
     onClick={() => onBuild(false)}>
     <i className='fa-solid fa-hammer' />
   </button>
@@ -74,8 +72,7 @@ function Release({ onBuild }) {
   return <button
     type="button"
     tooltip="Release"
-    style={{ border: 'none', background: 'none' }}
-    className="pe-2"
+    className="navbar-item"
     onClick={() => onBuild(true)}>
     <i className='fa-solid fa-rocket' />
   </button>
@@ -84,8 +81,7 @@ function Release({ onBuild }) {
 function Download({ onDownload }) {
   return <button type="button"
     tooltip="Download plugin as zip"
-    style={{ border: 'none', background: 'none' }}
-    className="pe-2"
+    className="navbar-item"
     onClick={onDownload}>
     <i className='fa-solid fa-download' />
   </button>
@@ -94,8 +90,7 @@ function Download({ onDownload }) {
 function Play({ showPlaySettings }) {
   return <button type="button"
     tooltip="Run"
-    style={{ border: 'none', background: 'none' }}
-    className="pe-2"
+    className="navbar-item"
     onClick={showPlaySettings}
   >
     <i className='fa-solid fa-play' />

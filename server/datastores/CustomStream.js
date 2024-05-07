@@ -1,5 +1,4 @@
 const stream = require('stream');
-const util = require('util');
 
 class CustomStream extends stream.Writable {
     constructor() {

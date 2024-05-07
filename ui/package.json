@@ -12,7 +12,7 @@
     "@codemirror/lint": "^6.5.0",
     "@replit/codemirror-indentation-markers": "^6.5.1",
     "@uiw/codemirror-theme-solarized": "^4.19.5",
-    "@uiw/react-codemirror": "^4.19.5",
+    "@uiw/react-codemirror": "^4.22",
     "bootstrap": "^5.2.3",
     "codemirror-json-schema": "^0.7.0",
     "eslint-linter-browserify": "^9.0.0",

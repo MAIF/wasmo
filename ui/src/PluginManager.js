@@ -307,7 +307,10 @@ function Header({ onNewPlugin, reloadPlugins }) {
       background: '#eee',
       borderRadius: 4,
       display: 'flex',
-      alignItems: 'center'
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 32,
+      height: 32
     }}>
       <i className='fa-solid fa-plus p-1' />
     </div>

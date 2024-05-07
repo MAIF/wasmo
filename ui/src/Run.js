@@ -152,7 +152,7 @@ export class Run extends React.Component {
                 />
                 <div className='mb-3'>
                     <div className='d-flex align-items-center justify-content-between'>
-                        <label htmlFor="input" className='form-label'>Select and fill the fake input context</label>
+                        <label htmlFor="input" className='form-label'>Input context</label>
                         <div className='w-50'>
                             {/* <Select
                                 value={context}
