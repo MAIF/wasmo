@@ -137,8 +137,6 @@ module.exports = class S3Datastore extends Datastore {
 
         const users = await this.getUsers();
 
-        console.log("retrieved users : " + users)
-
         await instance.send(new PutObjectCommand({
             Bucket,
             Key: 'users.json',
@@ -153,28 +151,35 @@ module.exports = class S3Datastore extends Datastore {
     createUserIfNotExists = async (email) => {
         const { instance, Bucket } = this.#state;;
 
-        console.log("attempt to create user : " + email)
+        // console.log("attempt to create user : " + email)
         try {
             const res = await instance.send(new HeadObjectCommand({
                 Bucket,
                 Key: `${format(email)}.json`
             }))
-            console.log('user file has been retrieved : ' + email);
+            // console.log('user file has been retrieved : ' + email);
         } catch (err) {
-            console.log('user file not found : ' + email);
+            // console.log('user file not found : ' + email);
             await this.#addUser(format(email))
         }
     }
 
-    getUsers = () => {
+    getUsers = async () => {
         const { instance, Bucket } = this.#state;
 
-        return instance.send(new GetObjectCommand({
-            Bucket,
-            Key: 'users.json'
-        }))
-            .then(data => new fetch.Response(data.Body).json())
-            .catch(err => logger.error(err))
+        try {
+            const rawData = await instance.send(new GetObjectCommand({
+                Bucket,
+                Key: 'users.json'
+            }))
+            return new fetch.Response(rawData.Body).json()
+        } catch (err) {
+            if (err.$metadata.httpStatusCode === 404 && err.Code === "NoSuchKey") {
+                return []
+            } else {
+                throw err
+            }
+        }
     }
 
     updateUser = (email, content) => {
