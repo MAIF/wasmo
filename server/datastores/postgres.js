@@ -63,21 +63,24 @@ module.exports = class PgDatastore extends Datastore {
                 const res = await client.query("SELECT content from users WHERE email = $1", [email])
                 client.release();
 
-                return res.rowCount > 0 ? res.rows[0].content : null;
+                return res.rowCount > 0 ? res.rows[0].content : {};
             })
     }
 
     getUserPlugins = (email) => {
         return this.getUser(email)
-            .then(user => user ? user.plugins : [])
-            .then(plugins => Promise.all(plugins.map(plugin => {
-                if (plugin.owner) {
-                    return this.getPlugin(plugin.owner, plugin.pluginId)
-                } else {
-                    return Promise.resolve(plugin)
-                }
-            })))
-            .catch(err => logger.error(err))
+            .then(data => data.plugins || [])
+            .then(plugins => {
+                return Promise.all(plugins.map(plugin => {
+                    if (plugin.owner) {
+                        return this.#getPlugin(plugin.owner, plugin.pluginId)
+                            .then(res => ({ ...res, owner: plugin.owner }))
+                    } else {
+                        return Promise.resolve(plugin)
+                    }
+                })
+                )
+            })
     }
 
     createUserIfNotExists = async (email) => {
@@ -102,17 +105,25 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     updateUser = (email, content) => {
+        console.log('update user', { email, content })
         return this.#pool.connect()
             .then(client => {
                 return client.query("UPDATE users SET content = $1::jsonb WHERE email = $2", [content, email])
-                    .then(() => client.release());
+                    .then(async res => {
+                        if (res.rowCount === 0) {
+                            await client.query("INSERT INTO users (content, email) VALUES($1::jsonb, $2)", [content, email])
+                        }
+
+                        client.release()
+                    });
             })
             .then(() => ({ status: 200 }))
-            .catch(_err => {
-                resolve({
+            .catch(err => {
+                console.log('update user error', err)
+                return {
                     error: 400,
                     status: 'something bad happened'
-                })
+                }
             });
     }
 
@@ -218,41 +229,57 @@ module.exports = class PgDatastore extends Datastore {
         return this.#sourcesDatastore.getConfigurationsFile(plugin.pluginId, files);
     }
 
+    #deleteRootPlugin = async (plugin, pluginId) => {
+        const { admins, users } = plugin;
+
+        await Promise.all([
+            ...(admins || []),
+            ...(users || [])
+        ].map(user => this.#removePluginFromUser(user, pluginId)))
+
+        return this.deletePlugin(plugin.owner, pluginId)
+    }
+
     deletePlugin = (email, pluginId) => {
         return new Promise(resolve => this.getUser(email)
             .then(data => {
                 if (Object.keys(data).length > 0) {
+                    const plugin = data.plugins.find(f => f.pluginId === pluginId)
+
                     this.updateUser(email, {
                         ...data,
                         plugins: data.plugins.filter(f => f.pluginId !== pluginId)
                     })
                         .then(() => {
-                            const plugin = data.plugins.find(f => f.pluginId === pluginId);
-                            const pluginHash = (plugin || {}).last_hash;
+                            if (plugin.owner || plugin.users || plugin.admins) {
+                                this.#deleteRootPlugin(plugin, pluginId)
+                                    .then(resolve)
+                            } else {
+                                const pluginHash = (plugin || {}).last_hash;
 
-                            Promise.all([
-                                this.#sourcesDatastore.deleteObject(`${pluginHash}.zip`),
-                                this.#sourcesDatastore.deleteObject(`${pluginHash}-logs.zip`),
-                                this.deleteObject(`${pluginId}.zip`),
-                                this.deleteObject(`${pluginId}-logs.zip`),
-                                this.#sourcesDatastore.removeBinaries((plugin.versions || []).map(r => r.name))
-                            ])
-                                .then(() => resolve({ status: 204, body: null }))
-                                .catch(err => {
-                                    resolve({
-                                        status: 400,
-                                        body: {
-                                            error: err.message
-                                        }
+                                Promise.all([
+                                    this.#sourcesDatastore.deleteObject(`${pluginHash}.zip`),
+                                    this.#sourcesDatastore.deleteObject(`${pluginHash}-logs.zip`),
+                                    this.#sourcesDatastore.deleteObject(`${pluginId}.zip`),
+                                    this.#sourcesDatastore.deleteObject(`${pluginId}-logs.zip`),
+                                    this.deleteObject(`${pluginId}.zip`),
+                                    this.deleteObject(`${pluginId}-logs.zip`),
+                                    this.#sourcesDatastore.removeBinaries((plugin.versions || []).map(r => r.name))
+                                ])
+                                    .then(() => resolve({ status: 204, body: null }))
+                                    .catch(err => {
+                                        resolve({
+                                            status: 400,
+                                            body: {
+                                                error: err.message
+                                            }
+                                        })
                                     })
-                                })
+                            }
                         })
                 } else {
                     resolve({
-                        status: 401,
-                        body: {
-                            error: 'invalid credentials'
-                        }
+                        status: 204, body: null
                     })
                 }
             }))
@@ -322,19 +349,26 @@ module.exports = class PgDatastore extends Datastore {
 
     patchPlugin = (email, pluginId, field, value) => {
         return this.getUser(email)
-            .then(data => this.updateUser(email, {
-                ...data,
-                plugins: (data.plugins || []).map(plugin => {
-                    if (plugin.pluginId === pluginId) {
-                        return {
-                            ...plugin,
-                            [field]: value
-                        }
-                    } else {
-                        return plugin
-                    }
-                })
-            }))
+            .then(data => {
+                const plugin = (data.plugins || []).find(plugin => plugin.pluginId === pluginId)
+
+                if (plugin.owner)
+                    return this.patchPlugin(plugin.owner, pluginId, field, value)
+                else
+                    return this.updateUser(email, {
+                        ...data,
+                        plugins: (data.plugins || []).map(plugin => {
+                            if (plugin.pluginId === pluginId) {
+                                return {
+                                    ...plugin,
+                                    [field]: value
+                                }
+                            } else {
+                                return plugin
+                            }
+                        })
+                    })
+            })
     }
 
     patchPluginName = (email, pluginId, newName) => {
@@ -351,18 +385,28 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     patchPluginUsers = async (email, pluginId, newUsers, newAdmins) => {
-        const user = await this.getUser(email);
+        let currentUser = email;
 
-        const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId)
+        const user = await this.getUser(currentUser);
 
-        const removedUsers = (plugin.users || []).filter(user => !newUsers.includes(user))
-        const removedAdmins = (plugin.admins || []).filter(admin => !newAdmins.includes(admin))
+        let plugin = user.plugins.find(plugin => plugin.pluginId === pluginId)
+
+        // if plugin is not owned by the user, we need to edit the root plugin
+        if (plugin.owner) {
+            currentUser = plugin.owner;
+
+            const owner = await this.getUser(plugin.owner)
+            plugin = owner.plugins.find(plugin => plugin.pluginId === pluginId)
+        }
+
+        const removedUsers = (plugin.users || []).filter(user => !newUsers.includes(user) && !newAdmins.includes(user))
+        const removedAdmins = (plugin.admins || []).filter(admin => !newAdmins.includes(admin) && !newUsers.includes(admin))
 
         await Promise.all(removedUsers.map(user => this.#removePluginFromUser(user, pluginId)))
         await Promise.all(removedAdmins.map(admin => this.#removePluginFromUser(admin, pluginId)))
 
-        return this.getUser(email)
-            .then(data => this.updateUser(email, {
+        return this.getUser(currentUser)
+            .then(data => this.updateUser(currentUser, {
                 ...data,
                 plugins: (data.plugins || []).map(plugin => {
                     if (plugin.pluginId === pluginId) {
@@ -431,14 +475,78 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     acceptInvitation = async (userEmail, ownerId, pluginId) => {
-        return this.#sourcesDatastore.acceptInvitation(userEmail, ownerId, pluginId)
+        try {
+            const ownerPlugins = await this.getUserPlugins(ownerId)
+            const user = await this.getUser(userEmail)
+
+            const ownerPlugin = ownerPlugins.find(plugin => plugin.pluginId === pluginId)
+
+            if (ownerPlugin &&
+                ((ownerPlugin.users || []).includes(userEmail) ||
+                    (ownerPlugin.admins || []).includes(userEmail))) {
+
+                const newPlugin = {
+                    pluginId: ownerPlugin.pluginId,
+                    owner: ownerId
+                }
+
+                return this.updateUser(userEmail, {
+                    ...user,
+                    plugins: [
+                        ...(user.plugins || []).filter(plugin => plugin.pluginId !== pluginId),
+                        newPlugin
+                    ]
+                })
+                    .then(() => true)
+            } else {
+                return false
+            }
+        } catch (err) {
+            console.log(err)
+            return false
+        }
     }
 
-    canSharePlugin = (email, pluginId) => {
-        return this.#sourcesDatastore.canSharePlugin(email, pluginId)
+    canSharePlugin = async (email, pluginId) => {
+        const user = await this.getUser(email);
+
+        const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId);
+
+        if (plugin?.owner) {
+            const owner = await this.getUser(plugin.owner)
+
+            const rootPlugin = owner.plugins.find(plugin => plugin.pluginId === pluginId);
+
+            if (rootPlugin) {
+                return (rootPlugin.admins || []).includes(email)
+            }
+
+            return false
+        }
+
+        return true
+
     }
 
     getPluginUsers = async (email, pluginId) => {
-        return this.#sourcesDatastore.getPluginUsers(email, pluginId)
+        const user = await this.getUser(email);
+
+        const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId);
+
+        if (plugin.owner) {
+            const owner = await this.getUser(plugin.owner)
+
+            const rootPlugin = owner.plugins.find(plugin => plugin.pluginId === pluginId);
+
+            return {
+                admins: rootPlugin.admins,
+                users: rootPlugin.users
+            }
+        }
+
+        return {
+            admins: plugin.admins,
+            users: plugin.users
+        }
     }
 };
