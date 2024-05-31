@@ -127,9 +127,23 @@ module.exports = class S3Datastore extends Datastore {
         })
     }
 
+    getPlugin = async (owner, pluginId) => {
+        const user = await this.getUser(owner);
+
+        return user.plugins.find(plugin => plugin.pluginId === pluginId);
+    }
+
     getUserPlugins = (email) => {
         return this.getUser(email)
             .then(data => data.plugins || [])
+            .then(plugins => Promise.all(plugins.map(plugin => {
+                if (plugin.owner) {
+                    return this.getPlugin(plugin.owner, plugin.pluginId)
+                        .then(res => ({ ...res, owner: plugin.owner }))
+                } else {
+                    return Promise.resolve(plugin)
+                }
+            })))
     }
 
     #addUser = async (email) => {
@@ -251,6 +265,11 @@ module.exports = class S3Datastore extends Datastore {
     putWasmInformationsToS3 = (email, pluginId, newHash, generateWasmName) => {
         return this.getUser(email)
             .then(data => {
+                const plugin = data.plugins.map(plugin => plugin.pluginId === pluginId)
+
+                if (plugin.owner)
+                    return this.putWasmInformationsToS3(plugin.owner, pluginId, newHash, generateWasmName)
+
                 const newPlugins = data.plugins.map(plugin => {
                     if (plugin.pluginId !== pluginId) {
                         return plugin;
@@ -468,6 +487,9 @@ module.exports = class S3Datastore extends Datastore {
             .then(data => {
                 const plugin = data.plugins.find(f => f.pluginId === pluginId)
 
+                if (plugin.owner)
+                    return this.getConfigurations(plugin.owner, pluginId)
+
                 const files = [{
                     ext: 'json',
                     filename: 'config',
@@ -497,39 +519,54 @@ module.exports = class S3Datastore extends Datastore {
             .catch(err => { logger.error(err) });
     }
 
+    #deleteRootPlugin = async (plugin, pluginId) => {
+        const { admins, users } = plugin;
+
+        await Promise.all([
+            ...(admins || []),
+            ...(users || [])
+        ].map(user => this.#removePluginFromUser(user, pluginId)))
+
+        return this.deletePlugin(plugin.owner, pluginId)
+    }
+
     deletePlugin = (email, pluginId) => {
         return new Promise(resolve => this.getUser(email)
             .then(data => {
                 if (Object.keys(data).length > 0) {
+                    const plugin = data.plugins.find(f => f.pluginId === pluginId)
+
                     this.updateUser(email, {
                         ...data,
                         plugins: data.plugins.filter(f => f.pluginId !== pluginId)
                     })
                         .then(() => {
-                            const plugin = data.plugins.find(f => f.pluginId === pluginId);
-                            const pluginHash = (plugin || {}).last_hash;
-
-                            Promise.all([
-                                this.deleteObject(`${pluginHash}.zip`),
-                                this.deleteObject(`${pluginHash}-logs.zip`),
-                                this.removeBinaries((plugin.versions || []).map(r => r.name))
-                            ])
-                                .then(() => resolve({ status: 204, body: null }))
-                                .catch(err => {
-                                    resolve({
-                                        status: 400,
-                                        body: {
-                                            error: err.message
-                                        }
+                            if (plugin.owner || plugin.users || plugin.admins) {
+                                this.#deleteRootPlugin(plugin, pluginId)
+                                    .then(resolve)
+                            } else {
+                                const pluginHash = (plugin || {}).last_hash;
+                                Promise.all([
+                                    this.deleteObject(`${pluginHash}.zip`),
+                                    this.deleteObject(`${pluginHash}-logs.zip`),
+                                    this.deleteObject(`${pluginId}.zip`),
+                                    this.deleteObject(`${pluginId}-logs.zip`),
+                                    this.removeBinaries((plugin.versions || []).map(r => r.name))
+                                ])
+                                    .then(() => resolve({ status: 204, body: null }))
+                                    .catch(err => {
+                                        resolve({
+                                            status: 400,
+                                            body: {
+                                                error: err.message
+                                            }
+                                        })
                                     })
-                                })
+                            }
                         })
                 } else {
                     resolve({
-                        status: 401,
-                        body: {
-                            error: 'invalid credentials'
-                        }
+                        status: 204, body: null
                     })
                 }
             }))
@@ -627,20 +664,153 @@ module.exports = class S3Datastore extends Datastore {
         })
     }
 
-    patchPluginName = (email, pluginId, newName) => {
+    patchPlugin = (email, pluginId, field, value) => {
         return this.getUser(email)
-            .then(data => this.updateUser(email, {
+            .then(data => {
+                const plugin = (data.plugins || []).find(plugin => plugin.pluginId === pluginId)
+
+                if (plugin.owner)
+                    return this.patchPlugin(plugin.owner, pluginId, field, value)
+                else
+                    return this.updateUser(email, {
+                        ...data,
+                        plugins: (data.plugins || []).map(plugin => {
+                            if (plugin.pluginId === pluginId) {
+                                return {
+                                    ...plugin,
+                                    [field]: value
+                                }
+                            } else {
+                                return plugin
+                            }
+                        })
+                    })
+            })
+    }
+
+    patchPluginName = (email, pluginId, newName) => {
+        return this.patchPlugin(email, pluginId, 'filename', newName)
+    }
+
+    #removePluginFromUser = async (email, pluginId) => {
+        const user = await this.getUser(email)
+
+        return this.updateUser(email, {
+            ...user,
+            plugins: (user.plugins || []).filter(plugin => plugin.pluginId !== pluginId)
+        })
+    }
+
+    patchPluginUsers = async (email, pluginId, newUsers, newAdmins) => {
+        let currentUser = email;
+
+        const user = await this.getUser(currentUser);
+
+        let plugin = user.plugins.find(plugin => plugin.pluginId === pluginId)
+
+        // if plugin is not owned by the user, we need to edit the root plugin
+        if (plugin.owner) {
+            currentUser = plugin.owner;
+
+            const owner = await this.getUser(plugin.owner)
+            plugin = owner.plugins.find(plugin => plugin.pluginId === pluginId)
+        }
+
+        const removedUsers = (plugin.users || []).filter(user => !newUsers.includes(user) && !newAdmins.includes(user))
+        const removedAdmins = (plugin.admins || []).filter(admin => !newAdmins.includes(admin) && !newUsers.includes(admin))
+
+        await Promise.all(removedUsers.map(user => this.#removePluginFromUser(user, pluginId)))
+        await Promise.all(removedAdmins.map(admin => this.#removePluginFromUser(admin, pluginId)))
+
+        return this.getUser(currentUser)
+            .then(data => this.updateUser(currentUser, {
                 ...data,
                 plugins: (data.plugins || []).map(plugin => {
                     if (plugin.pluginId === pluginId) {
                         return {
                             ...plugin,
-                            filename: newName
+                            users: newUsers,
+                            admins: newAdmins
                         }
                     } else {
                         return plugin
                     }
                 })
             }))
+    }
+
+    acceptInvitation = async (userEmail, ownerId, pluginId) => {
+        try {
+            const ownerPlugins = await this.getUserPlugins(ownerId)
+            const user = await this.getUser(userEmail)
+
+            const ownerPlugin = ownerPlugins.find(plugin => plugin.pluginId === pluginId)
+
+            if (ownerPlugin &&
+                ((ownerPlugin.users || []).includes(userEmail) ||
+                    (ownerPlugin.admins || []).includes(userEmail))) {
+
+                const newPlugin = {
+                    pluginId: ownerPlugin.pluginId,
+                    owner: ownerId
+                }
+
+                return this.updateUser(userEmail, {
+                    ...user,
+                    plugins: [
+                        ...(user.plugins || []).filter(plugin => plugin.pluginId !== pluginId),
+                        newPlugin
+                    ]
+                })
+                    .then(() => true)
+            } else {
+                return false
+            }
+        } catch (err) {
+            console.log(err)
+            return false
+        }
+    }
+
+    canSharePlugin = async (email, pluginId) => {
+        const user = await this.getUser(email);
+
+        const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId);
+
+        if (plugin?.owner) {
+            const owner = await this.getUser(plugin.owner)
+
+            const rootPlugin = owner.plugins.find(plugin => plugin.pluginId === pluginId);
+
+            if (rootPlugin) {
+                return (rootPlugin.admins || []).includes(email)
+            }
+
+            return false
+        }
+
+        return true
+    }
+
+    getPluginUsers = async (email, pluginId) => {
+        const user = await this.getUser(email);
+
+        const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId);
+
+        if (plugin.owner) {
+            const owner = await this.getUser(plugin.owner)
+
+            const rootPlugin = owner.plugins.find(plugin => plugin.pluginId === pluginId);
+
+            return {
+                admins: rootPlugin.admins,
+                users: rootPlugin.users
+            }
+        }
+
+        return {
+            admins: plugin.admins,
+            users: plugin.users
+        }
     }
 };

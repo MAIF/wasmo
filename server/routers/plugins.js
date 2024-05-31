@@ -147,6 +147,41 @@ router.put('/:id', (req, res) => {
     });
 })
 
+router.get('/:id/share-links', async (req, res) => {
+  const plugins = await Datastore.getUserPlugins(req.user.email)
+
+  const owner = plugins.find(plugin => plugin.pluginId === req.params.id)?.owner || req.user.email
+
+  const hash = Buffer.from(`${owner}:${req.params.id}`).toString('base64')
+  res.json(`${ENV.SECURE_DOMAIN ? 'https' : 'http'}://${ENV.DOMAIN}:${ENV.EXPOSED_PORT || ENV.PORT}/invitation/${hash}`)
+})
+
+router.put('/:id/users', (req, res) => {
+  Datastore.patchPluginUsers(req.user.email,
+    req.params.id,
+    req.body.users,
+    [...new Set([...req.body.admins, req.user.email])])
+    .then(() => {
+      res
+        .status(204)
+        .json(null)
+    })
+})
+
+router.get('/:id/users', (req, res) => {
+  Datastore.getPluginUsers(req.user.email, req.params.id)
+    .then(members => res.status(200).json(members))
+})
+
+router.get('/:id/rights', (req, res) => {
+  Datastore.canSharePlugin(req.user.email, req.params.id)
+    .then(canShare => {
+      res
+        .status(200)
+        .json(canShare)
+    })
+})
+
 router.delete('/:id', async (req, res) => {
   Datastore.deletePlugin(req.user.email, req.params.id)
     .then(out => {
@@ -210,7 +245,7 @@ router.post('/build', async (req, res) => {
               last_hash: " ",
               versions: []
             },
-            req,
+            req.user ? req.user.email : 'admin@otoroshi.io',
             res,
             "zipHashToTest",
             metadata.release,
@@ -221,7 +256,7 @@ router.post('/build', async (req, res) => {
     });
 })
 
-function addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, saveInLocal, pluginId) {
+function addPluginToBuildQueue(folder, plugin, user, res, zipHash, release, saveInLocal, pluginId) {
   FileSystem.checkIfInformationsFileExists(folder, plugin.type)
     .then(() => InformationsReader.extractInformations(folder, plugin.type))
     .then(({ pluginName, pluginVersion, metadata, err }) => {
@@ -261,7 +296,7 @@ function addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, saveI
                     folder,
                     plugin: plugin.pluginId,
                     wasmName,
-                    user: req.user ? req.user.email : 'admin@otoroshi.io',
+                    user,
                     zipHash,
                     isRustBuild: plugin.type === 'rust',
                     pluginType: plugin.type,
@@ -304,8 +339,15 @@ router.post('/:id/build', async (req, res) => {
   const pluginId = req.params.id;
   const release = req.query.release === 'true';
 
-  const data = await Datastore.getUser(req.user.email)
+  let user = req.user ? req.user.email : 'admin@otoroshi.io'
+
+  const data = await Datastore.getUser(user)
   let plugin = (data.plugins || []).find(p => p.pluginId === pluginId);
+
+  if (plugin?.owner) {
+    user = plugin.owner;
+    plugin = await Datastore.getPlugin(plugin.owner, pluginId);
+  }
 
   if (plugin.type === 'github') {
     plugin.type = req.query.plugin_type;
@@ -344,7 +386,15 @@ router.post('/:id/build', async (req, res) => {
             .digest('hex');
 
           if (release || plugin['last_hash'] !== zipHash || req.query.force) {
-            addPluginToBuildQueue(folder, plugin, req, res, zipHash, release, undefined, pluginId)
+            addPluginToBuildQueue(
+              folder,
+              plugin,
+              user,
+              res,
+              zipHash,
+              release,
+              undefined,
+              pluginId)
           } else {
             FileSystem.removeFolder('build', folder)
               .then(() => {

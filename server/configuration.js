@@ -18,6 +18,11 @@ module.exports = {
         PORT: process.env.MANAGER_PORT || 5001,
         STORAGE: process.env.STORAGE,
 
+        IS_DEV: process.env.NODE_ENV === "development",
+        DOMAIN: process.env.DOMAIN || 'localhost',
+        EXPOSED_PORT: process.env.EXPOSED_PORT,
+        SECURE_DOMAIN: process.env.SECURE_DOMAIN,
+
         // process.env.AWS_ACCESS_KEY_ID,
         // process.env.AWS_SECRET_ACCESS_KEY,
         // process.env.AWS_DEFAULT_REGION,

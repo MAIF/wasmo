@@ -121,6 +121,38 @@ module.exports = class Datastore {
     patchPluginName = (email, pluginId, newName) => Promise.resolve()
 
     /**
+     * Edit the plugin name
+     * @param {string} email 
+     * @param {string} pluginId 
+     * @param {string[]} users 
+     * @param {string[]} admins 
+     */
+    patchPluginUsers = (email, pluginId, users, admins) => Promise.resolve()
+
+    /**
+     * Get plugin members
+     * @param {string} email 
+     * @param {string} pluginId 
+     */
+    getPluginUsers = (email, pluginId) => Promise.resolve()
+
+    /**
+     * Get plugin of user
+     * @param {string} owner 
+     * @param {string} pluginId 
+     * @returns 
+     */
+    getPlugin = (owner, pluginId) => Promise.resolve()
+
+    /**
+     * Check if user can share plugin
+     * @param {*} email 
+     * @param {*} pluginId 
+     * @returns 
+     */
+    canSharePlugin = (email, pluginId) => Promise.resolve()
+
+    /**
      * Check if a job with this id is running
      * @param {string} pluginId 
      */
@@ -143,4 +175,10 @@ module.exports = class Datastore {
      * @returns {Promise<int>}
      */
     waitingTimeBeforeNextRun = pluginId => Promise.resolve(-1)
+
+    /**
+     * Check if received link is valid and add plugin to the current user
+     * @param {string} pluginId
+     */
+    acceptInvitation = (userId, ownerId, pluginId) => Promise.resolve()
 };

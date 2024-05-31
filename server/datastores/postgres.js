@@ -70,6 +70,13 @@ module.exports = class PgDatastore extends Datastore {
     getUserPlugins = (email) => {
         return this.getUser(email)
             .then(user => user ? user.plugins : [])
+            .then(plugins => Promise.all(plugins.map(plugin => {
+                if (plugin.owner) {
+                    return this.getPlugin(plugin.owner, plugin.pluginId)
+                } else {
+                    return Promise.resolve(plugin)
+                }
+            })))
             .catch(err => logger.error(err))
     }
 
@@ -120,6 +127,11 @@ module.exports = class PgDatastore extends Datastore {
     putWasmInformationsToS3 = (email, pluginId, newHash, generateWasmName) => {
         return this.getUser(email)
             .then(data => {
+                const plugin = data.plugins.map(plugin => plugin.pluginId === pluginId)
+
+                if (plugin.owner)
+                    return this.putWasmInformationsToS3(plugin.owner, pluginId, newHash, generateWasmName)
+
                 const newPlugins = data.plugins.map(plugin => {
                     if (plugin.pluginId !== pluginId) {
                         return plugin;
@@ -191,6 +203,9 @@ module.exports = class PgDatastore extends Datastore {
     getConfigurations = async (email, pluginId) => {
         const plugin = await this.#getPlugin(email, pluginId);
 
+        if (plugin.owner)
+            return this.getConfigurations(plugin.owner, pluginId)
+
         const files = [{
             ext: 'json',
             filename: 'config',
@@ -218,6 +233,8 @@ module.exports = class PgDatastore extends Datastore {
                             Promise.all([
                                 this.#sourcesDatastore.deleteObject(`${pluginHash}.zip`),
                                 this.#sourcesDatastore.deleteObject(`${pluginHash}-logs.zip`),
+                                this.deleteObject(`${pluginId}.zip`),
+                                this.deleteObject(`${pluginId}-logs.zip`),
                                 this.#sourcesDatastore.removeBinaries((plugin.versions || []).map(r => r.name))
                             ])
                                 .then(() => resolve({ status: 204, body: null }))
@@ -303,7 +320,7 @@ module.exports = class PgDatastore extends Datastore {
         })
     }
 
-    patchPluginName = (email, pluginId, newName) => {
+    patchPlugin = (email, pluginId, field, value) => {
         return this.getUser(email)
             .then(data => this.updateUser(email, {
                 ...data,
@@ -311,7 +328,48 @@ module.exports = class PgDatastore extends Datastore {
                     if (plugin.pluginId === pluginId) {
                         return {
                             ...plugin,
-                            filename: newName
+                            [field]: value
+                        }
+                    } else {
+                        return plugin
+                    }
+                })
+            }))
+    }
+
+    patchPluginName = (email, pluginId, newName) => {
+        return this.patchPlugin(email, pluginId, 'filename', value)
+    }
+
+    #removePluginFromUser = async (email, pluginId) => {
+        const user = await this.getUser(email)
+
+        return this.updateUser(email, {
+            ...user,
+            plugins: (user.plugins || []).filter(plugin => plugin.pluginId !== pluginId)
+        })
+    }
+
+    patchPluginUsers = async (email, pluginId, newUsers, newAdmins) => {
+        const user = await this.getUser(email);
+
+        const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId)
+
+        const removedUsers = (plugin.users || []).filter(user => !newUsers.includes(user))
+        const removedAdmins = (plugin.admins || []).filter(admin => !newAdmins.includes(admin))
+
+        await Promise.all(removedUsers.map(user => this.#removePluginFromUser(user, pluginId)))
+        await Promise.all(removedAdmins.map(admin => this.#removePluginFromUser(admin, pluginId)))
+
+        return this.getUser(email)
+            .then(data => this.updateUser(email, {
+                ...data,
+                plugins: (data.plugins || []).map(plugin => {
+                    if (plugin.pluginId === pluginId) {
+                        return {
+                            ...plugin,
+                            users: newUsers,
+                            admins: newAdmins
                         }
                     } else {
                         return plugin
@@ -351,7 +409,7 @@ module.exports = class PgDatastore extends Datastore {
         const client = await this.#pool.connect();
 
         await client.query("DELETE FROM jobs WHERE plugin_id = $1", [pluginId]);
-        
+
         client.release();
     }
 
@@ -370,5 +428,17 @@ module.exports = class PgDatastore extends Datastore {
                         return interval > 0 ? interval : 0;
                     });
             });
+    }
+
+    acceptInvitation = async (userEmail, ownerId, pluginId) => {
+        return this.#sourcesDatastore.acceptInvitation(userEmail, ownerId, pluginId)
+    }
+
+    canSharePlugin = (email, pluginId) => {
+        return this.#sourcesDatastore.canSharePlugin(email, pluginId)
+    }
+
+    getPluginUsers = async (email, pluginId) => {
+        return this.#sourcesDatastore.getPluginUsers(email, pluginId)
     }
 };

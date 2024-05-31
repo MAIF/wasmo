@@ -353,7 +353,7 @@ class App extends React.Component {
               Service.getPluginTemplate(plugin.type, plugin.template || 'empty')
                 .then(template => {
                   if (template.status !== 200) {
-                    template.json().then(window.alert)
+                    template.json().then(res => window.alert(JSON.stringify(res)))
                   } else {
                     template.blob()
                       .then(templatesFiles => this.downloadPluginTemplate(templatesFiles, plugin))
@@ -438,6 +438,7 @@ class App extends React.Component {
   }
 
   getPluginType = () => {
+    console.log(this.state.selectedPlugin)
     if (this.state.selectedPlugin.type === 'github') {
       const isRustPlugin = this.state.selectedPlugin.files
         .find(f => f.filename === "Cargo.toml");

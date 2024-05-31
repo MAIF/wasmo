@@ -1,8 +1,10 @@
 require('dotenv').config();
 
 const fs = require('fs-extra');
-const path = require('path')
+const path = require('node:path')
+
 const express = require('express');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const http = require('http');
 const compression = require('compression');
 const bodyParser = require('body-parser');
@@ -13,6 +15,7 @@ const pluginsRouter = require('./routers/plugins');
 const templatesRouter = require('./routers/templates');
 const publicRouter = require('./routers/public');
 const wasmRouter = require('./routers/wasm');
+const invitationRouter = require('./routers/invitation');
 
 const { WebSocket } = require('./services/websocket');
 const { FileSystem } = require('./services/file-system');
@@ -124,13 +127,22 @@ function createServer(appVersion) {
   app.use(`${baseURL}/api/templates`, templatesRouter);
   app.use(`${baseURL}/api/wasm`, wasmRouter);
   app.use(`${baseURL}/api/version`, (_, res) => res.json(appVersion));
-  app.use(`${baseURL}/api/development`, (_, res) => res.json(process.env.NODE_ENV === "development"));
+  app.use(`${baseURL}/api/development`, (_, res) => res.json(ENV.IS_DEV));
   app.use(`${baseURL}/api/websocket`, (_, res) => res.json(process.env.WSS === "true"));
 
   app.use(`${baseURL}/health`, (_, res) => res.json({ status: true }))
 
-  app.get(`${baseURL ? baseURL : '/'}`, (_, res) => res.sendFile(path.join(__dirname, '..', 'ui/build', '/index.html')));
-  app.use(baseURL, express.static(path.join(__dirname, '..', 'ui/build'), { redirect: false }));
+  app.use(`${baseURL}/invitation`, invitationRouter)
+
+  if (ENV.IS_DEV)
+    app.use(`${baseURL ? baseURL : '/'}`, createProxyMiddleware({
+      target: 'http://127.0.0.1:3000',
+      changeOrigin: true
+    }));
+  else {
+    app.get(`${baseURL ? baseURL : '/'}`, (_, res) => res.sendFile(path.join(__dirname, '..', 'ui/build', '/index.html')));
+    app.use(baseURL, express.static(path.join(__dirname, '..', 'ui/build'), { redirect: false }));
+  }
 
   return http.createServer(app);
 }

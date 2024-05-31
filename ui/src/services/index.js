@@ -128,6 +128,23 @@ export const getGithubSources = (repo, owner, ref, isPrivate) => rawFetch('/plug
 
 export const getRuntimeEnvironmentState = () => jsonFetch('/wasm/runtime');
 
+export const canSharePlugin = pluginId => jsonFetch(`/plugins/${pluginId}/rights`)
+
+export const getPluginUsers = pluginId => jsonFetch(`/plugins/${pluginId}/users`)
+
 export const getWasmRelease = wasmId => rawFetch(`/wasm/${wasmId}`);
 
 export const getAppVersion = () => jsonFetch('/version');
+
+export const setAuthorizedPeople = (pluginId, users, admins) => rawFetch(`/plugins/${pluginId}/users`, {
+  method: 'PUT',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    users,
+    admins
+  })
+})
+
+export const generateShareLink = pluginId => jsonFetch(`/plugins/${pluginId}/share-links`)
