@@ -226,17 +226,26 @@ module.exports = class S3Datastore extends Datastore {
         const Key = wasmFolder.split('/').slice(-1)[0]
 
         return new Promise((resolve, reject) => {
-            fs.readFile(wasmFolder, (err, data) => {
-                if (err)
-                    reject(err)
-                else
-                    instance.send(new PutObjectCommand({
-                        Bucket,
-                        Key: Key.endsWith(".wasm") ? Key : `${Key}.wasm`,
-                        Body: data
-                    }))
-                        .then(resolve)
-                        .catch(reject)
+            fs.readFile(wasmFolder, async (err, data) => {
+                let content = data
+                if (err) {
+                    const [err, data] = await new Promise(resolve => fs.readFile(
+                        `${wasmFolder.split("/").slice(0, -1).join('/')}/${wasmFolder.split("/").slice(-1)[0].split('-').slice(0, -1).join('-')}.wasm`
+                        , (err, data) => resolve([err, data])))
+
+                    if (err)
+                        return reject(err)
+                    else
+                        content = data
+                }
+
+                instance.send(new PutObjectCommand({
+                    Bucket,
+                    Key: Key.endsWith(".wasm") ? Key : `${Key}.wasm`,
+                    Body: data
+                }))
+                    .then(resolve)
+                    .catch(reject)
             })
         })
     }

@@ -18,12 +18,13 @@ const LOGS = {
 };
 
 class CompilerOptions {
-  constructor({ wasmName, entrypoint, wasi }) {
+  constructor({ wasmName, entrypoint, wasi, isReleaseBuild }) {
     this.wasi = wasi;
     this.wasmName = wasmName;
     this.opa = {
       entrypoint
     }
+    this.isReleaseBuild = isReleaseBuild
   }
 }
 

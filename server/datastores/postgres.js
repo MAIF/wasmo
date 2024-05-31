@@ -105,7 +105,6 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     updateUser = (email, content) => {
-        console.log('update user', { email, content })
         return this.#pool.connect()
             .then(client => {
                 return client.query("UPDATE users SET content = $1::jsonb WHERE email = $2", [content, email])
@@ -262,8 +261,8 @@ module.exports = class PgDatastore extends Datastore {
                                     this.#sourcesDatastore.deleteObject(`${pluginHash}-logs.zip`),
                                     this.#sourcesDatastore.deleteObject(`${pluginId}.zip`),
                                     this.#sourcesDatastore.deleteObject(`${pluginId}-logs.zip`),
-                                    this.deleteObject(`${pluginId}.zip`),
-                                    this.deleteObject(`${pluginId}-logs.zip`),
+                                    this.#sourcesDatastore.deleteObject(`${pluginId}.zip`),
+                                    this.#sourcesDatastore.deleteObject(`${pluginId}-logs.zip`),
                                     this.#sourcesDatastore.removeBinaries((plugin.versions || []).map(r => r.name))
                                 ])
                                     .then(() => resolve({ status: 204, body: null }))
