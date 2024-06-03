@@ -1,18 +1,38 @@
 # Integration with Otoroshi
 
-We can connect Otoroshi with Wasmo. The only step is to navigate to the danger zone of your Otoroshi instance, 
-and add the following values in the Wasmo section:
+Wasmo plugins can be used with [Otoroshi](https://www.otoroshi.io/) to build plugins to manipulate http requests.
 
-- `URL`: http://localhost:5001
-- `Apikey id`: admin-api-apikey-id
-- `Apikey secret`: admin-api-apikey-secret
-- `User`: *
-- `Token secret`:
+[Click here](https://zwiterrion.hashnode.dev/leveraging-wasm-for-api-gateway) to read an article about Otoroshi and Wasmo.
 
-The User property is used by Wasmo to filter the list of returned plugins. For example, 
-if the value of the property is `wasm@otoroshi.io`, Wasmo will return the list of Wasm plugins with the creator at `wasm@otoroshi.io`.
+## Bind Wasmo to Otoroshi
 
-Don’t forget to save the configuration.
+A convenient way to leverage Wasmo's plugins is by integrating Wasmo with Otoroshi. 
+This enables manipulation of HTTP requests and responses within Otoroshi, facilitating the creation of mock API backends and addressing various other scenarios. 
+
+We can connect Otoroshi with Wasmo. 
+
+Steps are really straightforward : 
+  - navigate to the danger zone of your Otoroshi instance (create a new [Otoroshi instance](https://maif.github.io/otoroshi/manual/how-to-s/wasm-usage.html#before-your-start) if not already done)
+  - connect Wasmo by specify the URL field where your Wasmo is deployed : http://localhost:5001 (following the Getting Started tutorial).
+  - save the configuration
+
+Congratulations! You can now use your Wasmo plugins in the Otoroshi plugins : 
+  - [Wasm Pre-Route](https://maif.github.io/otoroshi/manual/plugins/built-in-plugins.html#otoroshi.next.plugins.WasmPreRoute)
+  - [Wasm Request Transformer](https://maif.github.io/otoroshi/manual/plugins/built-in-plugins.html#otoroshi.next.plugins.WasmRequestTransformer)
+  - [Wasm Response Transformer](https://maif.github.io/otoroshi/manual/plugins/built-in-plugins.html#otoroshi.next.plugins.WasmResponseTransformer)
+  - [Wasm Route matcher](https://maif.github.io/otoroshi/manual/plugins/built-in-plugins.html#otoroshi.next.plugins.WasmRouteMatcher)
+  - [Wasm Sink](https://maif.github.io/otoroshi/manual/plugins/built-in-plugins.html#otoroshi.next.plugins.WasmSink)
+  - [Wasm Router](https://maif.github.io/otoroshi/manual/plugins/built-in-plugins.html#otoroshi.next.plugins.WasmRouter)
+  - [Wasm Access Control](https://maif.github.io/otoroshi/manual/plugins/built-in-plugins.html#otoroshi.next.plugins.WasmAccessValidator)
+  - [Wasm Backend](https://maif.github.io/otoroshi/manual/plugins/built-in-plugins.html#otoroshi.next.plugins.WasmBackend)
+
+
+## Expose Wasmo behind Otoroshi 
+
+You can configure Wasmo to delegate its authentication to Otoroshi. You should use this configuration in a production environment.
+
+You can follow this [tutorial](https://maif.github.io/otoroshi/manual/how-to-s/wasmo-installation.html#create-a-route-to-expose-and-protect-wasmo-with-authentication)
+to deploy Otoroshi and Wasmo, both locally, and to secure access to Wasmo.
 
 To have more informations about Otoroshi and Wasmo, you can follow the two tutorials:
 

@@ -1,25 +1,44 @@
 
 # Getting started
 
-## Prerequisites
+Wasmo Builder is an all-in-one builder for creating, editing and building **small** and **optimized** WASM binaries.
 
-- **Docker**: A Docker-enabled system with proper Docker access
+### Key Features
+
+- **Variety of languages**: Write plugins in your favorite language, Javascript, Typescript, Rust, Golang or Open Policy Agent.
+- **Build in one click**: Click the hammer and start using your wasm in seconds
+- **Fast starter**: Deploy the builder in-memory
 
 ## Instantiate a Wasmo Builder
+
+### Prerequisites
+
+- **Docker**: A Docker-enabled system with proper Docker access
 
 Choose a path to install Wasmo Builder:
 - **With a database**: Use a database to store generated Wasm binaries. Can use the Builder UI for editing plugins.
 - **Without a database (in-memory)**: Store generated Wasm binaries on the file system. In this mode, the Builder UI is unavailable but the CLI keeps running.
 
-Run the following command in your terminal to start your builder using a S3 storage:
+Run the following command in your terminal to start your builder using a S3 storage.
+
+
+These commands will first create a custom Docker network.
 
 ```
 docker network create wasmo-network
+```
+
+then instantiate a new S3 from the Scality image
+```
 docker run -d --name s3Server \
     -p 8000:8000 \
     -e SCALITY_ACCESS_KEY_ID=access_key \
     -e SCALITY_SECRET_ACCESS_KEY=secret \
     --net wasmo-network scality/s3server
+```
+
+and run a Wasmo Builder connnected to the S3.
+```
 docker run -d --net wasmo-network \
     --name wasmo \
     -p 5001:5001 \
@@ -33,7 +52,7 @@ docker run -d --net wasmo-network \
     maif/wasmo
 ```
 
-These commands will first create a custom Docker network, then instantiate a new S3 from the Scality imagte and run a Wasmo Builder connnected to the S3.
+ 
 
 If all goes well, Wasmo should now be serving your builder on [http://localhost:5001/](http://localhost:5001/).
 

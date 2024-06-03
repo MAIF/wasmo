@@ -1,11 +1,11 @@
 "use client"
 const LINKS = {
-  Builder: ["Overview", "Getting started", "Your first plugin", "Environment Variables", "Plugin Structure", 'UI'],
+  Builder: ["Getting started", "Your first plugin", "Environment Variables", "Plugin Structure", 'UI'],
   CLI: ["Getting started", "Core commands", "Configuration file"],
   Integrations: ["Otoroshi"],
 }
 
-const SELECTED = "bg-gray-200";
+const SELECTED = "bg-gray-400";
 
 const color = test => test ? SELECTED : 'transparent';
 const slugify = str => str.toString()
@@ -19,8 +19,8 @@ const slugify = str => str.toString()
 
 export function Sidebar({ metadata }) {
 
-  return <div className="flex h-screen flex-col justify-between ps-2" style={{ minWidth: 250 }}>
-    <div className="px-4 py-6 ps-0">
+  return <div className="flex h-screen flex-col justify-between ps-2 bg-slate-100" style={{ minWidth: 250 }}>
+    <div className="px-4 py-5 ps-0">
       {/* <span
         className="grid h-10 w-32 place-content-center rounded-lg bg-gray-100 text-xs text-gray-600"
       >
@@ -40,11 +40,10 @@ export function Sidebar({ metadata }) {
         {Object.entries(LINKS).map(([group, children]) => {
           return <li key={group} >
             <details className="group [&_summary::-webkit-details-marker]:hidden"
-              // open={metadata.href.startsWith(`/${slugify(group)}`)}
               open={true}
             >
               <summary
-                className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                className="border-slate-200 border-2 flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
               >
                 <span className="text-sm font-medium"> {group} </span>
 
@@ -72,7 +71,7 @@ export function Sidebar({ metadata }) {
                   return <li key={child}>
                     <a
                       href={href}
-                      className={`block rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 ${color(`/wasmo/${metadata.href}` === href)}`}
+                      className={`block rounded-lg px-2 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 ${color(`/wasmo/${metadata.href}` === href)}`}
                     >
                       {child}
                     </a>

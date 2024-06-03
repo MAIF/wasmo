@@ -1,27 +1,41 @@
 import Github from '../components/github';
 
-# Wasmo Overview
-
-This section provides detailed documentation for working with Wasmo. 
-
+# Wasmo
 
 Wasmo is combined tool (Builder and CLI) for creating and building from scrach your WASM binaries with a simple Docker container.
 WebAssembly (WASM) is a simple machine model and executable format with an extensive specification. It is designed to be portable, compact, and execute at or near native speeds.
 
-
 Wasmo is strongly linked to [Extism](https://extism.org/) and all plugins built with Wasmo will be only executable with an Existm runtime.
 
+<br />
+## Articles : examples and enterprise use cases
 
-Our Wasmo documentation is broken down into app:
-<Github title="Wasmo Builder" href="https://github.com/MAIF/wasmo" />
-*A tool for building WebAssembly binaries.*
+Wasmo plugins can be used :
+  - With the reverse proxy [Otoroshi](https://www.otoroshi.io/)
+    - [Wasm usage](https://maif.github.io/otoroshi/manual/how-to-s/wasm-usage.html)
+    - [Wasmo and Otoroshi](https://maif.github.io/otoroshi/manual/how-to-s/wasmo-installation.html)
+    - [Build plugins to manipulate http requests](https://zwiterrion.hashnode.dev/leveraging-wasm-for-api-gateway) 
+ 
+  - To build FAAS [Function As a Service](https://zwiterrion.hashnode.dev/building-your-first-faas-with-wasm)
+  - To control [Feature flags](https://maif.github.io/izanami/docs/guides/local-scripts?_highlight=wasmo#creating-your-script-with-wasmo-cli) with [Izanami](https://maif.github.io/izanami/)
 
-The builder is a tool for creating, editing and building your code to WASM binaries. 
-It supports the creation and edition in a built-in UI.
+<div className='flex gap-3'>
+  <div className='flex-1'>
+    <Github title="Wasmo Builder" href="https://github.com/MAIF/wasmo" />
+    <div style={{ minHeight: '4rem'}}>
+      ### A tool for building WebAssembly binaries
+    </div>
+    The builder is a tool for creating, editing and building your code to WASM binaries. 
+  It supports the creation and edition in a built-in UI.
+  </div>
 
-<Github title="Wasmo CLI" href="https://github.com/MAIF/wasmo/tree/main/cli" />
-*A tool for creating and leading WebAssembly building.*
+  <div className='flex-1'>
+    <Github title="Wasmo CLI" href="https://github.com/MAIF/wasmo/tree/main/cli" />
+    <div style={{ minHeight: '4rem'}}>
+      ###  A tool for creating and leading WebAssembly building
+    </div>
 
-
-The CLI is a tool to leading from your terminal the creation of WASM binaries.
-It comes with its own documentation, available in the [cli directory](https://github.com/MAIF/wasmo/tree/main/cli) of this project.
+    The CLI is a tool to leading from your terminal the creation of WASM binaries.
+  It comes with its own documentation, available in the [cli directory](https://github.com/MAIF/wasmo/tree/main/cli) of this project.
+  </div>
+</div>

@@ -11,8 +11,8 @@ export default function Home() {
       href: '/builder/getting-started'
     }}
     previous={{
-      href: "/builder/overview",
-      title: "Builder - Overview"
+      href: "/",
+      title: "Overview"
     }}
     next={{
       href: "/builder/your-first-plugin",

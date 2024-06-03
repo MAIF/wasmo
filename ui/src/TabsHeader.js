@@ -9,6 +9,9 @@ export function TabsHeader({
   selectedPlugin, onSave, onBuild, onDownload,
   showPlaySettings, children }) {
 
+  if (!selectedPlugin?.pluginId)
+    return null
+
   return <Header
     selectedPluginType={selectedPlugin?.type}
     onSave={onSave}
@@ -27,9 +30,6 @@ export function TabsHeader({
 function Header({
   children, onSave, onBuild, showActions, onDownload,
   showPlaySettings, pluginId }) {
-
-  if (!pluginId)
-    return null
 
   const [runtimeState, setRuntimeEnvironment] = useState(false);
   const [canShare, setCanSharePlugin] = useState(false);

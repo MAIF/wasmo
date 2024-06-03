@@ -16,7 +16,7 @@ export const Pre = props => {
   const codeString = props.children.props.children;
 
   return <div className='overflow-hidden relative rounded-lg my-7' style={{ maxWidth: 800 }}>
-    <div className='flex items-center bg-purple-900 ps-3' style={{
+    {language && <div className='flex items-center bg-purple-900 ps-3' style={{
       position: 'absolute',
       top: 0,
       left: 0,
@@ -29,9 +29,9 @@ export const Pre = props => {
       <div style={{ width: 10, height: 10, borderRadius: '50%' }} className='bg-gray-400' />
 
       {!['javascript', 'go', 'rust', 'js'].includes(language) && <span className='text-white ms-3'>{language}</span>}
-    </div>
+    </div>}
 
-    <div className="absolute right-2 rounded-lg top-10 p-1 cursor-pointer hover:bg-gray-600"
+    <div className={`absolute right-2 rounded-lg top-${language ? 10 : 2} p-1 cursor-pointer hover:bg-gray-600`}
       onClick={() => {
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(codeString);
@@ -50,7 +50,7 @@ export const Pre = props => {
     {copied && <div className='absolute right-10 top-10 p-1 text-white'>Copied!</div>}
 
     <SyntaxHighlighter language={language || "bash"} style={rainbow} customStyle={{
-      padding: '2.5rem 12px 1rem'
+      padding: language ? '2.5rem 12px 1rem' : '1rem 12px'
     }}>
       {codeString}
     </SyntaxHighlighter>
