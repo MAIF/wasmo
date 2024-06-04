@@ -181,4 +181,13 @@ module.exports = class Datastore {
      * @param {string} pluginId
      */
     acceptInvitation = (userId, ownerId, pluginId) => Promise.resolve()
+
+    /**
+     * Get invitation informations
+     * @param {string} userId 
+     * @param {string} ownerId 
+     * @param {string} pluginId 
+     * @returns 
+     */
+    getInvitation = (userId, ownerId, pluginId) => Promise.resolve()
 };

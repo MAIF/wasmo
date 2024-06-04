@@ -132,7 +132,7 @@ function createServer(appVersion) {
 
   app.use(`${baseURL}/health`, (_, res) => res.json({ status: true }))
 
-  app.use(`${baseURL}/invitation`, invitationRouter)
+  app.use(`${baseURL}/api/invitations`, invitationRouter)
 
   if (ENV.IS_DEV)
     app.use(`${baseURL ? baseURL : '/'}`, createProxyMiddleware({

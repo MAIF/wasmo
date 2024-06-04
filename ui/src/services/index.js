@@ -13,15 +13,13 @@ const f = (url, init = {}) => {
   })
 }
 
-const rawFetch = (url, init = {}) => {
-  return fetch(`/api${url}`, {
-    ...init,
-    credentials: 'include',
-    headers: {
-      ...init.headers || {}
-    },
-  })
-}
+const rawFetch = (url, init = {}) => fetch(`/api${url}`, {
+  ...init,
+  credentials: 'include',
+  headers: {
+    ...init.headers || {}
+  },
+});
 
 const jsonFetch = (url, init) => f(url, init).then(r => r.json())
 
@@ -134,7 +132,15 @@ export const getPluginUsers = pluginId => jsonFetch(`/plugins/${pluginId}/users`
 
 export const getWasmRelease = wasmId => rawFetch(`/wasm/${wasmId}`);
 
-export const getAppVersion = () => jsonFetch('/version');
+export const getAppVersion = () => f('/version');
+
+export const getInvitationInformation = invitationId => jsonFetch(`/invitations/${invitationId}`)
+
+export const acceptInvitation = invitationId => f(`/invitations/${invitationId}`, {
+  method: 'POST',
+  redirect: 'follow',
+  body: JSON.stringify({})
+})
 
 export const setAuthorizedPeople = (pluginId, users, admins) => rawFetch(`/plugins/${pluginId}/users`, {
   method: 'PUT',

@@ -6,6 +6,7 @@ import * as Service from './services'
 import TabsManager from './TabsManager';
 import { toast } from 'react-toastify';
 import { withRouter } from './withRouter';
+import InvitationHandler from './InvitationHandler';
 
 class App extends React.Component {
   state = {
@@ -18,7 +19,13 @@ class App extends React.Component {
 
   componentDidMount() {
     Service.getAppVersion()
-      .then(version => this.setState({ version }));
+      .then(res => {
+        if (res.ok) {
+          res
+            .json()
+            .then(version => this.setState({ version }))
+        }
+      })
 
     this.reloadPlugins().then(() => {
       if (window.location.search) {
@@ -555,6 +562,9 @@ class App extends React.Component {
       onKeyDown={this.onKeyDown}
       onClick={this.onClick}
       tabIndex="0">
+
+      <InvitationHandler />
+
       <TabsManager
         version={version}
         editorState={editorState}

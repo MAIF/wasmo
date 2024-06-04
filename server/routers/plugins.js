@@ -8,7 +8,7 @@ const { FileSystem } = require('../services/file-system');
 
 const { InformationsReader } = require('../services/informationsReader');
 const { WebSocket } = require('../services/websocket');
-const { ENV, STORAGE } = require('../configuration');
+const { ENV, STORAGE, AUTHENTICATION } = require('../configuration');
 const Datastore = require('../datastores');
 
 const router = express.Router()
@@ -174,12 +174,16 @@ router.get('/:id/users', (req, res) => {
 })
 
 router.get('/:id/rights', (req, res) => {
-  Datastore.canSharePlugin(req.user.email, req.params.id)
-    .then(canShare => {
-      res
-        .status(200)
-        .json(canShare)
-    })
+  if (ENV.AUTH_MODE !== AUTHENTICATION.NO_AUTH) {
+    Datastore.canSharePlugin(req.user.email, req.params.id)
+      .then(canShare => {
+        res
+          .status(200)
+          .json(canShare)
+      })
+  } else {
+    return false
+  }
 })
 
 router.delete('/:id', async (req, res) => {

@@ -781,6 +781,19 @@ module.exports = class S3Datastore extends Datastore {
         }
     }
 
+    getInvitation = async (userEmail, ownerId, pluginId) => {
+        try {
+            const ownerPlugins = await this.getUserPlugins(ownerId)
+
+            const ownerPlugin = ownerPlugins.find(plugin => plugin.pluginId === pluginId)
+
+            return ownerPlugin
+        } catch (err) {
+            console.log(err)
+            return false
+        }
+    }
+
     canSharePlugin = async (email, pluginId) => {
         const user = await this.getUser(email);
 
