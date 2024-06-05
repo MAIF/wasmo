@@ -148,28 +148,25 @@ router.put('/:id', (req, res) => {
 })
 
 router.get('/:id/share-links', async (req, res) => {
-  const plugins = await Datastore.getUserPlugins(req.user.email)
-
-  const owner = plugins.find(plugin => plugin.pluginId === req.params.id)?.owner || req.user.email
-
-  const hash = Buffer.from(`${owner}:${req.params.id}`).toString('base64')
+  const hash = Buffer.from(req.params.id).toString('base64')
   res.json(`${ENV.SECURE_DOMAIN ? 'https' : 'http'}://${ENV.DOMAIN}:${ENV.EXPOSED_PORT || ENV.PORT}/invitation/${hash}`)
 })
 
 router.put('/:id/users', (req, res) => {
-  Datastore.patchPluginUsers(req.params.id,
+  Datastore.patchPluginUsers(req.user.email,
+    req.params.id,
     req.body.users,
-    [...new Set([...req.body.admins, req.user.email])])
-    .then(() => {
+    req.body.admins)
+    .then(data => {
       res
-        .status(204)
-        .json(null)
+        .status(data.status)
+        .json(data.body)
     })
 })
 
 router.get('/:id/users', (req, res) => {
-  Datastore.getPluginUsers(req.params.id)
-    .then(members => res.status(200).json(members))
+  Datastore.getPluginUsers(req.user.email, req.params.id)
+    .then(out => res.status(out.status).json(out.data))
 })
 
 router.get('/:id/rights', (req, res) => {
@@ -186,7 +183,7 @@ router.get('/:id/rights', (req, res) => {
 })
 
 router.delete('/:id', async (req, res) => {
-  Datastore.deletePlugin(req.params.id)
+  Datastore.deletePlugin(req.user.email, req.params.id)
     .then(out => {
       res.status(out.status).json(out.body)
     })
@@ -342,15 +339,9 @@ router.post('/:id/build', async (req, res) => {
   const pluginId = req.params.id;
   const release = req.query.release === 'true';
 
-  let user = req.user ? req.user.email : 'admin@otoroshi.io'
+  let user = req.user ? req.user.email : 'admin@otoroshi.io';
 
-  const data = await Datastore.getUser(user)
-  let plugin = (data.plugins || []).find(p => p.pluginId === pluginId);
-
-  if (plugin?.owner) {
-    user = plugin.owner;
-    plugin = await Datastore.getPlugin(plugin.owner, pluginId);
-  }
+  const plugin = await Datastore.getPlugin(user, pluginId);
 
   if (plugin.type === 'github') {
     plugin.type = req.query.plugin_type;

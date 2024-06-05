@@ -48,7 +48,7 @@ module.exports = class Datastore {
      * @param {string} newHash 
      * @param {string} generateWasmName 
      */
-    putWasmInformationsToS3(pluginId, newHash, generateWasmName) { return Promise.resolve() }
+    putWasmInformationsToS3(email, pluginId, newHash, generateWasmName) { return Promise.resolve() }
 
     /**
      * Fetch wasm from datastore
@@ -178,14 +178,13 @@ module.exports = class Datastore {
      * Check if received link is valid and add plugin to the current user
      * @param {string} pluginId
      */
-    acceptInvitation = (userId, ownerId, pluginId) => Promise.resolve()
+    acceptInvitation = (userId, pluginId) => Promise.resolve()
 
     /**
      * Get invitation informations
      * @param {string} userId 
-     * @param {string} ownerId 
      * @param {string} pluginId 
      * @returns 
      */
-    getInvitation = (userId, ownerId, pluginId) => Promise.resolve()
+    getInvitation = (userId, pluginId) => Promise.resolve()
 };

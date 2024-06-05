@@ -119,10 +119,44 @@ module.exports = class S3Datastore extends Datastore {
         }
     }
 
-    getPlugin = async pluginId => {
-        const plugins = await this.getPlugins(pluginId);
+    hasRights = (email, pluginId) => {
+        return this.getPlugins()
+            .then(plugins => {
 
-        return plugins.find(plugin => plugin.pluginId === pluginId)
+                if (email === "*")
+                    return
+
+                const plugin = plugins.find(plugin => plugin.pluginId === pluginId)
+
+                const users = plugin?.users || [];
+                const admins = plugin?.admins || [];
+
+                if (users.includes(email) || admins.includes(email)) {
+                    return plugin
+                }
+
+                // TODO - better error handling
+                throw 'Not authorized'
+            })
+    }
+
+    getPlugin = async (email, pluginId) => {
+        const { instance, Bucket } = this.#state;
+
+        await this.hasRights(email, pluginId)
+
+        try {
+            const rawData = await instance.send(new GetObjectCommand({
+                Bucket,
+                Key: `${pluginId}.json`
+            }))
+            const res = await new fetch.Response(rawData.Body)
+                .json()
+
+            return res
+        } catch (err) {
+            return {}
+        }
     }
 
     putWasmFileToS3 = (wasmFolder) => {
@@ -176,8 +210,8 @@ module.exports = class S3Datastore extends Datastore {
         }
     }
 
-    putWasmInformationsToS3 = (pluginId, newHash, generateWasmName) => {
-        return this.getPlugin(pluginId)
+    putWasmInformationsToS3 = (email, pluginId, newHash, generateWasmName) => {
+        return this.getPlugin(email, pluginId)
             .then(plugin => {
                 let versions = plugin.versions || [];
 
@@ -208,7 +242,7 @@ module.exports = class S3Datastore extends Datastore {
                     versions
                 }
 
-                return this.updatePlugin(pluginId, patchPlugin)
+                return this.updatePluginInformations(pluginId, patchPlugin)
             })
     }
 
@@ -384,8 +418,8 @@ module.exports = class S3Datastore extends Datastore {
             })
     }
 
-    getConfigurations = pluginId => {
-        return this.getPlugin(pluginId)
+    getConfigurations = (email, pluginId) => {
+        return this.getPlugin(email, pluginId)
             .then(plugin => {
                 const files = [{
                     ext: 'json',
@@ -416,14 +450,15 @@ module.exports = class S3Datastore extends Datastore {
             .catch(err => { logger.error(err) });
     }
 
-    deletePlugin = (pluginId) => {
-        return new Promise(resolve => this.getPlugin(pluginId)
+    deletePlugin = (email, pluginId) => {
+        return new Promise(resolve => this.getPlugin(email, pluginId)
             .then(plugin => {
                 Promise.all([
                     this.deleteObject(`${pluginId}.zip`),
                     this.deleteObject(`${pluginId}-logs.zip`),
                     this.removeBinaries((plugin.versions || []).map(r => r.name)),
-                    this.deleteObject(`${pluginId}.json`)
+                    this.deleteObject(`${pluginId}.json`),
+                    this.removePluginFromList(pluginId)
                 ])
                     .then(() => resolve({ status: 204, body: null }))
                     .catch(err => {
@@ -435,6 +470,42 @@ module.exports = class S3Datastore extends Datastore {
                         })
                     })
             }))
+            .catch(_ => {
+                resolve({
+                    status: 400,
+                    body: {
+                        error: "something bad happened"
+                    }
+                })
+            })
+    }
+
+    updatePluginInformations = (id, body) => {
+        const { instance, Bucket } = this.#state;
+
+        const params = {
+            Bucket,
+            Key: `${id}.json`,
+            ContentType: 'application/json',
+            Body: fromUtf8(JSON.stringify(body))
+        }
+
+        console.log("updatePluginInformations", id, body)
+
+        return instance.send(new PutObjectCommand(params))
+            .then(() => ({
+                status: 204,
+                body: null
+            }))
+            .catch(err => {
+                return {
+                    status: err.$metadata.httpStatusCode,
+                    body: {
+                        error: err.Code,
+                        status: err.$metadata.httpStatusCode
+                    }
+                }
+            })
     }
 
     updatePlugin = (id, body) => {
@@ -442,7 +513,7 @@ module.exports = class S3Datastore extends Datastore {
 
         const params = {
             Bucket,
-            Key: `${id}.json`,
+            Key: `${id}.zip`,
             Body: body
         }
 
@@ -467,6 +538,7 @@ module.exports = class S3Datastore extends Datastore {
 
         return new Promise(resolve => {
             const pluginId = crypto.randomUUID()
+
             const newPlugin = isGithub ? {
                 filename: metadata.repo,
                 owner: metadata.owner,
@@ -481,6 +553,8 @@ module.exports = class S3Datastore extends Datastore {
                 template: metadata.template
             };
 
+            console.log('generate pluginID', pluginId, newPlugin.pluginId)
+
             const params = {
                 Bucket,
                 Key: `${pluginId}.json`,
@@ -489,8 +563,9 @@ module.exports = class S3Datastore extends Datastore {
             }
 
             instance.send(new PutObjectCommand(params))
-                .then(() => {
-                    this.getPluginUsers
+                .then(async () => {
+                    await this.addPluginToList(email, newPlugin);
+                    const plugins = await this.getUserPlugins(email);
                     resolve({
                         status: 201,
                         body: {
@@ -499,6 +574,7 @@ module.exports = class S3Datastore extends Datastore {
                     })
                 })
                 .catch(err => {
+                    console.log(err)
                     resolve({
                         status: err.$metadata.httpStatusCode,
                         body: {
@@ -510,97 +586,149 @@ module.exports = class S3Datastore extends Datastore {
         })
     }
 
-    patchPlugin = async (luginId, field, value) => {
-        const plugin = await getPlugin(pluginId)
+    patchPlugin = async (email, pluginId, field, value) => {
+        const plugin = await this.getPlugin(email, pluginId)
 
-        return this.updatePlugin(pluginId, {
+        return this.updatePluginInformations(pluginId, {
             ...plugin,
             [field]: value
         })
     }
 
-    patchPluginName = (pluginId, newName) => {
-        return this.patchPlugin(pluginId, 'filename', newName)
+    patchPluginName = (email, pluginId, newName) => {
+        return this.patchPlugin(email, pluginId, 'filename', newName)
     }
 
-    patchPluginUsers = async (pluginId, newUsers, newAdmins) => {
-        const plugin = this.getPlugin(pluginId)
+    patchPluginUsers = async (email, pluginId, newUsers, newAdmins) => {
+        const plugins = await this.getPlugins()
 
-        return this.updatePlugin(pluginId, {
-            ...plugin,
-            users: newUsers,
-            admins: newAdmins
-        })
-    }
+        const plugin = plugins.find(p => p.pluginId === pluginId)
 
-    acceptInvitation = async (userEmail, ownerId, pluginId) => {
-        // try {
-        //     const plugin = await this.getPlugin(pluginId)
-
-        //     const newPlugin = {
-        //         pluginId: ownerPlugin.pluginId,
-        //         owner: ownerId
-        //     }
-
-        //     return this.updatePlugin(pluginId, newPlugin)
-        //         .then(() => true)
-
-        // } catch (err) {
-        //     console.log(err)
-        //     return false
-        // }
+        if (plugin) {
+            this.updatePluginList(pluginId, {
+                ...plugin,
+                users: newUsers,
+                admins: newAdmins
+            })
+            return {
+                status: 204,
+                data: null
+            }
+        } else {
+            return {
+                status: 404,
+                data: {
+                    error: 'something bad happened'
+                }
+            }
+        }
     }
 
     getUserPlugins = async email => {
         const plugins = await this.getPlugins();
+        console.log(plugins)
 
-        return plugins.find(plugin => {
+        const userPlugins = plugins.filter(plugin => {
             const users = plugin.users || [];
             const admins = plugin.admins || [];
 
             return users.includes(email) || admins.includes(email)
-        })
+        }) || []
+
+        console.log("users plugins")
+        console.log(userPlugins, email)
+
+        return Promise.all(userPlugins.map(plugin => this.getPlugin(email, plugin.pluginId)))
+            .then(plugins => {
+                return plugins.filter(data => Object.keys(data).length > 0)
+            })
     }
 
-    getInvitation = async (userEmail, ownerId, pluginId) => {
-        // try {
-        //     const ownerPlugins = await this.getUserPlugins(ownerId)
+    addPluginToList = async (email, plugin) => {
+        const { instance, Bucket } = this.#state;
 
-        //     const ownerPlugin = ownerPlugins.find(plugin => plugin.pluginId === pluginId)
+        const plugins = await this.getPlugins()
 
-        //     return ownerPlugin
-        // } catch (err) {
-        //     console.log(err)
-        //     return false
-        // }
+        return instance.send(new PutObjectCommand({
+            Bucket,
+            Key: 'plugins.json',
+            ContentType: 'application/json',
+            Body: fromUtf8(JSON.stringify([
+                ...plugins,
+                {
+                    pluginId: plugin.pluginId,
+                    admins: [email],
+                    users: []
+                }
+            ]))
+        }))
     }
+
+    updatePluginList = async (pluginId, content) => {
+        const { instance, Bucket } = this.#state;
+
+        const plugins = await this.getPlugins()
+
+        return instance.send(new PutObjectCommand({
+            Bucket,
+            Key: 'plugins.json',
+            ContentType: 'application/json',
+            Body: fromUtf8(JSON.stringify(plugins.map(plugin => {
+                if (plugin.pluginId === pluginId) {
+                    return content
+                }
+                return plugin
+            })))
+        }))
+    }
+
+    removePluginFromList = async pluginId => {
+        const { instance, Bucket } = this.#state;
+
+        const plugins = await this.getPlugins()
+
+        return instance.send(new PutObjectCommand({
+            Bucket,
+            Key: 'plugins.json',
+            ContentType: 'application/json',
+            Body: fromUtf8(JSON.stringify(plugins.filter(plugin => plugin.pluginId !== pluginId)))
+        }))
+    }
+
+    getInvitation = (email, pluginId) => this.getPlugin(email, pluginId)
 
     canSharePlugin = async (email, pluginId) => {
-        // const user = await this.getUser(email);
+        const plugins = await this.getPlugins()
 
-        // const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId);
+        const plugin = plugins.find(p => p.pluginId === pluginId)
 
-        // if (plugin?.owner) {
-        //     const owner = await this.getUser(plugin.owner)
+        if (plugin) {
+            return plugin.admins.includes(email)
+        }
 
-        //     const rootPlugin = owner.plugins.find(plugin => plugin.pluginId === pluginId);
-
-        //     if (rootPlugin) {
-        //         return (rootPlugin.admins || []).includes(email)
-        //     }
-
-        //     return false
-        // }
-
-        return true
+        return false
     }
 
-    getPluginUsers = async (pluginId) => {
-        const plugin = await this.getPlugin(pluginId)
+    getPluginUsers = async (email, pluginId) => {
+        const plugins = await this.getPlugins()
 
-        return {
-            admins: plugin.admins,
-            users: plugin.users
+        const plugin = plugins.find(p => p.pluginId === pluginId)
+
+        if (plugin) {
+            return {
+                status: 200,
+                data: {
+                    admins: plugin.admins,
+                    users: plugin.users
+                }
+            }
+        } else {
+            return {
+                status: 404,
+                data: {
+                    error: 'something bad happened'
+                }
+            }
         }
     }
 };

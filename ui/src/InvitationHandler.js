@@ -18,13 +18,21 @@ function InvitationHandler() {
     const paths = window.location.pathname.split("/invitation");
 
     if (paths.length === 2) {
-      const invitationId = paths[1];
+      const invitationId = paths[1].slice(1);
 
       Service.getInvitationInformation(invitationId)
-        .then(invit => setInvitation({
-          ...invit,
-          invitationId
-        }))
+        .then(response => {
+          if (response.redirected) {
+            window.location.href = response.url;
+          } else {
+            response
+              .json()
+              .then(invit => setInvitation({
+                ...invit,
+                invitationId
+              }))
+          }
+        })
     }
   }, [])
 
@@ -38,7 +46,7 @@ function InvitationHandler() {
   }}>
     <div className="d-flex flex-column align-items-start p-3 rounded">
       <div className="d-flex justify-content-between w-100 align-items-center">
-        <h2>Invitation to edit {invitation.filename} plugin</h2>
+        <h2>You invited to edit {invitation.filename} plugin</h2>
 
         <a
           href="#ok"
@@ -67,14 +75,15 @@ function InvitationHandler() {
         type="button"
         className="btn btn-dark"
         onClick={() => {
-          Service.acceptInvitation(invitation.invitationId)
-            .then(response => {
-              if (response.redirected) {
-                window.location.href = response.url;
-              }
-            })
+          window.location.href = `/?pluginId=${atob(invitation.invitationId)}`
+          // Service.acceptInvitation(invitation.invitationId)
+          //   .then(response => {
+          //     if (response.redirected) {
+          //       window.location.href = response.url;
+          //     }
+          //   })
         }}>
-        Accept invitation and view plugin
+        View plugin
       </button>
     </div>
   </div>
