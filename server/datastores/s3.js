@@ -15,11 +15,10 @@ const dns = require('dns');
 const url = require('url');
 const fs = require('fs-extra');
 
-const { format, isAString } = require('../utils');
+const { isAString } = require('../utils');
 const Datastore = require('./api');
 const { ENV, STORAGE } = require("../configuration");
 const logger = require("../logger");
-const consumers = require('node:stream/consumers');
 const AdmZip = require("adm-zip");
 const { Console } = require('console');
 const CustomStream = require('./CustomStream');
@@ -210,7 +209,7 @@ module.exports = class S3Datastore extends Datastore {
         }
     }
 
-    putWasmInformationsToS3 = (email, pluginId, newHash, generateWasmName) => {
+    pushNewPluginVersion = (email, pluginId, newHash, generateWasmName) => {
         return this.getPlugin(email, pluginId)
             .then(plugin => {
                 let versions = plugin.versions || [];

@@ -5,6 +5,16 @@ module.exports = class Datastore {
      */
     async initialize() { Promise.resolve() }
     /**
+     * List of created plugins, whole database
+     */
+    getPlugins() { Promise.resolve() }
+    /**
+     * Check if user is in the users or admins list of specific plugin
+     * @param {string} email 
+     * @param {string} pluginId 
+     */
+    hasRights(email, pluginId) { Promise.resolve() }
+    /**
      * Get current user
      */
     getUser(email) { return Promise.resolve() }
@@ -13,6 +23,26 @@ module.exports = class Datastore {
      * @returns {Object[]}
      */
     getUserPlugins(email) { return Promise.resolve() }
+    /**
+     * Add plugin to the list of plugins
+     * @param {string} email 
+     * @param {any} plugin 
+     * @returns 
+     */
+    addPluginToList = (email, plugin) => Promise.resolve()
+    /**
+     * Update plugin informations like users, admins list
+     * @param {string} pluginId 
+     * @param {any} content 
+     * @returns 
+     */
+    updatePluginList = (pluginId, content) => Promise.resolve()
+    /**
+     * Remove plugin from list of plugins
+     * @param {string} pluginId 
+     * @returns 
+     */
+    removePluginFromList = (pluginId) => Promise.resolve()
     /**
      * register a new user if not present
      * @param {string} email 
@@ -32,8 +62,11 @@ module.exports = class Datastore {
     /**
      * Save wasm file
      * @param {string} wasmFolder 
+     * @param {string} pluginId
+     * @param {string} newHash 
+     * @param {string} generateWasmName 
      */
-    putWasmFileToS3(wasmFolder) { return Promise.resolve() }
+    putWasmFileToS3(email, pluginId, newHash, generateWasmName) { return Promise.resolve() }
 
     /**
      * Save logs file
@@ -48,7 +81,7 @@ module.exports = class Datastore {
      * @param {string} newHash 
      * @param {string} generateWasmName 
      */
-    putWasmInformationsToS3(email, pluginId, newHash, generateWasmName) { return Promise.resolve() }
+    pushNewPluginVersion(email, pluginId, newHash, generateWasmName) { return Promise.resolve() }
 
     /**
      * Fetch wasm from datastore
@@ -62,24 +95,26 @@ module.exports = class Datastore {
      * @param {JSON} runOptions 
      */
     runWasm(wasmId, runOptions) { return Promise.resolve() }
-
     /**
      * Check the presence of a specific wasm in database
      * @param {string} wasmId 
      * @param {boolean} release 
      */
-    isWasmExists(wasmId, release) {
-        return Promise.resolve()
-    }
-
+    isWasmExists(wasmId, release) { return Promise.resolve() }
     /**
      * Fetch plugin sources
      * @param {string} pluginId 
      * @returns sources as buffer
      */
-    getSources = pluginId => {
-        return Promise.resolve()
-    }
+    getSources = pluginId => { return Promise.resolve() }
+    
+    /**
+     * Get log files of specific plugin at add them to files
+     * @param {string} pluginId 
+     * @param {any} files 
+     * @returns 
+     */
+    getConfigurationsFile (pluginId, files) { return Promise.resolve() }
 
     /**
      * Fetch configuration file
@@ -91,10 +126,35 @@ module.exports = class Datastore {
     }
 
     /**
-     * Delete specific plugin
+     * Remove all wasm version of specific plugins
+     * @param {string[]} versions 
+     * @returns 
+     */
+    removeBinaries = versions => {
+        return Promise.resolve()
+    }
+
+    /**
+     * Remove object from S3
+     * @param {string} key 
+     * @returns 
+     */
+    deleteObject = key => { return Promise.resolve() }
+
+    /**
+     * Delete specific plugin and all assets
+     * @param {string} email 
      * @param {string} pluginId 
      */
-    deletePlugin = (pluginId) => Promise.resolve()
+    deletePlugin = (email, pluginId) => Promise.resolve()
+
+    /**
+     * Update plugin informations
+     * @param {string} id 
+     * @param {any} body - plugin content
+     * @returns 
+     */
+    updatePluginInformations = (pluginId, body) => Promise.resolve()
 
     /**
      * Update plugin content
@@ -109,6 +169,15 @@ module.exports = class Datastore {
      * @param {JSON} metadata 
      */
     createEmptyPlugin = (email, metadata, isGithub) => Promise.resolve()
+    /**
+     * Update plugin field
+     * @param {string} email 
+     * @param {string} pluginId 
+     * @param {string} field 
+     * @param {any} value 
+     * @returns 
+     */
+    patchPlugin = (email, pluginId, field, value) => Promise.resolve()
 
     /**
      * Edit the plugin name
@@ -135,12 +204,12 @@ module.exports = class Datastore {
     getPluginUsers = (email, pluginId) => Promise.resolve()
 
     /**
-     * Get plugin of user
-     * @param {string} owner 
+     * Get plugin (check if user can access it)
+     * @param {string} email 
      * @param {string} pluginId 
      * @returns 
      */
-    getPlugin = (owner, pluginId) => Promise.resolve()
+    getPlugin = (email, pluginId) => Promise.resolve()
 
     /**
      * Check if user can share plugin
@@ -182,9 +251,15 @@ module.exports = class Datastore {
 
     /**
      * Get invitation informations
-     * @param {string} userId 
+     * @param {string} email 
      * @param {string} pluginId 
-     * @returns 
      */
-    getInvitation = (userId, pluginId) => Promise.resolve()
+    getInvitation = (email, pluginId) => Promise.resolve()
+
+    /**
+     * Check if user are allowed to share plugin to other users
+     * @param {string} email 
+     * @param {string} pluginId 
+     */
+    canSharePlugin = (email, pluginId) => Promise.resolve()
 };

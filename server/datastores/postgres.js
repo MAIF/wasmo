@@ -51,35 +51,29 @@ module.exports = class PgDatastore extends Datastore {
         const client = await this.#pool.connect();
 
         await Promise.all([
-            client.query("CREATE TABLE IF NOT EXISTS users(id SERIAL, email VARCHAR, content JSONB)"),
+            client.query("CREATE TABLE IF NOT EXISTS plugins(id VARCHAR(200), content JSONB)"),
             client.query("CREATE TABLE IF NOT EXISTS jobs(id SERIAL, plugin_id VARCHAR UNIQUE, created_at TIMESTAMP default current_timestamp)"),
         ]);
         client.release()
     }
 
-    getUser = (email) => {
+    getPlugins = () => {
         return this.#pool.connect()
             .then(async client => {
-                const res = await client.query("SELECT content from users WHERE email = $1", [email])
+                const res = await client.query("SELECT content FROM plugins", [])
                 client.release();
 
-                return res.rowCount > 0 ? res.rows[0].content : {};
+                return res.rowCount > 0 ? res.rows.map(r => r.content) : []
             })
     }
 
-    getUserPlugins = (email) => {
-        return this.getUser(email)
-            .then(data => data.plugins || [])
-            .then(plugins => {
-                return Promise.all(plugins.map(plugin => {
-                    if (plugin.owner) {
-                        return this.#getPlugin(plugin.owner, plugin.pluginId)
-                            .then(res => ({ ...res, owner: plugin.owner }))
-                    } else {
-                        return Promise.resolve(plugin)
-                    }
-                })
-                )
+    getUserPlugins = async email => {
+        return this.#pool.connect()
+            .then(async client => {
+                const res = await client.query("SELECT content FROM plugins WHERE content->'admins' ? $1::text OR content->'users' ? $1::text", [email])
+                client.release();
+
+                return res.rowCount > 0 ? res.rows.map(r => r.content) : []
             })
     }
 
@@ -104,28 +98,6 @@ module.exports = class PgDatastore extends Datastore {
             })
     }
 
-    updateUser = (email, content) => {
-        return this.#pool.connect()
-            .then(client => {
-                return client.query("UPDATE users SET content = $1::jsonb WHERE email = $2", [content, email])
-                    .then(async res => {
-                        if (res.rowCount === 0) {
-                            await client.query("INSERT INTO users (content, email) VALUES($1::jsonb, $2)", [content, email])
-                        }
-
-                        client.release()
-                    });
-            })
-            .then(() => ({ status: 200 }))
-            .catch(err => {
-                console.log('update user error', err)
-                return {
-                    error: 400,
-                    status: 'something bad happened'
-                }
-            });
-    }
-
     putWasmFileToS3 = (wasmFolder) => {
         return this.#sourcesDatastore.putWasmFileToS3(wasmFolder);
     }
@@ -134,51 +106,39 @@ module.exports = class PgDatastore extends Datastore {
         return this.#sourcesDatastore.putBuildLogsToS3(logId, logsFolder);
     }
 
-    putWasmInformationsToS3 = (email, pluginId, newHash, generateWasmName) => {
-        return this.getUser(email)
-            .then(data => {
-                const plugin = data.plugins.map(plugin => plugin.pluginId === pluginId)
+    pushNewPluginVersion = (email, pluginId, newHash, generateWasmName) => {
+        return this.getPlugin(email, pluginId)
+            .then(plugin => {
+                let versions = plugin.versions || [];
 
-                if (plugin.owner)
-                    return this.putWasmInformationsToS3(plugin.owner, pluginId, newHash, generateWasmName)
+                // convert legacy array
+                if (versions.length > 0 && isAString(versions[0])) {
+                    versions = versions.map(name => ({ name }))
+                }
 
-                const newPlugins = data.plugins.map(plugin => {
-                    if (plugin.pluginId !== pluginId) {
-                        return plugin;
+                const index = versions.findIndex(item => item.name === generateWasmName);
+                if (index === -1)
+                    versions.push({
+                        name: generateWasmName,
+                        updated_at: Date.now(),
+                        creator: email
+                    })
+                else {
+                    versions[index] = {
+                        ...versions[index],
+                        updated_at: Date.now(),
+                        creator: email
                     }
-                    let versions = plugin.versions || [];
+                }
 
-                    // convert legacy array
-                    if (versions.length > 0 && isAString(versions[0])) {
-                        versions = versions.map(name => ({ name }))
-                    }
+                const patchPlugin = {
+                    ...plugin,
+                    last_hash: newHash,
+                    wasm: generateWasmName,
+                    versions
+                }
 
-                    const index = versions.findIndex(item => item.name === generateWasmName);
-                    if (index === -1)
-                        versions.push({
-                            name: generateWasmName,
-                            updated_at: Date.now(),
-                            creator: email
-                        })
-                    else {
-                        versions[index] = {
-                            ...versions[index],
-                            updated_at: Date.now(),
-                            creator: email
-                        }
-                    }
-
-                    return {
-                        ...plugin,
-                        last_hash: newHash,
-                        wasm: generateWasmName,
-                        versions
-                    }
-                });
-                return this.updateUser(email, {
-                    ...data,
-                    plugins: newPlugins
-                })
+                return this.updatePluginList(pluginId, patchPlugin)
             })
     }
 
@@ -198,20 +158,46 @@ module.exports = class PgDatastore extends Datastore {
         return this.#sourcesDatastore.getSources(pluginId);
     }
 
-    #getPlugin = (email, pluginId) => {
+    hasRights = (email, pluginId) => {
         return this.#pool.connect()
-            .then(client => {
-                return client.query("SELECT content FROM users WHERE email = $1", [email])
-                    .then(res => {
-                        client.release();
+            .then(client => client.query("SELECT * FROM plugins WHERE id = $1::text", [pluginId])
+                .then(res => {
+                    client.release()
+                    return res.rowCount === 1 ? res.rows[0].content : {}
+                }))
+            .then(plugin => {
+                if (email === "*")
+                    return
 
-                        return res.rowCount > 0 ? (res.rows[0].content.plugins || [])?.find(plugin => plugin.pluginId === pluginId) : {}
-                    })
+                const users = plugin?.users || [];
+                const admins = plugin?.admins || [];
+
+                if (users.includes(email) || admins.includes(email)) {
+                    return plugin
+                }
+
+                // TODO - better error handling
+                throw 'Not authorized'
             })
     }
 
+    getPlugin = async (email, pluginId) => {
+        try {
+            await this.hasRights(email, pluginId)
+        } catch (_err) {
+            return {}
+        }
+
+        return this.#pool.connect()
+            .then(client => client.query("SELECT * FROM plugins WHERE id = $1::text", [pluginId])
+                .then(res => {
+                    client.release()
+                    return res.rowCount === 1 ? res.rows[0].content : {}
+                }))
+    }
+
     getConfigurations = async (email, pluginId) => {
-        const plugin = await this.#getPlugin(email, pluginId);
+        const plugin = await this.getPlugin(email, pluginId);
 
         if (plugin.owner)
             return this.getConfigurations(plugin.owner, pluginId)
@@ -228,60 +214,34 @@ module.exports = class PgDatastore extends Datastore {
         return this.#sourcesDatastore.getConfigurationsFile(plugin.pluginId, files);
     }
 
-    #deleteRootPlugin = async (plugin, pluginId) => {
-        const { admins, users } = plugin;
-
-        await Promise.all([
-            ...(admins || []),
-            ...(users || [])
-        ].map(user => this.#removePluginFromUser(user, pluginId)))
-
-        return this.deletePlugin(plugin.owner, pluginId)
-    }
-
     deletePlugin = (email, pluginId) => {
-        return new Promise(resolve => this.getUser(email)
-            .then(data => {
-                if (Object.keys(data).length > 0) {
-                    const plugin = data.plugins.find(f => f.pluginId === pluginId)
-
-                    this.updateUser(email, {
-                        ...data,
-                        plugins: data.plugins.filter(f => f.pluginId !== pluginId)
-                    })
-                        .then(() => {
-                            if (plugin.owner || plugin.users || plugin.admins) {
-                                this.#deleteRootPlugin(plugin, pluginId)
-                                    .then(resolve)
-                            } else {
-                                const pluginHash = (plugin || {}).last_hash;
-
-                                Promise.all([
-                                    this.#sourcesDatastore.deleteObject(`${pluginHash}.zip`),
-                                    this.#sourcesDatastore.deleteObject(`${pluginHash}-logs.zip`),
-                                    this.#sourcesDatastore.deleteObject(`${pluginId}.zip`),
-                                    this.#sourcesDatastore.deleteObject(`${pluginId}-logs.zip`),
-                                    this.#sourcesDatastore.deleteObject(`${pluginId}.zip`),
-                                    this.#sourcesDatastore.deleteObject(`${pluginId}-logs.zip`),
-                                    this.#sourcesDatastore.removeBinaries((plugin.versions || []).map(r => r.name))
-                                ])
-                                    .then(() => resolve({ status: 204, body: null }))
-                                    .catch(err => {
-                                        resolve({
-                                            status: 400,
-                                            body: {
-                                                error: err.message
-                                            }
-                                        })
-                                    })
+        return new Promise(resolve => this.getPlugin(email, pluginId)
+            .then(plugin => {
+                Promise.all([
+                    this.#sourcesDatastore.deleteObject(`${pluginId}.zip`),
+                    this.#sourcesDatastore.deleteObject(`${pluginId}-logs.zip`),
+                    this.#sourcesDatastore.removeBinaries((plugin.versions || []).map(r => r.name)),
+                    this.#sourcesDatastore.deleteObject(`${pluginId}.json`),
+                    this.removePluginFromList(pluginId)
+                ])
+                    .then(() => resolve({ status: 204, body: null }))
+                    .catch(err => {
+                        resolve({
+                            status: 400,
+                            body: {
+                                error: err.message
                             }
                         })
-                } else {
-                    resolve({
-                        status: 204, body: null
                     })
-                }
             }))
+            .catch(_ => {
+                resolve({
+                    status: 400,
+                    body: {
+                        error: "something bad happened"
+                    }
+                })
+            })
     }
 
     updatePlugin = (id, body) => {
@@ -290,135 +250,118 @@ module.exports = class PgDatastore extends Datastore {
 
     createEmptyPlugin = (email, metadata, isGithub) => {
         return new Promise(resolve => {
-            this.createUserIfNotExists(email)
-                .then(() => {
-                    this.getUser(email)
-                        .then(data => {
-                            const pluginId = crypto.randomUUID()
-                            const plugins = [
-                                ...(data.plugins || []),
-                                isGithub ? {
-                                    filename: metadata.repo,
-                                    owner: metadata.owner,
-                                    ref: metadata.ref,
-                                    type: 'github',
-                                    pluginId: pluginId,
-                                    private: metadata.private
-                                } : {
-                                    filename: metadata.name.replace(/ /g, '-'),
-                                    type: metadata.type,
-                                    pluginId: pluginId,
-                                    template: metadata.template
-                                }
-                            ]
+            const pluginId = crypto.randomUUID()
+            const newPlugin = isGithub ? {
+                filename: metadata.repo,
+                owner: metadata.owner,
+                ref: metadata.ref,
+                type: 'github',
+                pluginId: pluginId,
+                private: metadata.private
+            } : {
+                filename: metadata.name.replace(/ /g, '-'),
+                type: metadata.type,
+                pluginId: pluginId,
+                template: metadata.template
+            }
 
-                            return this.#pool.connect()
-                                .then(client => {
-                                    return client.query("UPDATE users SET content = $1::jsonb WHERE email = $2", [{ plugins }, email])
-                                        .then(() => client.release())
-                                })
-                                .then(() => {
-                                    resolve({
-                                        status: 201,
-                                        body: {
-                                            plugins
-                                        }
-                                    })
-                                })
-                                .catch(err => {
-                                    resolve({
-                                        status: 400,
-                                        body: {
-                                            error: err.message
-                                        }
-                                    })
-                                })
+            console.log('generate pluginID', pluginId, newPlugin.pluginId)
+
+            return this.#pool.connect()
+                .then(client => {
+                    return client.query("INSERT INTO plugins(id, content) VALUES($1, $2::jsonb)", [newPlugin.pluginId, JSON.stringify({
+                        ...newPlugin,
+                        admins: [email],
+                        users: []
+                    })])
+                        .then(() => {
+                            client.release()
+                            return this.getUserPlugins(email)
                         })
                 })
-                .catch(err => {
+                .then(plugins => {
                     resolve({
-                        status: 400,
+                        status: 201,
                         body: {
-                            error: err.message
+                            plugins
+                        }
+                    })
+                })
+                .catch(err => {
+                    console.log(err)
+                    resolve({
+                        status: err.$metadata.httpStatusCode,
+                        body: {
+                            error: err.Code,
+                            status: err.$metadata.httpStatusCode
                         }
                     })
                 })
         })
     }
 
-    patchPlugin = (email, pluginId, field, value) => {
-        return this.getUser(email)
-            .then(data => {
-                const plugin = (data.plugins || []).find(plugin => plugin.pluginId === pluginId)
+    patchPlugin = async (email, pluginId, field, value) => {
+        const plugin = await this.getPlugin(email, pluginId)
 
-                if (plugin.owner)
-                    return this.patchPlugin(plugin.owner, pluginId, field, value)
-                else
-                    return this.updateUser(email, {
-                        ...data,
-                        plugins: (data.plugins || []).map(plugin => {
-                            if (plugin.pluginId === pluginId) {
-                                return {
-                                    ...plugin,
-                                    [field]: value
-                                }
-                            } else {
-                                return plugin
-                            }
-                        })
-                    })
-            })
+        return this.updatePluginList(pluginId, {
+            ...plugin,
+            [field]: value
+        })
     }
 
-    patchPluginName = (email, pluginId, newName) => {
+    patchPluginName = (email, pluginId, value) => {
         return this.patchPlugin(email, pluginId, 'filename', value)
     }
 
-    #removePluginFromUser = async (email, pluginId) => {
-        const user = await this.getUser(email)
+    patchPluginUsers = async (email, pluginId, newUsers, newAdmins) => {
+        const plugin = await this.getPlugin(email, pluginId)
 
-        return this.updateUser(email, {
-            ...user,
-            plugins: (user.plugins || []).filter(plugin => plugin.pluginId !== pluginId)
-        })
+        if (plugin) {
+            this.updatePluginList(pluginId, {
+                ...plugin,
+                users: newUsers,
+                admins: newAdmins
+            })
+            return {
+                status: 204,
+                data: null
+            }
+        } else {
+            return {
+                status: 404,
+                data: {
+                    error: 'something bad happened'
+                }
+            }
+        }
     }
 
-    patchPluginUsers = async (email, pluginId, newUsers, newAdmins) => {
-        let currentUser = email;
+    addPluginToList = async (email, plugin) => {
+        return this.#pool.connect()
+            .then(client => {
+                return client.query("INSERT INTO plugins(id, content) VALUES($1, $2::jsonb)", [plugin.pluginId, JSON.stringify({
+                    pluginId: plugin.pluginId,
+                    admins: [email],
+                    users: []
+                })])
+                    .then(() => client.release())
+            })
+    }
 
-        const user = await this.getUser(currentUser);
+    updatePluginList = async (pluginId, content) => {
+        return this.#pool.connect()
+            .then(client => {
+                return client.query("UPDATE plugins SET content = $1::jsonb WHERE id = $2", [JSON.stringify(content), pluginId])
+                    .then(() => client.release())
+            })
+    }
 
-        let plugin = user.plugins.find(plugin => plugin.pluginId === pluginId)
-
-        // if plugin is not owned by the user, we need to edit the root plugin
-        if (plugin.owner) {
-            currentUser = plugin.owner;
-
-            const owner = await this.getUser(plugin.owner)
-            plugin = owner.plugins.find(plugin => plugin.pluginId === pluginId)
-        }
-
-        const removedUsers = (plugin.users || []).filter(user => !newUsers.includes(user) && !newAdmins.includes(user))
-        const removedAdmins = (plugin.admins || []).filter(admin => !newAdmins.includes(admin) && !newUsers.includes(admin))
-
-        await Promise.all(removedUsers.map(user => this.#removePluginFromUser(user, pluginId)))
-        await Promise.all(removedAdmins.map(admin => this.#removePluginFromUser(admin, pluginId)))
-
-        return this.getUser(currentUser)
-            .then(data => this.updateUser(currentUser, {
-                ...data,
-                plugins: (data.plugins || []).map(plugin => {
-                    if (plugin.pluginId === pluginId) {
-                        return {
-                            ...plugin,
-                            users: newUsers,
-                            admins: newAdmins
-                        }
-                    } else {
-                        return plugin
-                    }
-                })
-            }))
+    removePluginFromList = async (pluginId) => {
+        return this.#pool.connect()
+            .then(client => {
+                return client.query("DELETE FROM plugins WHERE id = $1", [pluginId])
+                    .then(() => client.release())
+            })
     }
 
     isJobRunning = pluginId => {
@@ -473,79 +416,26 @@ module.exports = class PgDatastore extends Datastore {
             });
     }
 
-    acceptInvitation = async (userEmail, ownerId, pluginId) => {
-        try {
-            const ownerPlugins = await this.getUserPlugins(ownerId)
-            const user = await this.getUser(userEmail)
-
-            const ownerPlugin = ownerPlugins.find(plugin => plugin.pluginId === pluginId)
-
-            if (ownerPlugin &&
-                ((ownerPlugin.users || []).includes(userEmail) ||
-                    (ownerPlugin.admins || []).includes(userEmail))) {
-
-                const newPlugin = {
-                    pluginId: ownerPlugin.pluginId,
-                    owner: ownerId
-                }
-
-                return this.updateUser(userEmail, {
-                    ...user,
-                    plugins: [
-                        ...(user.plugins || []).filter(plugin => plugin.pluginId !== pluginId),
-                        newPlugin
-                    ]
-                })
-                    .then(() => true)
-            } else {
-                return false
-            }
-        } catch (err) {
-            console.log(err)
-            return false
-        }
-    }
+    getInvitation = (email, pluginId) => this.getPlugin(email, pluginId)
 
     canSharePlugin = async (email, pluginId) => {
-        const user = await this.getUser(email);
-
-        const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId);
-
-        if (plugin?.owner) {
-            const owner = await this.getUser(plugin.owner)
-
-            const rootPlugin = owner.plugins.find(plugin => plugin.pluginId === pluginId);
-
-            if (rootPlugin) {
-                return (rootPlugin.admins || []).includes(email)
-            }
-
-            return false
-        }
-
-        return true
-
+        return this.#pool.connect()
+            .then(client => client.query("SELECT * FROM plugins WHERE id = $1::text AND content->'admins' ? $2::text", [pluginId, email])
+                .then(res => {
+                    client.release()
+                    return res.rowCount > 0
+                }))
     }
 
-    getPluginUsers = async (email, pluginId) => {
-        const user = await this.getUser(email);
-
-        const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId);
-
-        if (plugin.owner) {
-            const owner = await this.getUser(plugin.owner)
-
-            const rootPlugin = owner.plugins.find(plugin => plugin.pluginId === pluginId);
-
-            return {
-                admins: rootPlugin.admins,
-                users: rootPlugin.users
-            }
-        }
-
-        return {
-            admins: plugin.admins,
-            users: plugin.users
-        }
+    getPluginUsers = (email, pluginId) => {
+        return this.#pool.connect()
+            .then(client => client.query(`SELECT content->'admins' as admins, content->'users' as users
+                FROM plugins 
+                WHERE id = $1::text AND content->'admins' ? $2::text`, [pluginId, email])
+                .then(res => {
+                    client.release()
+                    return res.rowCount > 0 ? res.rows[0] : { admins: [], users: [] }
+                }))
+            .then(data => ({ status: 200, data }))
     }
-};
+}

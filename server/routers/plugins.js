@@ -413,7 +413,7 @@ router.post('/:id/build', async (req, res) => {
 })
 
 router.patch('/:id/filename', (req, res) => {
-  Datastore.patchPluginName(req.params.id, req.body.filename)
+  Datastore.patchPluginName(req.user.email, req.params.id, req.body.filename)
     .then(() => {
       res
         .status(204)

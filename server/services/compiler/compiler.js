@@ -155,7 +155,7 @@ class Compiler {
               .then(() => this.#websocketEmitMessage(buildOptions, "WASM has been saved ...")),
             Datastore.putBuildLogsToS3(`${buildOptions.plugin.id}-logs.zip`, buildOptions.logsFolder)
               .then(() => this.#websocketEmitMessage(buildOptions, "Logs has been saved ...")),
-            Datastore.putWasmInformationsToS3(buildOptions.userEmail, buildOptions.plugin.id, buildOptions.plugin.hash, `${this.options.wasmName}.wasm`)
+            Datastore.pushNewPluginVersion(buildOptions.userEmail, buildOptions.plugin.id, buildOptions.plugin.hash, `${this.options.wasmName}.wasm`)
               .then(() => this.#websocketEmitMessage(buildOptions, "Informations has been updated"))
           ]))
           .then(() => {
