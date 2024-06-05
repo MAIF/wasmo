@@ -44,12 +44,11 @@ module.exports = class Datastore {
 
     /**
      * Save plugin information after build process 
-     * @param {string} email 
      * @param {string} pluginId 
      * @param {string} newHash 
      * @param {string} generateWasmName 
      */
-    putWasmInformationsToS3(email, pluginId, newHash, generateWasmName) { return Promise.resolve() }
+    putWasmInformationsToS3(pluginId, newHash, generateWasmName) { return Promise.resolve() }
 
     /**
      * Fetch wasm from datastore
@@ -93,10 +92,9 @@ module.exports = class Datastore {
 
     /**
      * Delete specific plugin
-     * @param {string} email 
      * @param {string} pluginId 
      */
-    deletePlugin = (email, pluginId) => Promise.resolve()
+    deletePlugin = (pluginId) => Promise.resolve()
 
     /**
      * Update plugin content

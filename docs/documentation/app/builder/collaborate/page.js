@@ -11,12 +11,12 @@ export default function Home() {
       href: '/builder/ui'
     }}
     previous={{
-      href: "/builder/collaborate",
-      title: "Collaborate"
+      href: "/builder/plugin-structure",
+      title: "Plugin structure"
     }}
     next={{
-      href: "/cli/getting-started",
-      title: "Getting started"
+      href: "/cli/ui",
+      title: "User interface"
     }}>
     <Page />
   </Layout>

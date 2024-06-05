@@ -157,8 +157,7 @@ router.get('/:id/share-links', async (req, res) => {
 })
 
 router.put('/:id/users', (req, res) => {
-  Datastore.patchPluginUsers(req.user.email,
-    req.params.id,
+  Datastore.patchPluginUsers(req.params.id,
     req.body.users,
     [...new Set([...req.body.admins, req.user.email])])
     .then(() => {
@@ -169,7 +168,7 @@ router.put('/:id/users', (req, res) => {
 })
 
 router.get('/:id/users', (req, res) => {
-  Datastore.getPluginUsers(req.user.email, req.params.id)
+  Datastore.getPluginUsers(req.params.id)
     .then(members => res.status(200).json(members))
 })
 
@@ -187,7 +186,7 @@ router.get('/:id/rights', (req, res) => {
 })
 
 router.delete('/:id', async (req, res) => {
-  Datastore.deletePlugin(req.user.email, req.params.id)
+  Datastore.deletePlugin(req.params.id)
     .then(out => {
       res.status(out.status).json(out.body)
     })
@@ -423,7 +422,7 @@ router.post('/:id/build', async (req, res) => {
 })
 
 router.patch('/:id/filename', (req, res) => {
-  Datastore.patchPluginName(req.user.email, req.params.id, req.body.filename)
+  Datastore.patchPluginName(req.params.id, req.body.filename)
     .then(() => {
       res
         .status(204)

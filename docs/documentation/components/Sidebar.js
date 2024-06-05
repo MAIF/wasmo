@@ -1,6 +1,6 @@
 "use client"
 const LINKS = {
-  Builder: ["Getting started", "Your first plugin", "Environment Variables", "Plugin Structure", 'UI'],
+  Builder: ["Getting started", "Your first plugin", "Environment Variables", "Plugin Structure", "Collaborate", 'UI'],
   CLI: ["Getting started", "Core commands", "Configuration file"],
   Integrations: ["Otoroshi"],
 }
