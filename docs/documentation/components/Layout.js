@@ -49,7 +49,7 @@ function Layout({ children, next, metadata, previous }) {
           table: Table,
           th: props => <th className='whitespace-nowrap px-4 py-2 font-medium text-gray-900'>{props.children}</th>,
           thead: props => <thead className="ltr:text-left rtl:text-right">{props.children}</thead>,
-          h3: props => <h3 className='text-xl font-bold my-3'>{props.children}</h3>,
+          h3: Heading.H3,
           h4: props => <h4 className='text-lg my-3'>{props.children}</h4>
         }}>
           {children}

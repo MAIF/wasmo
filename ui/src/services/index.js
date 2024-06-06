@@ -134,7 +134,7 @@ export const getWasmRelease = wasmId => rawFetch(`/wasm/${wasmId}`);
 
 export const getAppVersion = () => f('/version');
 
-export const getInvitationInformation = invitationId => jsonFetch(`/invitations/${invitationId}`)
+export const getInvitationInformation = invitationId => f(`/invitations/${invitationId}`)
 
 export const acceptInvitation = invitationId => f(`/invitations/${invitationId}`, {
   method: 'POST',

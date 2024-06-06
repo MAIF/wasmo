@@ -5,8 +5,7 @@ const { GetObjectCommand,
     S3Client,
     HeadBucketCommand,
     CreateBucketCommand,
-    DeleteObjectCommand,
-    DeleteBucketCommand
+    DeleteObjectCommand
 } = require("@aws-sdk/client-s3");
 const { fromUtf8 } = require("@aws-sdk/util-utf8-node");
 
@@ -15,19 +14,14 @@ const dns = require('dns');
 const url = require('url');
 const fs = require('fs-extra');
 
-const { format, isAString } = require('../utils');
+const { isAString } = require('../utils');
 const Datastore = require('./api');
 const { ENV, STORAGE } = require("../configuration");
 const logger = require("../logger");
-const consumers = require('node:stream/consumers');
 const AdmZip = require("adm-zip");
 const { Console } = require('console');
 const CustomStream = require('./CustomStream');
 
-/**
- * Class representing S3.
- * @extends Datastore
- */
 module.exports = class S3Datastore extends Datastore {
     #state = {
         instance: undefined,
@@ -101,90 +95,13 @@ module.exports = class S3Datastore extends Datastore {
         return this.#createBucketIfMissing();
     }
 
-    getUser = (email) => {
-        const { instance, Bucket } = this.#state;
-
-        return new Promise(resolve => {
-            instance.send(new GetObjectCommand({
-                Bucket,
-                Key: `${format(email)}.json`
-            }))
-                .then(data => {
-                    try {
-                        if (data && data.Body) {
-                            consumers.json(data.Body)
-                                .then(resolve)
-                        }
-                        else
-                            resolve({})
-                    } catch (_err) {
-                        resolve({})
-                    }
-                })
-                .catch(_err => {
-                    resolve({})
-                })
-        })
-    }
-
-    getPlugin = async (owner, pluginId) => {
-        const user = await this.getUser(owner);
-
-        return user.plugins.find(plugin => plugin.pluginId === pluginId);
-    }
-
-    getUserPlugins = (email) => {
-        return this.getUser(email)
-            .then(data => data.plugins || [])
-            .then(plugins => Promise.all(plugins.map(plugin => {
-                if (plugin.owner) {
-                    return this.getPlugin(plugin.owner, plugin.pluginId)
-                        .then(res => ({ ...res, owner: plugin.owner }))
-                } else {
-                    return Promise.resolve(plugin)
-                }
-            })))
-    }
-
-    #addUser = async (email) => {
-        const { instance, Bucket } = this.#state;
-
-        const users = await this.getUsers();
-
-        await instance.send(new PutObjectCommand({
-            Bucket,
-            Key: 'users.json',
-            Body: fromUtf8(JSON.stringify([
-                ...users,
-                email
-            ])),
-            ContentType: 'application/json',
-        }))
-    }
-
-    createUserIfNotExists = async (email) => {
-        const { instance, Bucket } = this.#state;;
-
-        // console.log("attempt to create user : " + email)
-        try {
-            const res = await instance.send(new HeadObjectCommand({
-                Bucket,
-                Key: `${format(email)}.json`
-            }))
-            // console.log('user file has been retrieved : ' + email);
-        } catch (err) {
-            // console.log('user file not found : ' + email);
-            await this.#addUser(format(email))
-        }
-    }
-
-    getUsers = async () => {
+    getPlugins = async () => {
         const { instance, Bucket } = this.#state;
 
         try {
             const rawData = await instance.send(new GetObjectCommand({
                 Bucket,
-                Key: 'users.json'
+                Key: 'plugins.json'
             }))
             return new fetch.Response(rawData.Body).json()
         } catch (err) {
@@ -196,28 +113,44 @@ module.exports = class S3Datastore extends Datastore {
         }
     }
 
-    updateUser = (email, content) => {
+    hasRights = (email, pluginId) => {
+        return this.getPlugins()
+            .then(plugins => {
+
+                if (email === "*")
+                    return
+
+                const plugin = plugins.find(plugin => plugin.pluginId === pluginId)
+
+                const users = plugin?.users || [];
+                const admins = plugin?.admins || [];
+
+                if (users.includes(email) || admins.includes(email)) {
+                    return plugin
+                }
+
+                // TODO - better error handling
+                throw 'Not authorized'
+            })
+    }
+
+    getPlugin = async (email, pluginId) => {
         const { instance, Bucket } = this.#state;
 
-        const jsonProfile = format(email);
+        await this.hasRights(email, pluginId)
 
-        return new Promise(resolve => {
-            instance.send(new PutObjectCommand({
+        try {
+            const rawData = await instance.send(new GetObjectCommand({
                 Bucket,
-                Key: `${jsonProfile}.json`,
-                Body: fromUtf8(JSON.stringify(content)),
-                ContentType: 'application/json'
+                Key: `${pluginId}.json`
             }))
-                .then(_ => resolve({
-                    status: 200
-                }))
-                .catch(err => {
-                    resolve({
-                        error: err.Code,
-                        status: err.$metadata.httpStatusCode
-                    })
-                })
-        })
+            const res = await new fetch.Response(rawData.Body)
+                .json()
+
+            return res
+        } catch (err) {
+            return {}
+        }
     }
 
     putWasmFileToS3 = (wasmFolder) => {
@@ -271,51 +204,39 @@ module.exports = class S3Datastore extends Datastore {
         }
     }
 
-    putWasmInformationsToS3 = (email, pluginId, newHash, generateWasmName) => {
-        return this.getUser(email)
-            .then(data => {
-                const plugin = data.plugins.map(plugin => plugin.pluginId === pluginId)
+    pushNewPluginVersion = (email, pluginId, newHash, generateWasmName) => {
+        return this.getPlugin(email, pluginId)
+            .then(plugin => {
+                let versions = plugin.versions || [];
 
-                if (plugin.owner)
-                    return this.putWasmInformationsToS3(plugin.owner, pluginId, newHash, generateWasmName)
+                // convert legacy array
+                if (versions.length > 0 && isAString(versions[0])) {
+                    versions = versions.map(name => ({ name }))
+                }
 
-                const newPlugins = data.plugins.map(plugin => {
-                    if (plugin.pluginId !== pluginId) {
-                        return plugin;
+                const index = versions.findIndex(item => item.name === generateWasmName);
+                if (index === -1)
+                    versions.push({
+                        name: generateWasmName,
+                        updated_at: Date.now(),
+                        creator: email
+                    })
+                else {
+                    versions[index] = {
+                        ...versions[index],
+                        updated_at: Date.now(),
+                        creator: email
                     }
-                    let versions = plugin.versions || [];
+                }
 
-                    // convert legacy array
-                    if (versions.length > 0 && isAString(versions[0])) {
-                        versions = versions.map(name => ({ name }))
-                    }
+                const patchPlugin = {
+                    ...plugin,
+                    last_hash: newHash,
+                    wasm: generateWasmName,
+                    versions
+                }
 
-                    const index = versions.findIndex(item => item.name === generateWasmName);
-                    if (index === -1)
-                        versions.push({
-                            name: generateWasmName,
-                            updated_at: Date.now(),
-                            creator: email
-                        })
-                    else {
-                        versions[index] = {
-                            ...versions[index],
-                            updated_at: Date.now(),
-                            creator: email
-                        }
-                    }
-
-                    return {
-                        ...plugin,
-                        last_hash: newHash,
-                        wasm: generateWasmName,
-                        versions
-                    }
-                });
-                return this.updateUser(email, {
-                    ...data,
-                    plugins: newPlugins
-                })
+                return this.updatePluginInformations(pluginId, patchPlugin)
             })
     }
 
@@ -492,13 +413,8 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     getConfigurations = (email, pluginId) => {
-        return this.getUser(email)
-            .then(data => {
-                const plugin = data.plugins.find(f => f.pluginId === pluginId)
-
-                if (plugin.owner)
-                    return this.getConfigurations(plugin.owner, pluginId)
-
+        return this.getPlugin(email, pluginId)
+            .then(plugin => {
                 const files = [{
                     ext: 'json',
                     filename: 'config',
@@ -528,57 +444,62 @@ module.exports = class S3Datastore extends Datastore {
             .catch(err => { logger.error(err) });
     }
 
-    #deleteRootPlugin = async (plugin, pluginId) => {
-        const { admins, users } = plugin;
-
-        await Promise.all([
-            ...(admins || []),
-            ...(users || [])
-        ].map(user => this.#removePluginFromUser(user, pluginId)))
-
-        return this.deletePlugin(plugin.owner, pluginId)
-    }
-
     deletePlugin = (email, pluginId) => {
-        return new Promise(resolve => this.getUser(email)
-            .then(data => {
-                if (Object.keys(data).length > 0) {
-                    const plugin = data.plugins.find(f => f.pluginId === pluginId)
-
-                    this.updateUser(email, {
-                        ...data,
-                        plugins: data.plugins.filter(f => f.pluginId !== pluginId)
-                    })
-                        .then(() => {
-                            if (plugin.owner || plugin.users || plugin.admins) {
-                                this.#deleteRootPlugin(plugin, pluginId)
-                                    .then(resolve)
-                            } else {
-                                const pluginHash = (plugin || {}).last_hash;
-                                Promise.all([
-                                    this.deleteObject(`${pluginHash}.zip`),
-                                    this.deleteObject(`${pluginHash}-logs.zip`),
-                                    this.deleteObject(`${pluginId}.zip`),
-                                    this.deleteObject(`${pluginId}-logs.zip`),
-                                    this.removeBinaries((plugin.versions || []).map(r => r.name))
-                                ])
-                                    .then(() => resolve({ status: 204, body: null }))
-                                    .catch(err => {
-                                        resolve({
-                                            status: 400,
-                                            body: {
-                                                error: err.message
-                                            }
-                                        })
-                                    })
+        return new Promise(resolve => this.getPlugin(email, pluginId)
+            .then(plugin => {
+                Promise.all([
+                    this.deleteObject(`${pluginId}.zip`),
+                    this.deleteObject(`${pluginId}-logs.zip`),
+                    this.removeBinaries((plugin.versions || []).map(r => r.name)),
+                    this.deleteObject(`${pluginId}.json`),
+                    this.removePluginFromList(pluginId)
+                ])
+                    .then(() => resolve({ status: 204, body: null }))
+                    .catch(err => {
+                        resolve({
+                            status: 400,
+                            body: {
+                                error: err.message
                             }
                         })
-                } else {
-                    resolve({
-                        status: 204, body: null
                     })
-                }
             }))
+            .catch(_ => {
+                resolve({
+                    status: 400,
+                    body: {
+                        error: "something bad happened"
+                    }
+                })
+            })
+    }
+
+    updatePluginInformations = (id, body) => {
+        const { instance, Bucket } = this.#state;
+
+        const params = {
+            Bucket,
+            Key: `${id}.json`,
+            ContentType: 'application/json',
+            Body: fromUtf8(JSON.stringify(body))
+        }
+
+        console.log("updatePluginInformations", id, body)
+
+        return instance.send(new PutObjectCommand(params))
+            .then(() => ({
+                status: 204,
+                body: null
+            }))
+            .catch(err => {
+                return {
+                    status: err.$metadata.httpStatusCode,
+                    body: {
+                        error: err.Code,
+                        status: err.$metadata.httpStatusCode
+                    }
+                }
+            })
     }
 
     updatePlugin = (id, body) => {
@@ -610,229 +531,198 @@ module.exports = class S3Datastore extends Datastore {
         const { instance, Bucket } = this.#state;
 
         return new Promise(resolve => {
-            this.createUserIfNotExists(email)
-                .then(() => {
-                    this.getUser(email)
-                        .then(data => {
-                            const pluginId = crypto.randomUUID()
-                            const plugins = [
-                                ...(data.plugins || []),
-                                isGithub ? {
-                                    filename: metadata.repo,
-                                    owner: metadata.owner,
-                                    ref: metadata.ref,
-                                    type: 'github',
-                                    pluginId: pluginId,
-                                    private: metadata.private
-                                } : {
-                                    filename: metadata.name.replace(/ /g, '-'),
-                                    type: metadata.type,
-                                    pluginId: pluginId,
-                                    template: metadata.template
-                                }
+            const pluginId = crypto.randomUUID()
 
-                            ]
-                            const params = {
-                                Bucket,
-                                Key: `${format(email)}.json`,
-                                Body: fromUtf8(JSON.stringify({
-                                    ...data,
-                                    plugins
-                                })),
-                                ContentType: 'application/json',
-                            }
+            const newPlugin = isGithub ? {
+                filename: metadata.repo,
+                owner: metadata.owner,
+                ref: metadata.ref,
+                type: 'github',
+                pluginId: pluginId,
+                private: metadata.private
+            } : {
+                filename: metadata.name.replace(/ /g, '-'),
+                type: metadata.type,
+                pluginId: pluginId,
+                template: metadata.template
+            };
 
-                            instance.send(new PutObjectCommand(params))
-                                .then(() => {
-                                    resolve({
-                                        status: 201,
-                                        body: {
-                                            plugins
-                                        }
-                                    })
-                                })
-                                .catch(err => {
-                                    resolve({
-                                        status: err.$metadata.httpStatusCode,
-                                        body: {
-                                            error: err.Code,
-                                            status: err.$metadata.httpStatusCode
-                                        }
-                                    })
-                                })
-                        })
+            console.log('generate pluginID', pluginId, newPlugin.pluginId)
+
+            const params = {
+                Bucket,
+                Key: `${pluginId}.json`,
+                Body: fromUtf8(JSON.stringify(newPlugin)),
+                ContentType: 'application/json',
+            }
+
+            instance.send(new PutObjectCommand(params))
+                .then(async () => {
+                    await this.addPluginToList(email, newPlugin);
+                    const plugins = await this.getUserPlugins(email);
+                    resolve({
+                        status: 201,
+                        body: {
+                            plugins
+                        }
+                    })
                 })
                 .catch(err => {
+                    console.log(err)
                     resolve({
-                        status: 400,
+                        status: err.$metadata.httpStatusCode,
                         body: {
-                            error: err.message
+                            error: err.Code,
+                            status: err.$metadata.httpStatusCode
                         }
                     })
                 })
         })
     }
 
-    patchPlugin = (email, pluginId, field, value) => {
-        return this.getUser(email)
-            .then(data => {
-                const plugin = (data.plugins || []).find(plugin => plugin.pluginId === pluginId)
+    patchPlugin = async (email, pluginId, field, value) => {
+        const plugin = await this.getPlugin(email, pluginId)
 
-                if (plugin.owner)
-                    return this.patchPlugin(plugin.owner, pluginId, field, value)
-                else
-                    return this.updateUser(email, {
-                        ...data,
-                        plugins: (data.plugins || []).map(plugin => {
-                            if (plugin.pluginId === pluginId) {
-                                return {
-                                    ...plugin,
-                                    [field]: value
-                                }
-                            } else {
-                                return plugin
-                            }
-                        })
-                    })
-            })
+        return this.updatePluginInformations(pluginId, {
+            ...plugin,
+            [field]: value
+        })
     }
 
     patchPluginName = (email, pluginId, newName) => {
         return this.patchPlugin(email, pluginId, 'filename', newName)
     }
 
-    #removePluginFromUser = async (email, pluginId) => {
-        const user = await this.getUser(email)
-
-        return this.updateUser(email, {
-            ...user,
-            plugins: (user.plugins || []).filter(plugin => plugin.pluginId !== pluginId)
-        })
-    }
-
     patchPluginUsers = async (email, pluginId, newUsers, newAdmins) => {
-        let currentUser = email;
+        const plugins = await this.getPlugins()
 
-        const user = await this.getUser(currentUser);
+        const plugin = plugins.find(p => p.pluginId === pluginId)
 
-        let plugin = user.plugins.find(plugin => plugin.pluginId === pluginId)
-
-        // if plugin is not owned by the user, we need to edit the root plugin
-        if (plugin.owner) {
-            currentUser = plugin.owner;
-
-            const owner = await this.getUser(plugin.owner)
-            plugin = owner.plugins.find(plugin => plugin.pluginId === pluginId)
-        }
-
-        const removedUsers = (plugin.users || []).filter(user => !newUsers.includes(user) && !newAdmins.includes(user))
-        const removedAdmins = (plugin.admins || []).filter(admin => !newAdmins.includes(admin) && !newUsers.includes(admin))
-
-        await Promise.all(removedUsers.map(user => this.#removePluginFromUser(user, pluginId)))
-        await Promise.all(removedAdmins.map(admin => this.#removePluginFromUser(admin, pluginId)))
-
-        return this.getUser(currentUser)
-            .then(data => this.updateUser(currentUser, {
-                ...data,
-                plugins: (data.plugins || []).map(plugin => {
-                    if (plugin.pluginId === pluginId) {
-                        return {
-                            ...plugin,
-                            users: newUsers,
-                            admins: newAdmins
-                        }
-                    } else {
-                        return plugin
-                    }
-                })
-            }))
-    }
-
-    acceptInvitation = async (userEmail, ownerId, pluginId) => {
-        try {
-            const ownerPlugins = await this.getUserPlugins(ownerId)
-            const user = await this.getUser(userEmail)
-
-            const ownerPlugin = ownerPlugins.find(plugin => plugin.pluginId === pluginId)
-
-            if (ownerPlugin &&
-                ((ownerPlugin.users || []).includes(userEmail) ||
-                    (ownerPlugin.admins || []).includes(userEmail))) {
-
-                const newPlugin = {
-                    pluginId: ownerPlugin.pluginId,
-                    owner: ownerId
-                }
-
-                return this.updateUser(userEmail, {
-                    ...user,
-                    plugins: [
-                        ...(user.plugins || []).filter(plugin => plugin.pluginId !== pluginId),
-                        newPlugin
-                    ]
-                })
-                    .then(() => true)
-            } else {
-                return false
+        if (plugin) {
+            this.updatePluginList(pluginId, {
+                ...plugin,
+                users: newUsers,
+                admins: newAdmins
+            })
+            return {
+                status: 204,
+                data: null
             }
-        } catch (err) {
-            console.log(err)
-            return false
+        } else {
+            return {
+                status: 404,
+                data: {
+                    error: 'something bad happened'
+                }
+            }
         }
     }
 
-    getInvitation = async (userEmail, ownerId, pluginId) => {
-        try {
-            const ownerPlugins = await this.getUserPlugins(ownerId)
+    getUserPlugins = async email => {
+        const plugins = await this.getPlugins();
+        console.log(plugins)
 
-            const ownerPlugin = ownerPlugins.find(plugin => plugin.pluginId === pluginId)
+        const userPlugins = plugins.filter(plugin => {
+            const users = plugin.users || [];
+            const admins = plugin.admins || [];
 
-            return ownerPlugin
-        } catch (err) {
-            console.log(err)
-            return false
-        }
+            return users.includes(email) || admins.includes(email)
+        }) || []
+
+        console.log("users plugins")
+        console.log(userPlugins, email)
+
+        return Promise.all(userPlugins.map(plugin => this.getPlugin(email, plugin.pluginId)))
+            .then(plugins => {
+                return plugins.filter(data => Object.keys(data).length > 0)
+            })
     }
+
+    addPluginToList = async (email, plugin) => {
+        const { instance, Bucket } = this.#state;
+
+        const plugins = await this.getPlugins()
+
+        return instance.send(new PutObjectCommand({
+            Bucket,
+            Key: 'plugins.json',
+            ContentType: 'application/json',
+            Body: fromUtf8(JSON.stringify([
+                ...plugins,
+                {
+                    pluginId: plugin.pluginId,
+                    admins: [email],
+                    users: []
+                }
+            ]))
+        }))
+    }
+
+    updatePluginList = async (pluginId, content) => {
+        const { instance, Bucket } = this.#state;
+
+        const plugins = await this.getPlugins()
+
+        return instance.send(new PutObjectCommand({
+            Bucket,
+            Key: 'plugins.json',
+            ContentType: 'application/json',
+            Body: fromUtf8(JSON.stringify(plugins.map(plugin => {
+                if (plugin.pluginId === pluginId) {
+                    return content
+                }
+                return plugin
+            })))
+        }))
+    }
+
+    removePluginFromList = async pluginId => {
+        const { instance, Bucket } = this.#state;
+
+        const plugins = await this.getPlugins()
+
+        return instance.send(new PutObjectCommand({
+            Bucket,
+            Key: 'plugins.json',
+            ContentType: 'application/json',
+            Body: fromUtf8(JSON.stringify(plugins.filter(plugin => plugin.pluginId !== pluginId)))
+        }))
+    }
+
+    getInvitation = (email, pluginId) => this.getPlugin(email, pluginId)
 
     canSharePlugin = async (email, pluginId) => {
-        const user = await this.getUser(email);
+        const plugins = await this.getPlugins()
 
-        const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId);
+        const plugin = plugins.find(p => p.pluginId === pluginId)
 
-        if (plugin?.owner) {
-            const owner = await this.getUser(plugin.owner)
-
-            const rootPlugin = owner.plugins.find(plugin => plugin.pluginId === pluginId);
-
-            if (rootPlugin) {
-                return (rootPlugin.admins || []).includes(email)
-            }
-
-            return false
+        if (plugin) {
+            return plugin.admins.includes(email)
         }
 
-        return true
+        return false
     }
 
     getPluginUsers = async (email, pluginId) => {
-        const user = await this.getUser(email);
+        const plugins = await this.getPlugins()
 
-        const plugin = user.plugins.find(plugin => plugin.pluginId === pluginId);
+        const plugin = plugins.find(p => p.pluginId === pluginId)
 
-        if (plugin.owner) {
-            const owner = await this.getUser(plugin.owner)
-
-            const rootPlugin = owner.plugins.find(plugin => plugin.pluginId === pluginId);
-
+        if (plugin) {
             return {
-                admins: rootPlugin.admins,
-                users: rootPlugin.users
+                status: 200,
+                data: {
+                    admins: plugin.admins,
+                    users: plugin.users
+                }
             }
-        }
-
-        return {
-            admins: plugin.admins,
-            users: plugin.users
+        } else {
+            return {
+                status: 404,
+                data: {
+                    error: 'something bad happened'
+                }
+            }
         }
     }
 };

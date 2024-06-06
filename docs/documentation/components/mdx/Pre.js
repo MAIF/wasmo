@@ -31,15 +31,16 @@ export const Pre = props => {
       {!['javascript', 'go', 'rust', 'js'].includes(language) && <span className='text-white ms-3'>{language}</span>}
     </div>}
 
-    <div className={`absolute right-2 rounded-lg top-${language ? 10 : 2} p-1 cursor-pointer hover:bg-gray-600`}
+    <div className={`absolute right-2 rounded-lg p-1 cursor-pointer hover:bg-gray-600`}
+      style={{
+        top: language ? '2.5rem' : '.5rem',
+        border: '1px solid #fff'
+      }}
       onClick={() => {
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(codeString);
           setCopied(true)
         }
-      }}
-      style={{
-        border: '1px solid #fff'
       }}>
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="#ffffff"
         className="w-5 h-5">

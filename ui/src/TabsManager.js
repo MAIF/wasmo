@@ -70,6 +70,7 @@ function TabsManager({ plugins, ...props }) {
                 onNewPlugin={props.onNewPlugin}
                 setFilename={props.onPluginNameChange}
                 removePlugin={props.removePlugin}
+                onDownload={props.onDownload}
                 enablePluginRenaming={props.enablePluginRenaming}
               />
               {props.selectedPlugin && <FileManager
@@ -94,10 +95,16 @@ function TabsManager({ plugins, ...props }) {
                 <i className="fa-solid fa-chevron-left" />
               </button>}
 
-              {props.selectedPlugin && <button type="button" className='btn btn-outline-danger m-3 my-2' style={{ fontSize: '.8rem' }}
-                onClick={props.removePlugin}>
-                Remove {props.selectedPlugin.filename}
-              </button>}
+              {props.selectedPlugin && <div className='d-flex flex-column gap-2 m-3 my-2'>
+                <button type="button" className='btn btn-outline-dark' style={{ fontSize: '.8rem' }}
+                  onClick={props.onDownload}>
+                  Download {props.selectedPlugin.filename} as zip
+                </button>
+                <button type="button" className='btn btn-outline-danger' style={{ fontSize: '.8rem' }}
+                  onClick={props.removePlugin}>
+                  Delete {props.selectedPlugin.filename}
+                </button>
+              </div>}
             </>}
           </SidebarContext.Consumer>
         </Sidebar>

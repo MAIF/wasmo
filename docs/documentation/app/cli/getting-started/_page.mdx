@@ -43,7 +43,10 @@ Then open the content of your `my-first-plugin` folder. You should find the gene
 
 You can now optionally start a new plugin from a template by appending `--template=[template-name]` to the creation command.
 
-If you don't pass a template, Wasmo will list the available templates: `js`, `ts`, `opa`, `go` and `rust`.
+If you don't pass a template, Wasmo will list the available templates. There are listed by product : 
+  - empty template : `js`, `ts`, `opa`, `go` and `rust`
+  - Otoroshi template : `otoroshi_go`, `otoroshi_rust`, `otoroshi_opa`, `otoroshi_ts`, `otoroshi_js`
+  - Izanami template : `izanami_js`, `izanami_go`, `izanami_rust`, `izanami_opa`, `izanami_ts`
 
 ```
 wasmo init --name=my-first-plugin --template=[template-name] --path=[output-directory]
@@ -61,7 +64,11 @@ You have two ways to build your plugin:
 
 [wasmoserver]: https://github.com/MAIF/wasmo
 
-Assuming we want to build our `my-first-plugin` locally. Enter `wasmo build --host=OneShotDocker --path=my-first-plugin` to start the build. 
+Assuming we want to build our `my-first-plugin` locally. Enter the following command to start the build. 
+
+```
+wasmo build --host=OneShotDocker --path=my-first-plugin
+```
 
 Let's explain these 3 parameters:
   - the `path` parameter is explicitly used to indicate the plugin to build

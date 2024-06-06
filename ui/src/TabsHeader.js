@@ -6,7 +6,7 @@ import { toast } from 'react-toastify'
 import Select from 'react-select/creatable';
 
 export function TabsHeader({
-  selectedPlugin, onSave, onBuild, onDownload,
+  selectedPlugin, onSave, onBuild,
   showPlaySettings, children }) {
 
   if (!selectedPlugin?.pluginId)
@@ -16,20 +16,15 @@ export function TabsHeader({
     selectedPluginType={selectedPlugin?.type}
     onSave={onSave}
     onBuild={onBuild}
-    onDownload={onDownload}
     showActions={!!selectedPlugin}
     showPlaySettings={showPlaySettings}
     pluginId={selectedPlugin?.pluginId}
-  // users={selectedPlugin?.users}
-  // admins={selectedPlugin?.admins}
   >
     {children}
   </Header>
 }
 
-function Header({
-  children, onSave, onBuild, showActions, onDownload,
-  showPlaySettings, pluginId }) {
+function Header({ children, onSave, onBuild, showActions, showPlaySettings, pluginId }) {
 
   const [runtimeState, setRuntimeEnvironment] = useState(false);
   const [canShare, setCanSharePlugin] = useState(false);
@@ -73,7 +68,6 @@ function Header({
             <Save onSave={onSave} />
             <Build onBuild={onBuild} />
             <Release onBuild={onBuild} />
-            <Download onDownload={onDownload} />
             {runtimeState && <Play showPlaySettings={showPlaySettings} />}
           </>}
         </div>
@@ -213,9 +207,9 @@ function ShareButton(props) {
     <a href="#shareplugin" style={{ textDecoration: 'none' }}>
       <button
         type="button"
-        className="btn btn-sm btn-outline-dark gap-2">
+        tooltip="Share plugin"
+        className="navbar-item">
         <i className='fa-solid fa-link me-1' />
-        Share plugin
       </button>
     </a>
     <SharePluginModal {...props} />
@@ -248,16 +242,7 @@ function Release({ onBuild }) {
     tooltip="Release"
     className="navbar-item"
     onClick={() => onBuild(true)}>
-    <i className='fa-solid fa-rocket' />
-  </button>
-}
-
-function Download({ onDownload }) {
-  return <button type="button"
-    tooltip="Download plugin as zip"
-    className="navbar-item"
-    onClick={onDownload}>
-    <i className='fa-solid fa-download' />
+    <i className='fa-solid fa-truck-fast' />
   </button>
 }
 

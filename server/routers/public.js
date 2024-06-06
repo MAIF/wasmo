@@ -67,27 +67,10 @@ router.get('/wasm/:id', (req, res) => {
 router.get('/plugins', (req, res) => {
   const reg = req.headers['kind'] || '*';
 
-  if (reg === '*') {
-    Datastore.getUsers()
-      .then(r => {
-        const users = [...new Set([...(r || []), "adminotoroshiio"])];
-
-        if (users.length > 0) {
-          Promise.all(users.map(Datastore.getUser))
-            .then(pluginsByUser => {
-              res.json(pluginsByUser
-                .map(user => user.plugins)
-                .flat()
-                .filter(f => f))
-            })
-        } else {
-          res.json([])
-        }
-      })
-  } else {
-    Datastore.getUser(reg)
-      .then(data => res.json(data.plugins))
-  }
+  Datastore
+    .getPlugins()
+    .then(plugins => Promise.all(plugins.map(plugin => Datastore.getPlugin(reg, plugin.pluginId))))
+    .then(plugins => res.json(plugins.filter(data => Object.keys(data).length > 0)))
 });
 
 module.exports = router;

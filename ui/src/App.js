@@ -14,7 +14,7 @@ class App extends React.Component {
     plugins: [],
     selectedPlugin: undefined,
     configFiles: [],
-    version: 'unknown'
+    version: ''
   }
 
   componentDidMount() {
