@@ -5,8 +5,7 @@ const { GetObjectCommand,
     S3Client,
     HeadBucketCommand,
     CreateBucketCommand,
-    DeleteObjectCommand,
-    DeleteBucketCommand
+    DeleteObjectCommand
 } = require("@aws-sdk/client-s3");
 const { fromUtf8 } = require("@aws-sdk/util-utf8-node");
 
@@ -23,10 +22,6 @@ const AdmZip = require("adm-zip");
 const { Console } = require('console');
 const CustomStream = require('./CustomStream');
 
-/**
- * Class representing S3.
- * @extends Datastore
- */
 module.exports = class S3Datastore extends Datastore {
     #state = {
         instance: undefined,

@@ -1,0 +1,109 @@
+import Badge from '../../components/Badge'
+import Badges from '../../components/Badges'
+import FAQButton from '../../components/FAQButton'
+
+# FAQ
+
+<FAQButton title="What is the fastest way to use Wasmo?" />
+<FAQButton title="How to create an Otoroshi-compatible plugin using Docker?" />
+<FAQButton title="How can I create a new development version of my plugin?" />
+<FAQButton title="Can I download the generated Wasm from the UI?" />
+<FAQButton title="Can I determine who built each version and at what time?" />
+<FAQButton title="How to collaborate with my team ?" />
+<FAQButton title="Our team have a CI/CD process and wants to automate the building of our plugins." />
+<FAQButton title="How can I collaborate with my team?" />
+
+### What is the fastest way to use Wasmo?
+
+```
+$ cargo install wasmo
+or
+$ brew tap maif/wasmo
+$ brew install wasmo
+```
+
+### How to create an Otoroshi-compatible plugin using Docker? 
+<Badge raw value="Name : foo" default/>
+
+Initialize the plugin with corresponding Otoroshi template and Javascript language 
+``` 
+wasmo init --template=otoroshi_js --name=foo
+```
+
+Build plugin from folder and Docker
+```
+wasmo build --host=OneShotDocker --path=.
+```
+
+### How can I create a new development version of my plugin?
+<Badges raw values={["Name : foo", "Version : 1.0.2"]} default/>
+
+Rust plugin
+
+``` Cargo.toml
+[package]
+name = "foo"
+version = "1.0.2"
+
+...
+```
+
+JS/TS/Open Policy Agent plugin
+
+``` package.json
+{
+  "name": "foo",
+  "version": "1.0.2",
+  ...
+}
+```
+
+Go plugin
+
+``` go.mod
+module foo/1.0.2
+
+...
+```
+
+<div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '2rem' }}>
+  <img src="/wasmo/release.png" style={{  borderRadius: '.5rem',
+    width: '230px',
+    maxWidth: '230px',
+    height: '503px',
+    minHeight: '503px'
+  }} />
+
+  <div className="flex flex-col ms-5">
+    ### Can I download the generated Wasm from the UI?
+
+    Once you have built a dev or release version of your plugin using the Hammer or Rocker buttons (available at the top right of the screen),
+    you can click on each version under the 'Releases' section on the left side of the screen.
+
+    ### Can I determine who built each version and at what time?
+
+    Each plugin has a **config** file under the **configuration** section with the following information : 
+      - type: language used to develop the plugin.
+      - users: list of users allowed to edit and view the plugin.
+      - admins: list of admins allowed to edit, view and share the plugin.
+      - filename: name of the plugin.
+      - pluginId: unique ID of the plugin.
+      - template: original template, selected at plugin creation.
+      - **versions: list of built versions, with name, creator and date of generation**.
+      - last_hash: hash used by the backend to check if changes has been made between last version.
+  </div>
+</div>
+
+### How can I collaborate with my team?
+
+Since version 1.22, Wasmo allows users to share plugins with two levels of rights: 
+- `users`: Can edit and view plugin.
+- `admins`: Can edit, view and share plugin.
+
+You can find more information about sharing by reading this [article](/wasmo/builder/collaborate)
+
+### Our team have a CI/CD process and wants to automate the building of our plugins.
+
+Since version 1.x, Wasmo includes a command line interface to create, edit and build plugins. 
+
+You can find more [information](/wasmo/cli/getting-started) about the CLI and the Github [repository](https://github.com/MAIF/wasmo/tree/main/cli)

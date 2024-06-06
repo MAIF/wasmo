@@ -70,7 +70,9 @@ export default function Searchbar({ handleOpen, open }) {
           paddingTop: open ? 20 : 6
         }}>
           <div id="search" style={{ display: open ? 'initial' : 'none' }}></div>
-          {!open && <div className='cursor-pointer p-2 bg-purple-700 rounded-xl items-center flex'>
+          {!open && <div className='cursor-pointer p-2 rounded-xl items-center flex' style={{
+            background: 'rgb(126 34 206)'
+          }}>
             <svg viewBox="0 0 20 20"
               aria-hidden="true"
               className="h-auto w-5 fill-white">

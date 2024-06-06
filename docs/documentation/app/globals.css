@@ -17,3 +17,37 @@
     max-height: calc(500px - 71px);
     margin-bottom: 24px;
 }
+
+.sidebar-group::before {
+    position: absolute;
+    bottom: -0.1rem;
+    top: -0.1rem;
+    left: -0.5rem;
+    width: 10px;
+    --tw-border-opacity: 1;
+    border-right-width: 2px;
+    border-color: rgb(226 232 240 / var(--tw-border-opacity));
+    opacity: 1;
+    content: "";
+}
+
+.sidebar-group-selected::before {
+    border-color: rgb(126 34 206);
+}
+
+h2, h3 {
+    position: relative;
+}
+
+.anchor-link {
+    color: #666;
+    opacity: 0;
+    position: absolute;
+    transform: translate(-1em, -2px);
+    width: 1em;
+}
+
+h3:hover .anchor-link,
+h2:hover .anchor-link {
+    opacity: 1;
+}

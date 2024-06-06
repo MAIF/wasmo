@@ -73,6 +73,7 @@ h1 {
 [tooltip]::before,
 [tooltip]::after {
   text-transform: none;
+  right: -50%;
   font-size: 0.75em;
   line-height: 1;
   user-select: none;

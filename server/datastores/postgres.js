@@ -10,10 +10,6 @@ const { Pool } = require('pg');
 const logger = require("../logger");
 const { isAString } = require('../utils');
 
-/**
- * Class representing PG.
- * @extends Datastore
- */
 module.exports = class PgDatastore extends Datastore {
     /** @type {S3Datastore} */
     #sourcesDatastore = undefined;
@@ -159,25 +155,18 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     hasRights = (email, pluginId) => {
+        if (email === "*")
+            return Promise.resolve()
+
         return this.#pool.connect()
-            .then(client => client.query("SELECT * FROM plugins WHERE id = $1::text", [pluginId])
+            .then(client => client.query("SELECT * FROM plugins WHERE id = $1::text AND (content->'admins' ? $2::text OR content->'users' ? $2::text)", [pluginId, email])
                 .then(res => {
                     client.release()
-                    return res.rowCount === 1 ? res.rows[0].content : {}
+                    return res.rowCount === 1
                 }))
-            .then(plugin => {
-                if (email === "*")
-                    return
-
-                const users = plugin?.users || [];
-                const admins = plugin?.admins || [];
-
-                if (users.includes(email) || admins.includes(email)) {
-                    return plugin
-                }
-
-                // TODO - better error handling
-                throw 'Not authorized'
+            .then(authorized => {
+                if (!authorized)
+                    throw 'Not authorized'
             })
     }
 
