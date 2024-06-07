@@ -3,7 +3,11 @@ module.exports = class Datastore {
     /**
      * Initialize the datastore
      */
-    async initialize() { Promise.resolve() }
+    initialize() { Promise.resolve() }
+    /**
+     * Check and apply migrations to legacy database
+     */
+    applyMigrations() { Promise.resolve() }
     /**
      * List of created plugins, whole database
      */
@@ -107,14 +111,14 @@ module.exports = class Datastore {
      * @returns sources as buffer
      */
     getSources = pluginId => { return Promise.resolve() }
-    
+
     /**
      * Get log files of specific plugin at add them to files
      * @param {string} pluginId 
      * @param {any} files 
      * @returns 
      */
-    getConfigurationsFile (pluginId, files) { return Promise.resolve() }
+    getConfigurationsFile(pluginId, files) { return Promise.resolve() }
 
     /**
      * Fetch configuration file

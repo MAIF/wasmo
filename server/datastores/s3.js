@@ -14,40 +14,46 @@ const dns = require('dns');
 const url = require('url');
 const fs = require('fs-extra');
 
-const { isAString } = require('../utils');
+const { isAString, arrayIncludesEmail } = require('../utils');
 const Datastore = require('./api');
 const { ENV, STORAGE } = require("../configuration");
 const logger = require("../logger");
 const AdmZip = require("adm-zip");
 const { Console } = require('console');
 const CustomStream = require('./CustomStream');
+const { S3_1_22 } = require('./migrations/s3-1.22');
 
 module.exports = class S3Datastore extends Datastore {
-    #state = {
+    state = {
         instance: undefined,
         Bucket: undefined
     }
 
-    #createBucketIfMissing = () => {
-        const params = { Bucket: this.#state.Bucket }
+    applyMigrations = () => S3_1_22(this)
 
-        return this.#state.instance.send(new HeadBucketCommand(params))
+    #createBucketIfMissing = usingByPg => {
+        const params = { Bucket: this.state.Bucket }
+
+        return this.state.instance.send(new HeadBucketCommand(params))
             .then(() => {
                 logger.info("Using existing bucket")
+
+                if (!usingByPg)
+                    return this.applyMigrations()
             })
             .catch(res => {
                 if (res || res.$metadata.httpStatusCode === 404 ||
                     res.$metadata.httpStatusCode === 403 ||
                     res.$metadata.httpStatusCode === 400) {
-                    logger.info(`Bucket ${this.#state.Bucket} is missing.`)
+                    logger.info(`Bucket ${this.state.Bucket} is missing.`)
                     return new Promise(resolve => {
-                        this.#state.instance.send(new CreateBucketCommand(params), err => {
+                        this.state.instance.send(new CreateBucketCommand(params), err => {
                             if (err) {
                                 logger.error("Failed to create missing bucket")
                                 logger.error(err)
                                 process.exit(1)
                             } else {
-                                logger.info(`Bucket ${this.#state.Bucket} created.`)
+                                logger.info(`Bucket ${this.state.Bucket} created.`)
                                 resolve()
                             }
                         });
@@ -58,7 +64,7 @@ module.exports = class S3Datastore extends Datastore {
             })
     }
 
-    initialize = async () => {
+    initialize = async usingByPg => {
         if (!ENV.S3_BUCKET) {
             logger.error("[S3 INITIALIZATION](failed): S3 Bucket is missing");
             process.exit(1);
@@ -70,8 +76,9 @@ module.exports = class S3Datastore extends Datastore {
             const URL = url.parse(ENV.S3_ENDPOINT);
 
             const ip = await new Promise(resolve => dns.lookup(URL.hostname, (_, ip) => resolve(ip)));
+            console.log(`${URL.protocol}//${ip}:${URL.port}${URL.pathname}`)
             logger.debug(`${URL.protocol}//${ip}:${URL.port}${URL.pathname}`)
-            this.#state = {
+            this.state = {
                 instance: new S3Client({
                     region: ENV.AWS_DEFAULT_REGION,
                     endpoint: `${URL.protocol}//${ip}:${URL.port}${URL.pathname}`,
@@ -80,7 +87,7 @@ module.exports = class S3Datastore extends Datastore {
                 Bucket: ENV.S3_BUCKET
             }
         } else {
-            this.#state = {
+            this.state = {
                 instance: new S3Client({
                     region: ENV.AWS_DEFAULT_REGION,
                     endpoint: ENV.S3_ENDPOINT,
@@ -92,11 +99,11 @@ module.exports = class S3Datastore extends Datastore {
             logger.info("Bucket initialized");
         }
 
-        return this.#createBucketIfMissing();
+        return this.#createBucketIfMissing(usingByPg);
     }
 
     getPlugins = async () => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         try {
             const rawData = await instance.send(new GetObjectCommand({
@@ -125,7 +132,7 @@ module.exports = class S3Datastore extends Datastore {
                 const users = plugin?.users || [];
                 const admins = plugin?.admins || [];
 
-                if (users.includes(email) || admins.includes(email)) {
+                if (arrayIncludesEmail(users, email) || arrayIncludesEmail(admins, email)) {
                     return plugin
                 }
 
@@ -135,7 +142,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     getPlugin = async (email, pluginId) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         await this.hasRights(email, pluginId)
 
@@ -154,7 +161,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     putWasmFileToS3 = (wasmFolder) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         const Key = wasmFolder.split('/').slice(-1)[0]
 
@@ -184,7 +191,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     putBuildLogsToS3 = (logId, logsFolder) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         try {
             const zip = new AdmZip()
@@ -241,7 +248,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     #getWasm = async name => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         try {
             const data = await instance.send(new GetObjectCommand({
@@ -269,7 +276,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     run = (wasm, { input, functionName, wasi }) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         // function proxy_log(cp, kOffs) {
         //     const buffer = cp.read(kOffs).text()
@@ -347,7 +354,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     isWasmExists = (wasmId, release) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         if (!release) {
             return Promise.resolve(false);
@@ -362,7 +369,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     getSources = pluginId => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         const params = {
             Bucket,
@@ -389,7 +396,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     getConfigurationsFile = (pluginId, files) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         return instance.send(new GetObjectCommand({
             Bucket,
@@ -433,7 +440,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     deleteObject = key => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         const params = {
             Bucket,
@@ -475,7 +482,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     updatePluginInformations = (id, body) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         const params = {
             Bucket,
@@ -503,7 +510,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     updatePlugin = (id, body) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         const params = {
             Bucket,
@@ -528,7 +535,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     createEmptyPlugin = (email, metadata, isGithub) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         return new Promise(resolve => {
             const pluginId = crypto.randomUUID()
@@ -626,7 +633,7 @@ module.exports = class S3Datastore extends Datastore {
             const users = plugin.users || [];
             const admins = plugin.admins || [];
 
-            return users.includes(email) || admins.includes(email)
+            return arrayIncludesEmail(users, email) || arrayIncludesEmail(admins, email)
         }) || []
 
         console.log("users plugins")
@@ -639,7 +646,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     addPluginToList = async (email, plugin) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         const plugins = await this.getPlugins()
 
@@ -659,7 +666,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     updatePluginList = async (pluginId, content) => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         const plugins = await this.getPlugins()
 
@@ -677,7 +684,7 @@ module.exports = class S3Datastore extends Datastore {
     }
 
     removePluginFromList = async pluginId => {
-        const { instance, Bucket } = this.#state;
+        const { instance, Bucket } = this.state;
 
         const plugins = await this.getPlugins()
 
@@ -697,7 +704,7 @@ module.exports = class S3Datastore extends Datastore {
         const plugin = plugins.find(p => p.pluginId === pluginId)
 
         if (plugin) {
-            return plugin.admins.includes(email)
+            return arrayIncludesEmail(plugin.admins, email)
         }
 
         return false

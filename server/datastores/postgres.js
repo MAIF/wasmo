@@ -9,13 +9,14 @@ const { Pool } = require('pg');
 
 const logger = require("../logger");
 const { isAString } = require('../utils');
+const { PG_1_22 } = require('./migrations/pg-1.22');
 
 module.exports = class PgDatastore extends Datastore {
     /** @type {S3Datastore} */
     #sourcesDatastore = undefined;
 
     /** @type {Pool} */
-    #pool = undefined;
+    pool = undefined;
 
     /**
      * @param {S3Datastore} sourcesDatastore 
@@ -29,9 +30,9 @@ module.exports = class PgDatastore extends Datastore {
     initialize = async () => {
         logger.info("Initialize pg client");
 
-        await this.#sourcesDatastore.initialize();
+        await this.#sourcesDatastore.initialize(true);
 
-        this.#pool = new Pool({
+        this.pool = new Pool({
             host: ENV.PG.HOST,
             port: ENV.PG.PORT,
             database: ENV.PG.DATABASE,
@@ -44,17 +45,22 @@ module.exports = class PgDatastore extends Datastore {
             .on('error', err => logger.error(err));
 
 
-        const client = await this.#pool.connect();
+        const client = await this.pool.connect();
 
         await Promise.all([
             client.query("CREATE TABLE IF NOT EXISTS plugins(id VARCHAR(200), content JSONB)"),
             client.query("CREATE TABLE IF NOT EXISTS jobs(id SERIAL, plugin_id VARCHAR UNIQUE, created_at TIMESTAMP default current_timestamp)"),
         ]);
         client.release()
+
+
+        await this.applyMigrations()
     }
 
+    applyMigrations = () => PG_1_22(this)
+
     getPlugins = () => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(async client => {
                 const res = await client.query("SELECT content FROM plugins", [])
                 client.release();
@@ -64,7 +70,7 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     getUserPlugins = async email => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(async client => {
                 const res = await client.query("SELECT content FROM plugins WHERE content->'admins' ? $1::text OR content->'users' ? $1::text", [email])
                 client.release();
@@ -77,7 +83,7 @@ module.exports = class PgDatastore extends Datastore {
         const optUser = await this.getUser(email);
 
         if (!optUser) {
-            await this.#pool.connect()
+            await this.pool.connect()
                 .then(client => {
                     return client.query("INSERT INTO users(email, content) VALUES($1, $2::jsonb)", [email, {}])
                         .then(() => client.release())
@@ -86,7 +92,7 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     getUsers = () => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(async client => {
                 const res = await client.query("SELECT * from users");
                 client.release();
@@ -158,7 +164,7 @@ module.exports = class PgDatastore extends Datastore {
         if (email === "*")
             return Promise.resolve()
 
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(client => client.query("SELECT * FROM plugins WHERE id = $1::text AND (content->'admins' ? $2::text OR content->'users' ? $2::text)", [pluginId, email])
                 .then(res => {
                     client.release()
@@ -177,7 +183,7 @@ module.exports = class PgDatastore extends Datastore {
             return {}
         }
 
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(client => client.query("SELECT * FROM plugins WHERE id = $1::text", [pluginId])
                 .then(res => {
                     client.release()
@@ -256,7 +262,7 @@ module.exports = class PgDatastore extends Datastore {
 
             console.log('generate pluginID', pluginId, newPlugin.pluginId)
 
-            return this.#pool.connect()
+            return this.pool.connect()
                 .then(client => {
                     return client.query("INSERT INTO plugins(id, content) VALUES($1, $2::jsonb)", [newPlugin.pluginId, JSON.stringify({
                         ...newPlugin,
@@ -326,7 +332,7 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     addPluginToList = async (email, plugin) => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(client => {
                 return client.query("INSERT INTO plugins(id, content) VALUES($1, $2::jsonb)", [plugin.pluginId, JSON.stringify({
                     pluginId: plugin.pluginId,
@@ -338,7 +344,7 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     updatePluginList = async (pluginId, content) => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(client => {
                 return client.query("UPDATE plugins SET content = $1::jsonb WHERE id = $2", [JSON.stringify(content), pluginId])
                     .then(() => client.release())
@@ -346,7 +352,7 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     removePluginFromList = async (pluginId) => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(client => {
                 return client.query("DELETE FROM plugins WHERE id = $1", [pluginId])
                     .then(() => client.release())
@@ -354,7 +360,7 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     isJobRunning = pluginId => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(client => {
                 return client.query("INSERT INTO jobs(plugin_id) VALUES($1) on conflict (plugin_id) do nothing", [pluginId])
                     .then(res => {
@@ -371,7 +377,7 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     cleanJobsRunner = () => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(client => {
                 return client.query(`DELETE from jobs WHERE created_at < NOW() - make_interval(mins => 1)`)
                     .then(() => {
@@ -381,7 +387,7 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     removeJob = async pluginId => {
-        const client = await this.#pool.connect();
+        const client = await this.pool.connect();
 
         await client.query("DELETE FROM jobs WHERE plugin_id = $1", [pluginId]);
 
@@ -389,7 +395,7 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     waitingTimeBeforeNextRun = pluginId => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(client => {
                 return client.query("SELECT created_at FROM jobs WHERE plugin_id = $1", [pluginId])
                     .then(res => {
@@ -408,7 +414,7 @@ module.exports = class PgDatastore extends Datastore {
     getInvitation = (email, pluginId) => this.getPlugin(email, pluginId)
 
     canSharePlugin = async (email, pluginId) => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(client => client.query("SELECT * FROM plugins WHERE id = $1::text AND content->'admins' ? $2::text", [pluginId, email])
                 .then(res => {
                     client.release()
@@ -417,7 +423,7 @@ module.exports = class PgDatastore extends Datastore {
     }
 
     getPluginUsers = (email, pluginId) => {
-        return this.#pool.connect()
+        return this.pool.connect()
             .then(client => client.query(`SELECT content->'admins' as admins, content->'users' as users
                 FROM plugins 
                 WHERE id = $1::text AND content->'admins' ? $2::text`, [pluginId, email])

@@ -20,7 +20,7 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
   }, [loadConfigurationFile]);
 
   const connect = (isDevelopment, isWSS) => {
-    console.log("connect ws")
+    // console.log("connect ws")
     let socket;
 
     let protocol = 'ws';
@@ -58,7 +58,7 @@ function Terminal({ sizeTerminal, toggleResizingTerminal, changeTerminalSize, se
     }
 
     socket.onclose = function (e) {
-      console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+      // console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
 
       setTimeout(function () {
         connect(isDevelopment, isWSS);

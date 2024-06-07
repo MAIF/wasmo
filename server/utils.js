@@ -3,9 +3,13 @@ const fs = require("fs-extra");
 const path = require("path");
 const pako = require('pako');
 
+// legacy
 const format = value => {
   return value ? value.replace(/[^a-zA-Z ]/g, "") : "";
 }
+
+// legacy
+const arrayIncludesEmail = (arr, email) => arr.includes(email) || arr.includes(format(email))
 
 const isAString = variable => typeof variable === 'string' || variable instanceof String;
 
@@ -81,6 +85,7 @@ const INFORMATIONS_FILENAME = {
 
 module.exports = {
   format,
+  arrayIncludesEmail,
   unzip,
   unzipTo,
   INFORMATIONS_FILENAME,
