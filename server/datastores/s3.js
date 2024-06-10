@@ -76,7 +76,6 @@ module.exports = class S3Datastore extends Datastore {
             const URL = url.parse(ENV.S3_ENDPOINT);
 
             const ip = await new Promise(resolve => dns.lookup(URL.hostname, (_, ip) => resolve(ip)));
-            console.log(`${URL.protocol}//${ip}:${URL.port}${URL.pathname}`)
             logger.debug(`${URL.protocol}//${ip}:${URL.port}${URL.pathname}`)
             this.state = {
                 instance: new S3Client({
@@ -627,7 +626,6 @@ module.exports = class S3Datastore extends Datastore {
 
     getUserPlugins = async email => {
         const plugins = await this.getPlugins();
-        console.log(plugins)
 
         const userPlugins = plugins.filter(plugin => {
             const users = plugin.users || [];
@@ -635,9 +633,6 @@ module.exports = class S3Datastore extends Datastore {
 
             return arrayIncludesEmail(users, email) || arrayIncludesEmail(admins, email)
         }) || []
-
-        console.log("users plugins")
-        console.log(userPlugins, email)
 
         return Promise.all(userPlugins.map(plugin => this.getPlugin(email, plugin.pluginId)))
             .then(plugins => {

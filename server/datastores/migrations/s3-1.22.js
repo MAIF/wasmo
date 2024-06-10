@@ -66,8 +66,6 @@ function getUserPlugins(s3Datastore, email) {
 async function createPlugin(s3Datastore, email, pluginId, content) {
     const { instance, Bucket } = s3Datastore.state;
 
-    console.log(content)
-
     const params = {
         Bucket,
         Key: `${pluginId}.json`,
@@ -86,8 +84,6 @@ async function S3_1_22(s3Datastore) {
     if (!migrated) {
         const users = await getUsers(s3Datastore)
 
-        console.log('migrate users : ', users)
-
         const usersPlugins = await Promise.all(users.map(user => getUserPlugins(s3Datastore, user)));
 
         await Promise.all(usersPlugins.map((userPlugins, idx) => {
@@ -97,8 +93,6 @@ async function S3_1_22(s3Datastore) {
                 users: []
             })))
         }))
-
-        // TODO - problem came from the email formatter wasm@oto.tools and wasmototools
 
         const pluginsByUser = usersPlugins.reduce((acc, userPlugins, idx) => {
             return [...acc, ...userPlugins.map(plugin => ({
@@ -114,7 +108,6 @@ async function S3_1_22(s3Datastore) {
             .reduce((promise, item) => promise.then(() => new Promise(resolve => {
                 const { plugin, email } = item;
 
-                console.log('add ', email, plugin)
                 s3Datastore.addPluginToList(email, plugin)
                     .then(resolve)
             })), Promise.resolve())

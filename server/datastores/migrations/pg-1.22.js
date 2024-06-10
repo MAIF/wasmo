@@ -37,8 +37,6 @@ async function PG_1_22(pgDatastore) {
     if (!migrated) {
         const usersPlugins = await getUsers(pgDatastore)
 
-        console.log('migrate users : ', users)
-
         return usersPlugins.map(user => {
             return Promise.all(user.plugins.map(plugin => createPlugin(pgDatastore, plugin)))
         })
