@@ -17,7 +17,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
         const hash = this.getAttribute('href');
 
-        document.querySelector(hash).scrollIntoView({
+        document.querySelector(hash)?.scrollIntoView({
             behavior: 'smooth'
         });
 

@@ -5,11 +5,6 @@ import Warning from '../../../components/Warning'
 
 Wasmo Builder is fully configurable and the only way to configure it is to use the environment variables.
 
-- [Storage](#storage)
-- [Authentications](#authentications)
-- [Pairing with Otoroshi](#pairing-with-otoroshi)
-- [Using the CLI](#using-the-cli)
-- [Miscellaneous](#miscellaneous)
 
 ## Storage <Badges values={['S3', 'DOCKER_S3', 'S3_POSTGRES', 'DOCKER_S3_POSTGRES']} raw />
 
@@ -105,11 +100,13 @@ STORAGE=
 AWS_ACCESS_KEY_ID=                                      
 # Specifies an secret key associated with your S3 instance
 AWS_SECRET_ACCESS_KEY=                                  
-# The Default region name identifies the S3 Region whose servers you want to send your requests to by default
+# The Default region name identifies the S3 Region whose servers 
+# you want to send your requests to by default
 AWS_DEFAULT_REGION=         <DEFAULT 'us-east-1'>   
 # Specifies the endpoint that is used for all service requests    
 S3_ENDPOINT=
-# When set to true, the bucket name is always left in the request URI and never moved to the host as a sub-domain.
+# When set to true, the bucket name is always left in the request 
+# URI and never moved to the host as a sub-domain.
 S3_FORCE_PATH_STYLE=
 # Bucket used
 S3_BUCKET=
@@ -123,26 +120,31 @@ GITHUB_MAX_REPO_SIZE=
 PG_HOST=<DEFAULT  'localhost'>
 PG_PORT=<DEFAULT  5432>
 PG_DATABASE=<DEFAULT  'wasmo'>
-# This optional environment variable is used in conjunction with POSTGRES_PASSWORD to set a user and its password. This variable will create the specified user with superuser power and a database with the same name
+# This optional environment variable is used in conjunction with 
+# POSTGRES_PASSWORD to set a user and its password. This variable will create the specified user with superuser power and a database with the same name
 PG_USER=<DEFAULT  'postgres'>
-#  It must not be empty or undefined. This environment variable sets the superuser password for PostgreSQL
+#  It must not be empty or undefined. This environment variable 
+# sets the superuser password for PostgreSQL
 PG_PASSWORD=<DEFAULT  'password'>
 PG_POOL_SIZE=<DEFAULT  20>
-# Number of milliseconds a client must sit idle in the pool and not be checked out before it is disconnected from the backend and discarded
+# Number of milliseconds a client must sit idle in the pool and not 
+# be checked out before it is disconnected from the backend and discarded
 PG_IDLE_TIMEOUT_MILLIS=<DEFAULT  30000>
-# Number of milliseconds to wait before timing out when connecting a new client by default this is 0 which means no timeout
+# Number of milliseconds to wait before timing out when connecting 
+# a new client by default this is 0 which means no timeout
 PG_CONNECTION_TIMEOUT_MILLIS=<DEFAULT  2000>
 
-# Manager
-
-# The location of the plugin templates. This can be a URL or a file path starting with file://
+# The location of the plugin templates. This can be a URL or a file 
+# path starting with file://
 MANAGER_TEMPLATES=
 MANAGER_MAX_PARALLEL_JOBS=   <DEFAULT 2>
-# The domains allowed to call the Wasmo backend. This list is used by the CORS policy.
+# The domains allowed to call the Wasmo backend. 
+# This list is used by the CORS policy.
 MANAGER_ALLOWED_DOMAINS=     <DEFAULT 'localhost:5001'>
 # Defines whether Wasmo will be secured
 AUTH_MODE=                   <'NO_AUTH'|'BASIC_AUTH'|'OTOROSHI_AUTH'>
-# Secret used to verify the signature of the incoming token (only used with AUTH_MODE='OTOROSHI_AUTH')
+# Secret used to verify the signature of the incoming token 
+# (only used with AUTH_MODE='OTOROSHI_AUTH')
 OTOROSHI_TOKEN_SECRET=       <DEFAULT 'veryverysecret'>
 
 # Expected client id (only used with AUTH_MODE='BASIC_AUTH')
@@ -153,10 +155,23 @@ WASMO_CLIENT_SECRET=
 # Enables the Extism environment and the playground zone in UI
 EXTISM_RUNTIME_ENVIRONMENT=  <DEFAULT false>
 
-# At each time interval, Wasmo will clear a folder full of locally generated Wasm binaries
+# At each time interval, Wasmo will clear a folder full of locally generated 
+# Wasm binaries
 LOCAL_WASM_JOB_CLEANING=     <DEFAULT 60 * 60 * 1000> // 1 hour
 
 LOGGER_FILE=                 <DEFAULT false>
 LOGGER_LEVEL=                <DEFAULT 'info'>
-LOGGER_TIMESTAMP             <DEFAULT false>
+LOGGER_TIMESTAMP=            <DEFAULT false>
+
+# Enable WebSocket protocol over https
+WSS=                         <DEFAULT false>
+
+# Expose Wasmo on specific a domain and port (used to generate invitations links)
+# Links will be generated following the format : {SECURE_DOMAIN ? 'https' : 'http'}://${ENV.DOMAIN}:${ENV.EXPOSED_PORT || ENV.PORT}
+SECURE_DOMAIN=               <DEFAULT false>
+DOMAIN=                       
+EXPOSED_PORT=                 
+
+# Force Wasmo to validate domains of requests 
+CHECK_DOMAINS=               <DEFAULT true> # if false, MANAGER_ALLOWED_DOMAINS will be ignored
 ```
