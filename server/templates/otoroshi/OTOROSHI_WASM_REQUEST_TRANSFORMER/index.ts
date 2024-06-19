@@ -1,7 +1,11 @@
-export function execute() {
-    let context = JSON.parse(Host.inputString())
+import { WasmRequestTransformerContext, WasmTransformerResponse } from 'otoroshi-ts-types';
 
-    Host.outputString(JSON.stringify({
+export declare var Host: any;
+
+export function execute() {
+    let context = JSON.parse(Host.inputString()) as WasmRequestTransformerContext;
+
+    const error: WasmTransformerResponse = {
         ...context,
         method: "POST",
         headers: {
@@ -12,7 +16,8 @@ export function execute() {
         body_json: {
             foo: "bar"
         }
-    }))
+    }
+    Host.outputString(JSON.stringify(error));
 
     return 0
 }

@@ -1,12 +1,10 @@
 use extism_pdk::*;
-use otoroshi_rust_types::types::*;
+use otoroshi_rust_types::types;
 
 #[plugin_fn]
-pub fn execute(
-    Json(_context): Json<WasmPreRouteContext>,
-) -> FnResult<Json<WasmPreRouteResponse>> {
+pub fn execute(Json(context): Json<types::WasmPreRouteContext>) -> FnResult<Json<types::WasmPreRouteResponse>> {
     let out = types::WasmPreRouteResponse {
-        error: true,
+        error: Some(true),
         body: "you're not authorized",
         status: 401
     };
@@ -14,12 +12,12 @@ pub fn execute(
     match context.request.headers.get("bar") {
         Some(bar) => {
             if bar == "foo" {
-                Ok(Json({
-                    error: false
+                Ok(Json(types::WasmPreRouteResponse {
+                    error: Some(false)
                 }))
             } else {
-                Ok(Json({
-                    error: true,
+                Ok(Json(types::WasmPreRouteResponse {
+                    error: Some(true),
                     body: format!("{} is not authorized", bar).to_owned(),
                     status: 401
                 }))

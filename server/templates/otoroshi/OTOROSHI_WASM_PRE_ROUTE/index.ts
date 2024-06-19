@@ -11,7 +11,7 @@ export function execute() {
         }
         Host.outputString(JSON.stringify(out));
     } else {
-        const error = {
+        const error: WasmPreRouteResponse = {
             error: true,
             status: 401,
             headers: {

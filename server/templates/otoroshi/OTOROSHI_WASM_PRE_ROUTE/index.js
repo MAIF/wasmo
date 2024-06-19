@@ -9,7 +9,7 @@ export function execute() {
         Host.outputString(JSON.stringify({
             error: true,
             headers: {
-              'Content-Type': 'text/plain'
+                'Content-Type': 'text/plain'
             },
             status: 401,
             body: "you're not authorized"

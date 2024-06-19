@@ -1,39 +1,39 @@
 package main
 
 import (
-    "github.com/extism/go-pdk"
-    "github.com/buger/jsonparser"
-    // "github.com/MAIF/otoroshi-go-types"
+	"github.com/buger/jsonparser"
+	"github.com/extism/go-pdk"
 )
 
 //export execute
 func execute() int32 {
-    input := pdk.Input()
+	input := pdk.Input()
 
-    var foo, err = jsonparser.GetString(input, "request", "headers", "foo")
+	var foo, err = jsonparser.GetString(input, "request", "headers", "foo")
 
-    if err != nil {}
+	if err != nil {
+	}
 
-    var output = ""
-  
-    if foo == "bar" {
-      output = `{
+	var output = ""
+
+	if foo == "bar" {
+		output = `{
         "result": true
       }`
-    } else {
-      output = `{
+	} else {
+		output = `{
         "result": false,
         "error": {
           "message": "you're not authorized",
           "status": 401
         }
       }`
-    }
-    
-    mem := pdk.AllocateString(output)
-    pdk.OutputMemory(mem)
+	}
 
-    return 0
+	mem := pdk.AllocateString(output)
+	pdk.OutputMemory(mem)
+
+	return 0
 }
 
 func main() {}

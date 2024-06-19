@@ -1,10 +1,10 @@
 use extism_pdk::*;
-use otoroshi_rust_types::types::*;
+use otoroshi_rust_types::types;
 
 #[plugin_fn]
 pub fn execute(
-    Json(_context): Json<WasmAccessValidatorContext>,
-) -> FnResult<Json<WasmAccessValidatorResponse>> {
+    Json(context): Json<types::WasmAccessValidatorContext>,
+) -> FnResult<Json<types::WasmAccessValidatorResponse>> {
     let out = types::WasmAccessValidatorResponse {
         result: false,
         error: Some(types::WasmAccessValidatorError {

@@ -1,15 +1,15 @@
 use extism_pdk::*;
-use otoroshi_rust_types::types::*;
+use otoroshi_rust_types::types;
 use std::collections::HashMap;
 
 #[plugin_fn]
-pub fn execute(Json(context): Json<types::WasmQueryContext>) -> FnResult<Json<types::WasmQueryResponse>> {
+pub fn execute(Json(context): Json<types::WasmBackendContext>) -> FnResult<Json<types::WasmBackendResponse>> {
     let mut headers = HashMap::new();
     headers.insert("foo".to_string(), "bar".to_string());
 
-    let response = types::WasmQueryResponse { 
+    let response = types::WasmBackendResponse { 
         headers: Some(headers.into_iter().chain(context.raw_request.headers).collect()), 
-        body: r#"<html lang="en">
+        body_str: Some(r#"<html lang="en">
 
             <head>
                 <meta charset="utf-8">
@@ -30,7 +30,10 @@ pub fn execute(Json(context): Json<types::WasmQueryContext>) -> FnResult<Json<ty
             ">
             
             </body>
-            </html>"#.to_owned(),
+            </html>"#.to_owned()),
+        body_base64: None,
+        body_bytes: None,
+        body_json: None,
         status: 200
     };
   
