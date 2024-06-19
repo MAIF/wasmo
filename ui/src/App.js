@@ -86,8 +86,8 @@ class App extends React.Component {
     } else if (editorState === 'onNewPlugin') {
       const newPlugin = plugins.find(plugin => plugin.new && plugin.newFilename && plugin.newFilename.length > 0)
       if (newPlugin) {
-        const { newFilename, type, template } = newPlugin;
-        Service.createPlugin(newFilename, type, template)
+        const { newFilename, type, template, productTemplate } = newPlugin;
+        Service.createPlugin(newFilename, type, template, productTemplate)
           .then(res => {
             if (!res.error) {
               this.setState({
@@ -185,7 +185,7 @@ class App extends React.Component {
     })
   }
 
-  onNewPlugin = (type, template) => {
+  onNewPlugin = (type, template, productTemplate) => {
     this.setState({
       plugins: this.state.plugins.filter(p => !p.new)
     }, () => {
@@ -198,7 +198,8 @@ class App extends React.Component {
             new: true,
             filename: '',
             type,
-            template
+            template,
+            productTemplate
           }
         ]
       })
@@ -357,7 +358,7 @@ class App extends React.Component {
           .then(res => {
             // first case match the creation of a new plugin
             if (res.error && res.status === 404) {
-              Service.getPluginTemplate(plugin.type, plugin.template || 'empty')
+              Service.getPluginTemplate(plugin.type, plugin.template || 'empty', plugin.productTemplate)
                 .then(template => {
                   if (template.status !== 200) {
                     template.json().then(res => window.alert(JSON.stringify(res)))

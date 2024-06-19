@@ -14,11 +14,11 @@ router.get('/', (req, res) => {
         error: 'Missing type of project'
       })
   } else {
-    const { type } = req.query;
+    const { type, productTemplate } = req.query;
     const template = !req.query.template || req.query.template === 'undefined' ? 'empty' : req.query.template;
-
+ 
     if (['rust', 'js', 'go', 'ts', 'opa'].includes(type)) {
-      getTemplates(type, template, res);
+      getTemplates(type, template, productTemplate, res);
     } else {
       res
         .status(404)
@@ -36,7 +36,7 @@ function getTemplatesFromPath(type, template, res) {
     return res.sendFile(path.join(__dirname, '../templates', `${type}.zip`))
 }
 
-function getTemplates(type, template, res) {
+function getTemplates(type, template, productTemplate, res) {
   const source = ENV.MANAGER_TEMPLATES;
   const zipName = `${type}.zip`;
 

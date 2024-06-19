@@ -9,6 +9,7 @@ import Otoroshi from './assets/otoroshi.png';
 import Izanami from './assets/izanami.png';
 import { createGithubRepo } from './services';
 import { LOGOS } from './FilesLogo';
+import { OTOROSHI_TEMPLATES } from './templates/otoroshi';
 
 class PluginManager extends React.Component {
   render() {
@@ -44,8 +45,11 @@ class PluginManager extends React.Component {
 }
 
 function NewPluginModal({ onNewPlugin, setProjectSelector, reloadPlugins, active }) {
+
   const [showGithubModal, setGithubModal] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
+  const [language, setLanguage] = useState(false);
+  const [product, setProduct] = useState();
+  const [otoroshiTemplates, setOtoroshiTemplates] = useState(false);
 
   const [repo, setRepo] = useState("");
   const [owner, setOwner] = useState("");
@@ -156,7 +160,7 @@ function NewPluginModal({ onNewPlugin, setProjectSelector, reloadPlugins, active
     }} onClick={e => e.stopPropagation()}>
       {active && <div className='d-flex flex-column h-100'>
         <h3 style={{ fontSize: '1.25rem', textAlign: 'center', fontWeight: 'bold', background: '#000', color: '#fff', height: 42, margin: 0 }}
-          className='d-flex align-items-center justify-content-center'>Languages</h3>
+          className='d-flex align-items-center justify-content-center'>Language</h3>
         <div className='d-flex flex-column' style={{ flex: 1, padding: '.5rem 1rem' }}>
           {[
             {
@@ -197,9 +201,9 @@ function NewPluginModal({ onNewPlugin, setProjectSelector, reloadPlugins, active
               type="button"
               key={`action-${i}`}
               className='btn btn-sm btn-light d-flex align-items-center mb-2'
-              onClick={onClick ? onClick : () => setShowTemplates(value)}
+              onClick={onClick ? onClick : () => setLanguage(value)}
               style={{
-                border: value === showTemplates ? '1px solid #2ecc71' : 'none',
+                border: value === language ? '1px solid #2ecc71' : 'none',
                 gap: '.5rem',
                 padding: '.5rem 1rem',
                 borderRadius: 0,
@@ -214,7 +218,7 @@ function NewPluginModal({ onNewPlugin, setProjectSelector, reloadPlugins, active
                 width: 30,
                 height: 30,
                 background: 'rgb(46 204 113 / 27%)',
-                display: value === showTemplates ? 'block' : 'none'
+                display: value === language ? 'block' : 'none'
               }}>
                 <i className='fa-solid fa-check' color='#2ecc71' style={{ fontWeight: 'bold' }} />
               </span>
@@ -227,19 +231,35 @@ function NewPluginModal({ onNewPlugin, setProjectSelector, reloadPlugins, active
             style={{ border: 'none', borderRadius: 6, padding: '.5rem 1rem', background: '#000', flex: 1 }}
             onClick={e => {
               e.stopPropagation();
-              setShowTemplates(false)
+              setLanguage(false)
               setProjectSelector(false)
             }}>Cancel</button>
         </div>
       </div>}
     </div>
 
-    {active && showTemplates && <TemplatesSelector language={showTemplates} onNewPlugin={onNewPlugin} />}
+    {active && language &&
+      <ProductsSelector
+        product={product}
+        onClick={product => {
+          setProduct(product)
+          if (product === "otoroshi") {
+            setOtoroshiTemplates(true)
+          } else {
+            setOtoroshiTemplates(false)
+            onNewPlugin(language, product)
+            setProjectSelector(false)
+          }
+        }} />}
+    {active && otoroshiTemplates &&
+      <OtoroshiTemplatesSelector
+        language={language}
+        otoroshiTemplates={otoroshiTemplates}
+        onNewPlugin={onNewPlugin} />}
   </>
 }
 
-function TemplatesSelector({ language, onNewPlugin }) {
-
+function ProductsSelector({ onClick, product }) {
   return <div style={{
     position: 'absolute',
     top: 0,
@@ -253,25 +273,90 @@ function TemplatesSelector({ language, onNewPlugin }) {
   }}>
     <div className='d-flex flex-column h-100'>
       <h3 style={{ fontSize: '1.25rem', textAlign: 'center', fontWeight: 'bold', background: '#000', color: '#fff', height: 42, margin: 0 }}
-        className='d-flex align-items-center justify-content-center'>Templates</h3>
+        className='d-flex align-items-center justify-content-center'>Target</h3>
       <div className='d-flex flex-column' style={{ flex: 1, padding: '.5rem 1rem' }}>
         {[
           {
             icon: <span style={{ minWidth: 32 }}><i className='fa-solid fa-map fa-xl' /></span>,
             title: 'Empty',
-            onClick: () => onNewPlugin(language, 'empty')
+            value: 'empty',
+            onClick: () => onClick('empty')
           },
           {
             icon: <img src={Otoroshi} style={{ height: 34, width: 32 }} />,
             title: 'Otoroshi',
-            onClick: () => onNewPlugin(language, 'otoroshi')
+            value: 'otoroshi',
+            onClick: () => onClick('otoroshi')
           },
           {
             icon: <img src={Izanami} style={{ height: 38, width: 32 }} />,
             title: 'Izanami',
-            onClick: () => onNewPlugin(language, 'izanami')
+            value: 'izanami',
+            onClick: () => onClick('izanami')
           }
-        ].map(({ icon, onClick, title }, i) => {
+        ].map(({ icon, onClick, title, value }, i) => {
+          const selected = value === product
+          return <button
+            type="button"
+            key={`action-${i}`}
+            className='btn btn-sm btn-light d-flex align-items-center mb-2'
+            onClick={e => {
+              e.preventDefault()
+              e.stopPropagation()
+              onClick()
+            }}
+            style={{
+              border: 'none',
+              gap: '.5rem',
+              padding: '.5rem 1rem',
+              borderRadius: 0,
+              minHeight: 46,
+              border: selected ? '1px solid #2ecc71' : 'none',
+            }}>
+            {icon}
+            {title}
+            <span className='ms-auto btn btn-sm' style={{
+              borderRadius: '50%',
+              background: '#eee',
+              width: 30,
+              height: 30,
+              background: 'rgb(46 204 113 / 27%)',
+              display: selected ? 'block' : 'none'
+            }}>
+              <i className='fa-solid fa-check' color='#2ecc71' style={{ fontWeight: 'bold' }} />
+            </span>
+          </button>
+        })}
+      </div>
+    </div>
+  </div>
+}
+
+function OtoroshiTemplatesSelector({ language, onNewPlugin }) {
+
+  const [otoroshiTemplate, setOtoroshiTemplate] = useState("")
+
+  return <div style={{
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 715,
+    zIndex: 100,
+    width: 460,
+    background: '#eee',
+    gap: '.5rem',
+    transition: 'width .25s'
+  }}>
+    <div className='d-flex flex-column h-100'>
+      <h3 style={{ fontSize: '1.25rem', textAlign: 'center', fontWeight: 'bold', background: '#000', color: '#fff', height: 42, margin: 0 }}
+        className='d-flex align-items-center justify-content-center'>Templates</h3>
+      <div className='d-flex flex-column' style={{ flex: 1, padding: '.5rem 1rem' }}>
+        {Object.entries(OTOROSHI_TEMPLATES).map(([title, { key, description }]) => ({
+          icon: <span style={{ minWidth: 32 }}><i className='fa-solid fa-sheet-plastic fa-xl' /></span>,
+          title,
+          description,
+          onClick: () => onNewPlugin(language, 'empty', key)
+        })).map(({ icon, onClick, title, description }, i) => {
           return <button
             type="button"
             key={`action-${i}`}
@@ -279,7 +364,10 @@ function TemplatesSelector({ language, onNewPlugin }) {
             onClick={onClick}
             style={{ border: 'none', gap: '.5rem', padding: '.5rem 1rem', borderRadius: 0, minHeight: 46 }}>
             {icon}
-            {title}
+            <div className='d-flex flex-column'>
+              <p className='text-start m-0' style={{ fontWeight: 'bold' }}>{title}</p>
+              <p className='text-start m-0'>{description}</p>
+            </div>
           </button>
         })}
       </div>
