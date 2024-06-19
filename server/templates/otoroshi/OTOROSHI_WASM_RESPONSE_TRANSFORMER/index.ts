@@ -1,9 +1,9 @@
-import { WasmRequestTransformerContext, WasmTransformerResponse } from 'otoroshi-ts-types';
+import { WasmResponseTransformerContext, WasmTransformerResponse } from 'otoroshi-ts-types';
 
 export declare var Host: any;
 
 export function execute() {
-    let context = JSON.parse(Host.inputString()) as WasmRequestTransformerContext;
+    let context = JSON.parse(Host.inputString()) as WasmResponseTransformerContext;
 
     const error: WasmTransformerResponse = {
         ...context,
