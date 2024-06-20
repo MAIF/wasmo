@@ -56,6 +56,8 @@ export const getPluginConfig = plugin => jsonFetch(`/plugins/${plugin}/configura
 
 export const getPluginTemplate = (type, template, productTemplate) => f(`/templates?type=${type}&template=${template}&productTemplate=${productTemplate}`);
 
+export const getPluginProductTemplate = (type, template, productTemplate) => f(`/products_templates?type=${type}&template=${template}&productTemplate=${productTemplate}`);
+
 const buildZip = plugin => {
   const jsZip = new JSZip()
 

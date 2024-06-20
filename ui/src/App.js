@@ -290,7 +290,7 @@ class App extends React.Component {
     })
   }
 
-  initializeEmptyPlugin = () => {
+  initializeEmptyPlugin = async () => {
     const { selectedPlugin } = this.state;
 
     const INFORMATIONS_FILENAME = {
@@ -302,6 +302,20 @@ class App extends React.Component {
       opa: "package.json"
     };
 
+    const LANGUAGES_INDEX = {
+      rust: 'lib.rs',
+      js: 'index.js',
+      ts: 'index.ts',
+      go: 'main.go'
+    };
+
+    let indexFileContent = undefined
+
+    if (selectedPlugin.type !== "opa" && selectedPlugin.productTemplate) {
+      indexFileContent = await Service.getPluginProductTemplate(selectedPlugin.type, selectedPlugin.template || 'empty', selectedPlugin.productTemplate)
+        .then(res => res.text())
+    }
+
     this.updateSelectedPlugin({
       selectedPlugin: {
         ...selectedPlugin,
@@ -312,6 +326,11 @@ class App extends React.Component {
               content: file.content
                 .replace('@@PLUGIN_NAME@@', selectedPlugin.filename)
                 .replace('@@PLUGIN_VERSION@@', '1.0.0')
+            }
+          } else if (indexFileContent && file.filename === LANGUAGES_INDEX[selectedPlugin.type]) {
+            return {
+              ...file,
+              content: indexFileContent
             }
           }
           return file;

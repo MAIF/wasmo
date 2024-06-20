@@ -13,6 +13,7 @@ const { ENV, AUTHENTICATION } = require('./configuration');
 
 const pluginsRouter = require('./routers/plugins');
 const templatesRouter = require('./routers/templates');
+const productsTemplatesRouter = require('./routers/products_templates');
 const publicRouter = require('./routers/public');
 const wasmRouter = require('./routers/wasm');
 const invitationRouter = require('./routers/invitation');
@@ -125,6 +126,7 @@ function createServer(appVersion) {
   app.use(`${baseURL}/`, publicRouter);
   app.use(`${baseURL}/api/plugins`, pluginsRouter);
   app.use(`${baseURL}/api/templates`, templatesRouter);
+  app.use(`${baseURL}/api/products_templates`, productsTemplatesRouter);
   app.use(`${baseURL}/api/wasm`, wasmRouter);
   app.use(`${baseURL}/api/version`, (_, res) => res.json(appVersion));
   app.use(`${baseURL}/api/development`, (_, res) => res.json(ENV.IS_DEV));
