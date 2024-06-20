@@ -1,21 +1,25 @@
-export function execute() {
-    let context = JSON.parse(Host.inputString());
-  
-      if (context.request.headers["foo"] === "bar") {
-          const out = {
-              result: true
-          };
-          Host.outputString(JSON.stringify(out));
-      } else {
-          const error = {
-              result: false,
-              error: {
-                  message: "you're not authorized",
-                  status: 401
-              }
-          };
-          Host.outputString(JSON.stringify(error));
-      }
-  
-      return 0;
-  }
+export function sink_matches() {
+    // const context = JSON.parse(Host.inputString())
+    
+    Host.outputString(JSON.stringify({
+        result: true
+    }))
+
+    return 0
+}
+
+export function sink_handle() {
+    const context = JSON.parse(Host.inputString())
+
+    Host.outputString(JSON.stringify({
+        status: 200,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body_json: {
+            "WASM_SINK_RESPONSE": `Unknown path and domain for ${context.request.path}`
+        }
+    }))
+
+    return 0
+}

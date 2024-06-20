@@ -23,10 +23,10 @@ export const OTOROSHI_TEMPLATES = {
     key: "OTOROSHI_WASM_SINK",
     description: "Handle unmatched requests with a wasm plugin"
   },
-  "Router": {
-    key: "OTOROSHI_WASM_ROUTER",
-    description: "Can decide for routing with a wasm plugin"
-  },
+  // "Router": {
+  //   key: "OTOROSHI_WASM_ROUTER",
+  //   description: "Can decide for routing with a wasm plugin"
+  // },
   "Pre route": {
     key: "OTOROSHI_WASM_PRE_ROUTE",
     description: "This plugin can be used to use a wasm plugin as in pre-route phase"
