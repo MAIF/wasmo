@@ -39,19 +39,20 @@ router.get('/', (req, res) => {
 });
 
 function getTemplatesFromPath(type, template, res) {
+  console.log(path.join(__dirname, '../templates', template, `${type}.zip`))
   if (template !== 'empty')
     return res.sendFile(path.join(__dirname, '../templates', template, `${type}.zip`))
   else
     return res.sendFile(path.join(__dirname, '../templates', `${type}.zip`))
 }
 
-function getTemplates(path, res) {
+function getTemplates(templatePath, res) {
   const source = ENV.MANAGER_TEMPLATES;
 
   if (!source) {
-    return getTemplatesFromPath(path, res);
+    return res.sendFile(path.join(__dirname, '..', templatePath))
   } else if (source.startsWith('file://')) {
-    const paths = [path]
+    const paths = [templatePath]
 
     FileSystem.existsFile(...paths)
       .then(() => {
@@ -63,7 +64,7 @@ function getTemplates(path, res) {
           .json({ error: err })
       })
   } else if (source.startsWith('http')) {
-    fetch(`${source}/${path}`, {
+    fetch(`${source}/${templatePath}`, {
       redirect: 'follow'
     })
       .then(r => r.json())

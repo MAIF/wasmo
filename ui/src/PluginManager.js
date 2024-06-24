@@ -243,7 +243,7 @@ function NewPluginModal({ onNewPlugin, setProjectSelector, reloadPlugins, active
         product={product}
         onClick={product => {
           setProduct(product)
-          if (product === "otoroshi") {
+          if (product === "otoroshi" && language !== "opa") {
             setOtoroshiTemplates(true)
           } else {
             setOtoroshiTemplates(false)
