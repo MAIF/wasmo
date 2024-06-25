@@ -4,6 +4,15 @@
 
 # Wasmo
 
+<p align="center">
+<img width="1000" alt="Screenshot 2024-06-25 at 16 16 48" src="https://github.com/MAIF/wasmo/assets/6641669/6df99140-a9c3-462b-b906-dc9cfa088f8d">
+</p>
+
+<p align="center">
+<img width="1000" alt="Screenshot 2024-06-25 at 16 15 05" src="https://github.com/MAIF/wasmo/assets/6641669/b9ca8410-f1e1-456a-924e-05a6c2d7d243">
+</p>
+
+
 Wasmo can be deploy from the Docker using [the built images](https://hub.docker.com/r/maif/wasmo).
 
 It comes with a server part to create and build your WASM plugin and a frontend to edit your plugins directly in the integrated UI.
