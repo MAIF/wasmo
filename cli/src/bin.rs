@@ -13,10 +13,8 @@ use core::panic;
 use hyper::{Body, Client, Method, Request};
 use serde::Deserialize;
 use std::{
-    collections::HashMap, fs::{self, File}, hash::Hash, io::Write, path::{Path, PathBuf}, str::FromStr
+    collections::HashMap, fs::{self, File}, io::Write, path::{Path, PathBuf}, str::FromStr
 };
-
-use include_dir::{include_dir, Dir};
 
 
 use dirs;
@@ -43,80 +41,64 @@ const OTOROSHI_ZIP_JS: &[u8] = include_bytes!("../templates/otoroshi/js.zip");
 const OTOROSHI_ZIP_OPA: &[u8] = include_bytes!("../templates/otoroshi/opa.zip");
 const OTOROSHI_ZIP_RUST: &[u8] = include_bytes!("../templates/otoroshi/rust.zip");
 const OTOROSHI_ZIP_TS: &[u8] = include_bytes!("../templates/otoroshi/ts.zip");
-
-// const OTOROSHI_WASM_ACCESS_CONTROL_JS: &[u8] = include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_ACCESS_CONTROL.zip");
-// const OTOROSHI_WASM_BACKEND_JS: &[u8] = include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_BACKEND.zip");
-// const OTOROSHI_WASM_PRE_ROUTE_JS: &[u8] = include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_PRE_ROUTE.zip");
-// const OTOROSHI_WASM_REQUEST_TRANSFORMER_JS: &[u8] = include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_REQUEST_TRANSFORMER.zip");
-// const OTOROSHI_WASM_RESPONSE_TRANSFORMER_JS: &[u8] = include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_RESPONSE_TRANSFORMER.zip");
-// const OTOROSHI_WASM_ROUTE_MATCHER_JS: &[u8] = include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_ROUTE_MATCHER.zip");
-// const OTOROSHI_WASM_SINK_JS: &[u8] = include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_SINK.zip");
-
-// const OTOROSHI_WASM_ACCESS_CONTROL_GO: &[u8] = include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_ACCESS_CONTROL.zip");
-// const OTOROSHI_WASM_BACKEND_GO: &[u8] = include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_BACKEND.zip");
-// const OTOROSHI_WASM_PRE_ROUTE_GO: &[u8] = include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_PRE_ROUTE.zip");
-// const OTOROSHI_WASM_REQUEST_TRANSFORMER_GO: &[u8] = include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_REQUEST_TRANSFORMER.zip");
-// const OTOROSHI_WASM_RESPONSE_TRANSFORMER_GO: &[u8] = include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_RESPONSE_TRANSFORMER.zip");
-// const OTOROSHI_WASM_ROUTE_MATCHER_GO: &[u8] = include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_ROUTE_MATCHER.zip");
-// const OTOROSHI_WASM_SINK_GO: &[u8] = include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_SINK.zip");
-
-// const OTOROSHI_WASM_ACCESS_CONTROL_RUST: &[u8] = include_str!("../templates/otoroshi/languages/RUST/OTOROSH_WASM_ACCESS_CONTROL.zip");
-// const OTOROSHI_WASM_BACKEND_RUST: &[u8] = include_str!("../templates/otoroshi/languages/RUST/OROSHI_WASM_BACKEND.zip");
-// const OTOROSHI_WASM_PRE_ROUTE_RUST: &[u8] = include_str!("../templates/otoroshi/languages/RUST/OTOSHI_WASM_PRE_ROUTE.zip");
-// const OTOROSHI_WASM_REQUEST_TRANSFORMER_RUST: &[u8] = include_str!("../templates/otoroshi/languages/RUST/OTOROSHI_WASREQUEST_TRANSFORMER.zip");
-// const OTOROSHI_WASM_RESPONSE_TRANSFORMER_RUST: &[u8] = include_str!("../templates/otoroshi/languages/RUST/OTOROSHI_WASMESPONSE_TRANSFORMER.zip");
-// const OTOROSHI_WASM_ROUTE_MATCHER_RUST: &[u8] = include_str!("../templates/otoroshi/languages/RUST/OTOROS_WASM_ROUTE_MATCHER.zip");
-// const OTOROSHI_WASM_SINK_RUST: &[u8] = include_str!("../templates/otoroshi/languages/RUST/OTOROSHI_WASM_SINK.zip");
-
-// const OTOROSHI_WASM_ACCESS_CONTROL_TS: &[u8] = include_str!("../templates/otoroshi/languages/TS/OTOROSHGOWASM_ACCESS_CONTROL.zip");
-// const OTOROSHI_WASM_BACKEND_TS: &[u8] = include_str!("../templates/otoroshi/languages/TS/GOOROSHI_WASM_BACKEND.zip");
-// const OTOROSHI_WASM_PRE_ROUTE_TS: &[u8] = include_str!("../templates/otoroshi/languages/TS/OTGOOSHI_WASM_PRE_ROUTE.zip");
-// const OTOROSHI_WASM_REQUEST_TRANSFORMER_TS: &[u8] = include_str!("../templates/otoroshi/languages/TS/OTOROSHI_WASGOREQUEST_TRANSFORMER.zip");
-// const OTOROSHI_WASM_RESPONSE_TRANSFORMER_TS: &[u8] = include_str!("../templates/otoroshi/languages/TS/OTOROSHI_WASMGOESPONSE_TRANSFORMER.zip");
-// const OTOROSHI_WASM_ROUTE_MATCHER_TS: &[u8] = include_str!("../templates/otoroshi/languages/TS/OTOROSGO_WASM_ROUTE_MATCHER.zip");
-// const OTOROSHI_WASM_SINK_TS: &[u8] = include_str!("../templates/otoroshi/languages/TS/OTOROSHI_WASM_SINK.zip");
  
 use lazy_static::lazy_static;
 
 lazy_static! {
+    static ref OTOROSHI_WASM_TEMPLATES_ZIPNAME: HashMap<&'static str, &'static str> = {
+        let mut zip_names: HashMap<&'static str, &'static str> = HashMap::new();
+        zip_names.insert("ACCESS_CONTROL", "otoroshi_wasm_access_control");
+        zip_names.insert("BACKEND", "otoroshi_wasm_backend");
+        zip_names.insert("PRE_ROUTE", "otoroshi_wasm_pre_route");
+        zip_names.insert("REQUEST_TRANSFORMER", "otoroshi_wasm_request_transformer");
+        zip_names.insert("RESPONSE_TRANSFORMER", "otoroshi_wasm_response_transformer");
+        zip_names.insert("ROUTE_MATCHER", "otoroshi_wasm_route_matcher");
+        zip_names.insert("SINK", "otoroshi_wasm_sink");
+
+        zip_names
+    };
     static ref OTOROSHI_WASM_TEMPLATES: HashMap<&'static str, HashMap<&'static str, &'static[u8]>> = {
-        let mut m: HashMap<&'static str, &'static[u8]> = HashMap::new();
+        let mut m: HashMap<&'static str, HashMap<&'static str, &'static[u8]>> = HashMap::new();
 
-        let mut js_plugins = HashMap::new();
-        js_plugins.insert("ACCESS_CONTROL", include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_ACCESS_CONTROL.zip"));
-        js_plugins.insert("BACKEND", include_str!("../templates/otoroshi/languages/JS/OROSHI_WASM_BACKEND.zip"));
-        js_plugins.insert("PRE_ROUTE", include_str!("../templates/otoroshi/languages/JS/OTOSHI_WASM_PRE_ROUTE.zip"));
-        js_plugins.insert("REQUEST_TRANSFORMER", include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_REQUEST_TRANSFORMER.zip"));
-        js_plugins.insert("RESPONSE_TRANSFORMER", include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_RESPONSE_TRANSFORMER.zip"));
-        js_plugins.insert("ROUTE_MATCHER", include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_ROUTE_MATCHER.zip"));
-        js_plugins.insert("SINK", include_str!("../templates/otoroshi/languages/JS/OTOROSHI_WASM_SINK.zip"));
+        let mut js_plugins: HashMap<&'static str, &'static[u8]> = HashMap::new();
+        js_plugins.insert("ACCESS_CONTROL", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_access_control.zip"));
+        js_plugins.insert("BACKEND", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_backend.zip"));
+        js_plugins.insert("PRE_ROUTE", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_pre_route.zip"));
+        js_plugins.insert("REQUEST_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_request_transformer.zip"));
+        js_plugins.insert("RESPONSE_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_response_transformer.zip"));
+        js_plugins.insert("ROUTE_MATCHER", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_route_matcher.zip"));
+        js_plugins.insert("SINK", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_sink.zip"));
+        js_plugins.insert("EMPTY", include_bytes!("../templates/otoroshi/js.zip"));
 
-        let mut go_plugins = HashMap::new();
-        go_plugins.insert("ACCESS_CONTROL", include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_ACCESS_CONTROL.zip"));
-        go_plugins.insert("BACKEND", include_str!("../templates/otoroshi/languages/GO/OROSHI_WASM_BACKEND.zip"));
-        go_plugins.insert("PRE_ROUTE", include_str!("../templates/otoroshi/languages/GO/OTOSHI_WASM_PRE_ROUTE.zip"));
-        go_plugins.insert("REQUEST_TRANSFORMER", include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_REQUEST_TRANSFORMER.zip"));
-        go_plugins.insert("RESPONSE_TRANSFORMER", include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_RESPONSE_TRANSFORMER.zip"));
-        go_plugins.insert("ROUTE_MATCHER", include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_ROUTE_MATCHER.zip"));
-        go_plugins.insert("SINK", include_str!("../templates/otoroshi/languages/GO/OTOROSHI_WASM_SINK.zip"));
+        let mut go_plugins: HashMap<&'static str, &'static[u8]> = HashMap::new();
+        go_plugins.insert("ACCESS_CONTROL", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_access_control.zip"));
+        go_plugins.insert("BACKEND", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_backend.zip"));
+        go_plugins.insert("PRE_ROUTE", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_pre_route.zip"));
+        go_plugins.insert("REQUEST_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_request_transformer.zip"));
+        go_plugins.insert("RESPONSE_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_response_transformer.zip"));
+        go_plugins.insert("ROUTE_MATCHER", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_route_matcher.zip"));
+        go_plugins.insert("SINK", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_sink.zip"));
+        go_plugins.insert("EMPTY", include_bytes!("../templates/otoroshi/go.zip"));
 
-        let mut ts_plugins = HashMap::new();
-        ts_plugins.insert("ACCESS_CONTROL", include_str!("../templates/otoroshi/languages/TS/OTOROSHI_WASM_ACCESS_CONTROL.zip"));
-        ts_plugins.insert("BACKEND", include_str!("../templates/otoroshi/languages/TS/OROSHI_WASM_BACKEND.zip"));
-        ts_plugins.insert("PRE_ROUTE", include_str!("../templates/otoroshi/languages/TS/OTOSHI_WASM_PRE_ROUTE.zip"));
-        ts_plugins.insert("REQUEST_TRANSFORMER", include_str!("../templates/otoroshi/languages/TS/OTOROSHI_WASM_REQUEST_TRANSFORMER.zip"));
-        ts_plugins.insert("RESPONSE_TRANSFORMER", include_str!("../templates/otoroshi/languages/TS/OTOROSHI_WASM_RESPONSE_TRANSFORMER.zip"));
-        ts_plugins.insert("ROUTE_MATCHER", include_str!("../templates/otoroshi/languages/TS/OTOROSHI_WASM_ROUTE_MATCHER.zip"));
-        ts_plugins.insert("SINK", include_str!("../templates/otoroshi/languages/TS/OTOROSHI_WASM_SINK.zip"));
+        let mut ts_plugins: HashMap<&'static str, &'static[u8]> = HashMap::new();
+        ts_plugins.insert("ACCESS_CONTROL", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_access_control.zip"));
+        ts_plugins.insert("BACKEND", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_backend.zip"));
+        ts_plugins.insert("PRE_ROUTE", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_pre_route.zip"));
+        ts_plugins.insert("REQUEST_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_request_transformer.zip"));
+        ts_plugins.insert("RESPONSE_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_response_transformer.zip"));
+        ts_plugins.insert("ROUTE_MATCHER", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_route_matcher.zip"));
+        ts_plugins.insert("SINK", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_sink.zip"));
+        ts_plugins.insert("EMPTY", include_bytes!("../templates/otoroshi/ts.zip"));
 
-        let mut rust_plugins = HashMap::new();
-        rust_plugins.insert("ACCESS_CONTROL", include_str!("../templates/otoroshi/languages/RUST/OTOROSHI_WASM_ACCESS_CONTROL.zip"));
-        rust_plugins.insert("BACKEND", include_str!("../templates/otoroshi/languages/RUST/OROSHI_WASM_BACKEND.zip"));
-        rust_plugins.insert("PRE_ROUTE", include_str!("../templates/otoroshi/languages/RUST/OTOSHI_WASM_PRE_ROUTE.zip"));
-        rust_plugins.insert("REQUEST_TRANSFORMER", include_str!("../templates/otoroshi/languages/RUST/OTOROSHI_WASM_REQUEST_TRANSFORMER.zip"));
-        rust_plugins.insert("RESPONSE_TRANSFORMER", include_str!("../templates/otoroshi/languages/RUST/OTOROSHI_WASM_RESPONSE_TRANSFORMER.zip"));
-        rust_plugins.insert("ROUTE_MATCHER", include_str!("../templates/otoroshi/languages/RUST/OTOROSHI_WASM_ROUTE_MATCHER.zip"));
-        rust_plugins.insert("SINK", include_str!("../templates/otoroshi/languages/RUST/OTOROSHI_WASM_SINK.zip"));
+        let mut rust_plugins: HashMap<&'static str, &'static[u8]> = HashMap::new();
+        rust_plugins.insert("ACCESS_CONTROL", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_access_control.zip"));
+        rust_plugins.insert("BACKEND", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_backend.zip"));
+        rust_plugins.insert("PRE_ROUTE", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_pre_route.zip"));
+        rust_plugins.insert("REQUEST_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_request_transformer.zip"));
+        rust_plugins.insert("RESPONSE_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_response_transformer.zip"));
+        rust_plugins.insert("ROUTE_MATCHER", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_route_matcher.zip"));
+        rust_plugins.insert("SINK", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_sink.zip"));
+        rust_plugins.insert("EMPTY", include_bytes!("../templates/otoroshi/rust.zip"));
 
         m.insert("js", js_plugins);
         m.insert("go", go_plugins);
@@ -210,7 +192,7 @@ enum Commands {
         template: Option<String>,
         #[arg(
             value_name = "PRODUCT", 
-            short = 't',
+            // short = 'p',
             long = "product",
             value_parser = [
                 "izanami",
@@ -409,9 +391,9 @@ fn initialize_empty_project(language: String) -> &'static [u8] {
 }
 
 fn get_otoroshi_template(language: String, product_template: String) -> &'static [u8] {
-    match (language.as_str(), product_template.as_str()) {
-        ("go", "")
-    }
+    OTOROSHI_WASM_TEMPLATES.get(language.to_uppercase().as_str())
+        .unwrap()
+        .get(product_template.to_uppercase().as_str()).unwrap()
 }
 
 fn initialize(
@@ -423,9 +405,22 @@ fn initialize(
         path: Option<String>) -> WasmoResult<()> {
     logger::loading("<yellow>Creating</> plugin ...".to_string());
 
-    let zip_bytes = match (language, product, template, product_template) {
+    let zip_bytes = match (language.clone(), product, template.clone(), product_template.clone()) {
         (Some(language), None, None, None) => initialize_empty_project(language),
-        (Some(language), Some(product), None, Some(product_template)) => get_otoroshi_template(language, product_template),
+        (Some(language), Some(product), None, product_template) => {
+            match product.as_str() {
+                "otoroshi" => get_otoroshi_template(language, product_template.unwrap_or("empty".to_string())),
+                "izanami" => match language.as_str() {
+                    "go"    => IZANAMI_ZIP_GO,
+                    "js"    => IZANAMI_ZIP_JS,
+                    "opa"   => IZANAMI_ZIP_OPA,
+                    "rust"  => IZANAMI_ZIP_RUST,
+                    "ts"    => IZANAMI_ZIP_TS,
+                    _       => return Err(WasmoError::Raw("Unsupported language".to_string()))
+                },
+                _ => return Err(WasmoError::Raw("Only otoroshi or izanami values are allowed as product value".to_string()))
+            }
+        },
         (None, None, Some(template), None) => 
             match template.as_str() {
                 "go" => EMPTY_ZIP_GO,
@@ -448,10 +443,17 @@ fn initialize(
                 
                 _ => EMPTY_ZIP_JS
             },
-        (_, _, _, _) => return Err(WasmoError::Configuration("You should provide language, product, and template parameters, or use only the deprecated template parameter.".to_string()))
+        (_, _, _, _) => return Err(WasmoError::Raw("You should provide language, product, and product_template parameters, or use only the deprecated template parameter.".to_string()))
     };
     
-    let language_used = template.replace("izanami_", "").replace("otoroshi_", "");
+    let language_used = product_template.clone()
+        .map(|product| OTOROSHI_WASM_TEMPLATES_ZIPNAME.get(product.as_str()).unwrap_or(&"FAILED").to_string())
+        .unwrap_or(language
+            .unwrap_or(template.map(|template| template.replace("izanami_", "").replace("otoroshi_", "")).unwrap_or("FAILED".to_string())));
+
+    if language_used == "FAILED" {
+        return Err(WasmoError::Raw("Invalid language".to_string()));
+    }
     
     let manifest_dir = std::env::temp_dir();
     let zip_path = Path::new(&manifest_dir).join(format!("{}.zip", &language_used));
@@ -470,10 +472,17 @@ fn initialize(
     };
 
     logger::indent_println("<yellow>Unzipping</> the template ...".to_string());
-    let zip_action = zip_extensions::read::zip_extract(
-        &PathBuf::from(zip_path),
-        &manifest_dir,
-    );
+
+    let zip_action = match zip_extensions::read::zip_extract(
+        &PathBuf::from(zip_path.clone()),
+        &PathBuf::from(manifest_dir.clone())
+    ) { 
+        Ok(()) => Ok(()),
+        Err(_) => zip_extensions::read::zip_extract(
+            &PathBuf::from(zip_path),
+            &PathBuf::from(manifest_dir.clone()).join(language_used.clone())
+        )
+    };
 
     match zip_action {
         Ok(()) => rename_plugin(language_used, name, path),

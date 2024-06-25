@@ -39,3 +39,211 @@ To have more informations about Otoroshi and Wasmo, you can follow the two tutor
 - [Wasm usage](https://maif.github.io/otoroshi/manual/how-to-s/wasm-usage.html)
 
 - [Wasmo and Otoroshi](https://maif.github.io/otoroshi/manual/how-to-s/wasmo-installation.html)
+
+## Otoroshi plugins
+
+Wasmo can initialize plugins with predefined Otoroshi templates, which you can find directly on the UI.
+
+### Wasm Pre-Route
+
+This plugin can be used to use a wasm plugin as in pre-route phase
+
+```js
+export function execute() {
+    let context = JSON.parse(Host.inputString());
+  
+      if (context.request.headers["foo"] === "bar") {
+          const out = {
+              result: true
+          };
+          Host.outputString(JSON.stringify(out));
+      } else {
+          const error = {
+              result: false,
+              error: {
+                  message: "you're not authorized",
+                  status: 401
+              }
+          };
+          Host.outputString(JSON.stringify(error));
+      }
+  
+      return 0;
+  }
+```
+  
+### Wasm Request Transformer
+
+Transform the content of the request with a wasm plugin
+
+```js
+export function execute() {
+    let context = JSON.parse(Host.inputString())
+
+    Host.outputString(JSON.stringify({
+        ...context,
+        method: "POST",
+        headers: {
+            ...context.otoroshi_request.headers,
+            OTOROSHI_WASM_PLUGIN_ID: "OTOROSHI_WASM_REQUEST_TRANSFORMER",
+            "Content-Type": "application/json"
+        },
+        body_json: {
+            foo: "bar"
+        }
+    }))
+
+    return 0
+}
+```
+
+### Wasm Response Transformer
+
+Transform the content of a response with a wasm plugin
+
+```js
+export function execute() {
+    let context = JSON.parse(Host.inputString())
+
+    Host.outputString(JSON.stringify({
+        ...context,
+        status: 200,
+        headers: {
+            ...context.otoroshi_response.headers,
+            OTOROSHI_WASM_PLUGIN_ID: "OTOROSHI_WASM_RESPONSE_TRANSFORMER",
+            "Content-Type": "application/json"
+        },
+        body_json: {
+            foo: "bar"
+        },
+        // cookies 
+    }))
+
+    return 0
+}
+```
+
+### Wasm Route matcher
+
+The "matcher" is a tool that allows filtering a route during the routing phase. 
+In practice, you can create two routes that are identical from a frontend perspective 
+but have different "route matchers." 
+These matchers will select one route or the other based on a specific criterion.
+
+```js
+export function execute() {
+    let context = JSON.parse(Host.inputString())
+
+    Host.outputString(JSON.stringify({
+        result: context.request.headers.foo === "bar"
+    }))
+
+    return 0
+}
+```
+
+### Wasm Sink
+
+Handle unmatched requests with a wasm plugin
+
+```js
+export function sink_matches() {
+    // const context = JSON.parse(Host.inputString())
+    
+    Host.outputString(JSON.stringify({
+        result: true
+    }))
+
+    return 0
+}
+
+export function sink_handle() {
+    const context = JSON.parse(Host.inputString())
+
+    Host.outputString(JSON.stringify({
+        status: 200,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body_json: {
+            "WASM_SINK_RESPONSE": `Unknown path and domain for ${context.request.path}`
+        }
+    }))
+
+    return 0
+}
+```
+
+### Wasm Access Control
+
+Delegate route access to a wasm plugin
+
+```js
+export function execute() {
+    let context = JSON.parse(Host.inputString())
+
+    if (context.request.headers["foo"] === "bar") {
+        const out = {
+            result: true
+        }
+        Host.outputString(JSON.stringify(out))
+    } else {
+        const error = {
+            result: false,
+            error: {
+                message: "you're not authorized",
+                status: 401
+            }
+        }
+        Host.outputString(JSON.stringify(error))
+    }
+
+    return 0
+}
+```
+
+### Wasm Backend
+
+This plugin can be used to use a wasm plugin as backend
+
+```js
+export function execute() {
+  const str = Host.inputString()
+  const context = JSON.parse(str)
+
+  let headers = { ...context.request.headers }
+  headers["foo"] = "bar"
+
+  const response = {
+    headers,
+    'Content-Type': "text/html",
+    body: `<html lang="en">
+
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+            </head>
+            
+            <body style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                height: 100vh;
+                font-family: monospace;
+            ">
+                <h1>This HTML comes from the Wasmo plugin</h1>
+                <img src="https://maif.github.io/wasmo/wasmo.png" style="
+                width: 200;
+            ">
+            
+            </body>
+            </html>`,
+    status: 200
+  }
+
+  Host.outputString(JSON.stringify(response))
+
+  return 0
+}
+```
