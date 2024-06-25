@@ -10,7 +10,8 @@ pub enum WasmoError {
     FileSystem(String),
     NoDockerRunning(String),
     DockerContainer(String),
-    Configuration(String)
+    Configuration(String),
+    Raw(String)
 }
 
 impl fmt::Display for WasmoError {
@@ -34,6 +35,9 @@ impl fmt::Display for WasmoError {
             },
             WasmoError::Configuration(err) => {
                 write!(f,"something happened with the configuration, {}", &err)
+            },
+            WasmoError::Raw(err) => {
+                write!(f, "{}", &err)
             }
         }
     }

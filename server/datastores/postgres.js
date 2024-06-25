@@ -257,10 +257,11 @@ module.exports = class PgDatastore extends Datastore {
                 filename: metadata.name.replace(/ /g, '-'),
                 type: metadata.type,
                 pluginId: pluginId,
-                template: metadata.template
+                template: metadata.template,
+                productTemplate: metadata.productTemplate
             }
 
-            console.log('generate pluginID', pluginId, newPlugin.pluginId)
+            console.log('generate pluginID', pluginId, newPlugin)
 
             return this.pool.connect()
                 .then(client => {

@@ -13,11 +13,9 @@ use core::panic;
 use hyper::{Body, Client, Method, Request};
 use serde::Deserialize;
 use std::{
-    collections::HashMap,
-    fs::{self, File},
-    io::Write,
-    path::{PathBuf, Path}, str::FromStr,
+    collections::HashMap, fs::{self, File}, io::Write, path::{Path, PathBuf}, str::FromStr
 };
+
 
 use dirs;
 
@@ -43,7 +41,73 @@ const OTOROSHI_ZIP_JS: &[u8] = include_bytes!("../templates/otoroshi/js.zip");
 const OTOROSHI_ZIP_OPA: &[u8] = include_bytes!("../templates/otoroshi/opa.zip");
 const OTOROSHI_ZIP_RUST: &[u8] = include_bytes!("../templates/otoroshi/rust.zip");
 const OTOROSHI_ZIP_TS: &[u8] = include_bytes!("../templates/otoroshi/ts.zip");
+ 
+use lazy_static::lazy_static;
 
+lazy_static! {
+    static ref OTOROSHI_WASM_TEMPLATES_ZIPNAME: HashMap<&'static str, &'static str> = {
+        let mut zip_names: HashMap<&'static str, &'static str> = HashMap::new();
+        zip_names.insert("ACCESS_CONTROL", "otoroshi_wasm_access_control");
+        zip_names.insert("BACKEND", "otoroshi_wasm_backend");
+        zip_names.insert("PRE_ROUTE", "otoroshi_wasm_pre_route");
+        zip_names.insert("REQUEST_TRANSFORMER", "otoroshi_wasm_request_transformer");
+        zip_names.insert("RESPONSE_TRANSFORMER", "otoroshi_wasm_response_transformer");
+        zip_names.insert("ROUTE_MATCHER", "otoroshi_wasm_route_matcher");
+        zip_names.insert("SINK", "otoroshi_wasm_sink");
+
+        zip_names
+    };
+    static ref OTOROSHI_WASM_TEMPLATES: HashMap<&'static str, HashMap<&'static str, &'static[u8]>> = {
+        let mut m: HashMap<&'static str, HashMap<&'static str, &'static[u8]>> = HashMap::new();
+
+        let mut js_plugins: HashMap<&'static str, &'static[u8]> = HashMap::new();
+        js_plugins.insert("ACCESS_CONTROL", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_access_control.zip"));
+        js_plugins.insert("BACKEND", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_backend.zip"));
+        js_plugins.insert("PRE_ROUTE", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_pre_route.zip"));
+        js_plugins.insert("REQUEST_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_request_transformer.zip"));
+        js_plugins.insert("RESPONSE_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_response_transformer.zip"));
+        js_plugins.insert("ROUTE_MATCHER", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_route_matcher.zip"));
+        js_plugins.insert("SINK", include_bytes!("../templates/otoroshi/languages/js/otoroshi_wasm_sink.zip"));
+        js_plugins.insert("EMPTY", include_bytes!("../templates/otoroshi/js.zip"));
+
+        let mut go_plugins: HashMap<&'static str, &'static[u8]> = HashMap::new();
+        go_plugins.insert("ACCESS_CONTROL", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_access_control.zip"));
+        go_plugins.insert("BACKEND", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_backend.zip"));
+        go_plugins.insert("PRE_ROUTE", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_pre_route.zip"));
+        go_plugins.insert("REQUEST_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_request_transformer.zip"));
+        go_plugins.insert("RESPONSE_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_response_transformer.zip"));
+        go_plugins.insert("ROUTE_MATCHER", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_route_matcher.zip"));
+        go_plugins.insert("SINK", include_bytes!("../templates/otoroshi/languages/go/otoroshi_wasm_sink.zip"));
+        go_plugins.insert("EMPTY", include_bytes!("../templates/otoroshi/go.zip"));
+
+        let mut ts_plugins: HashMap<&'static str, &'static[u8]> = HashMap::new();
+        ts_plugins.insert("ACCESS_CONTROL", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_access_control.zip"));
+        ts_plugins.insert("BACKEND", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_backend.zip"));
+        ts_plugins.insert("PRE_ROUTE", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_pre_route.zip"));
+        ts_plugins.insert("REQUEST_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_request_transformer.zip"));
+        ts_plugins.insert("RESPONSE_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_response_transformer.zip"));
+        ts_plugins.insert("ROUTE_MATCHER", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_route_matcher.zip"));
+        ts_plugins.insert("SINK", include_bytes!("../templates/otoroshi/languages/ts/otoroshi_wasm_sink.zip"));
+        ts_plugins.insert("EMPTY", include_bytes!("../templates/otoroshi/ts.zip"));
+
+        let mut rust_plugins: HashMap<&'static str, &'static[u8]> = HashMap::new();
+        rust_plugins.insert("ACCESS_CONTROL", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_access_control.zip"));
+        rust_plugins.insert("BACKEND", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_backend.zip"));
+        rust_plugins.insert("PRE_ROUTE", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_pre_route.zip"));
+        rust_plugins.insert("REQUEST_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_request_transformer.zip"));
+        rust_plugins.insert("RESPONSE_TRANSFORMER", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_response_transformer.zip"));
+        rust_plugins.insert("ROUTE_MATCHER", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_route_matcher.zip"));
+        rust_plugins.insert("SINK", include_bytes!("../templates/otoroshi/languages/rust/otoroshi_wasm_sink.zip"));
+        rust_plugins.insert("EMPTY", include_bytes!("../templates/otoroshi/rust.zip"));
+
+        m.insert("js", js_plugins);
+        m.insert("go", go_plugins);
+        m.insert("ts", ts_plugins);
+        m.insert("rust", rust_plugins);
+
+        m
+    };
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Host {
@@ -125,7 +189,41 @@ enum Commands {
             ], 
             require_equals = true, 
         )]
-        template: String,
+        template: Option<String>,
+        #[arg(
+            value_name = "PRODUCT", 
+            // short = 'p',
+            long = "product",
+            value_parser = [
+                "izanami",
+                "otoroshi",
+                "other"
+            ], 
+        )]
+        product: Option<String>,
+        /// The product template
+        #[arg(
+            value_name = "PRODUCT_TEMPLATE", 
+            // short = 'p',
+            long = "product_template",
+            value_parser = [
+                "ACCESS_CONTROL",
+                "BACKEND",
+                "PRE_ROUTE",
+                "REQUEST_TRANSFORMER",
+                "RESPONSE_TRANSFORMER",
+                "ROUTE_MATCHER",
+                "SINK",
+            ]
+        )]
+        product_template: Option<String>,
+        /// The language
+        #[arg(
+            value_name = "LANGUAGE", 
+            // short = 'p',
+            long = "language"
+        )]
+        language: Option<String>,
         /// The plugin name
         #[arg(
             value_name = "NAME", 
@@ -281,35 +379,83 @@ fn update_metadata_file(path: &PathBuf, name: &String, template: &String) -> Was
     }
 }
 
-fn initialize(template: String, name: String, path: Option<String>) -> WasmoResult<()> {
+fn initialize_empty_project(language: String) -> &'static [u8] {
+    match language.as_str() {
+        "go"    => EMPTY_ZIP_GO,
+        "js"    => EMPTY_ZIP_JS,
+        "opa"   => EMPTY_ZIP_OPA,
+        "rust"  => EMPTY_ZIP_RUST,
+        "ts"    => EMPTY_ZIP_TS,
+        _       => EMPTY_ZIP_TS
+    }
+}
+
+fn get_otoroshi_template(language: String, product_template: String) -> &'static [u8] {
+    OTOROSHI_WASM_TEMPLATES.get(language.to_uppercase().as_str())
+        .unwrap()
+        .get(product_template.to_uppercase().as_str()).unwrap()
+}
+
+fn initialize(
+        language: Option<String>,
+        product: Option<String>,
+        template: Option<String>, 
+        product_template: Option<String>, 
+        name: String, 
+        path: Option<String>) -> WasmoResult<()> {
     logger::loading("<yellow>Creating</> plugin ...".to_string());
 
-    let manifest_dir = std::env::temp_dir();
-
-    let zip_bytes = match template.as_str() {
-        "go" => EMPTY_ZIP_GO,
-        "js" => EMPTY_ZIP_JS,
-        "opa" => EMPTY_ZIP_OPA,
-        "rust" => EMPTY_ZIP_RUST,
-        "ts" => EMPTY_ZIP_TS,
-
-        "izanami_go"    => IZANAMI_ZIP_GO,
-        "izanami_js"    => IZANAMI_ZIP_JS,
-        "izanami_opa"   => IZANAMI_ZIP_OPA,
-        "izanami_rust"  => IZANAMI_ZIP_RUST,
-        "izanami_ts"    => IZANAMI_ZIP_TS,
-
-        "otoroshi_go"   => OTOROSHI_ZIP_GO,
-        "otoroshi_js"   => OTOROSHI_ZIP_JS,
-        "otoroshi_opa"  => OTOROSHI_ZIP_OPA,
-        "otoroshi_rust" => OTOROSHI_ZIP_RUST,
-        "otoroshi_ts"   => OTOROSHI_ZIP_TS,
-
-        _ => EMPTY_ZIP_JS
+    let zip_bytes = match (language.clone(), product, template.clone(), product_template.clone()) {
+        (Some(language), None, None, None) => initialize_empty_project(language),
+        (Some(language), Some(product), None, product_template) => {
+            match product.as_str() {
+                "otoroshi" => get_otoroshi_template(language, product_template.unwrap_or("empty".to_string())),
+                "izanami" => match language.as_str() {
+                    "go"    => IZANAMI_ZIP_GO,
+                    "js"    => IZANAMI_ZIP_JS,
+                    "opa"   => IZANAMI_ZIP_OPA,
+                    "rust"  => IZANAMI_ZIP_RUST,
+                    "ts"    => IZANAMI_ZIP_TS,
+                    _       => return Err(WasmoError::Raw("Unsupported language".to_string()))
+                },
+                _ => return Err(WasmoError::Raw("Only otoroshi or izanami values are allowed as product value".to_string()))
+            }
+        },
+        (None, None, Some(template), None) => 
+            match template.as_str() {
+                "go" => EMPTY_ZIP_GO,
+                "js" => EMPTY_ZIP_JS,
+                "opa" => EMPTY_ZIP_OPA,
+                "rust" => EMPTY_ZIP_RUST,
+                "ts" => EMPTY_ZIP_TS,
+                
+                "izanami_go"    => IZANAMI_ZIP_GO,
+                "izanami_js"    => IZANAMI_ZIP_JS,
+                "izanami_opa"   => IZANAMI_ZIP_OPA,
+                "izanami_rust"  => IZANAMI_ZIP_RUST,
+                "izanami_ts"    => IZANAMI_ZIP_TS,
+                
+                "otoroshi_go"   => OTOROSHI_ZIP_GO,
+                "otoroshi_js"   => OTOROSHI_ZIP_JS,
+                "otoroshi_opa"  => OTOROSHI_ZIP_OPA,
+                "otoroshi_rust" => OTOROSHI_ZIP_RUST,
+                "otoroshi_ts"   => OTOROSHI_ZIP_TS,
+                
+                _ => EMPTY_ZIP_JS
+            },
+        (_, _, _, _) => return Err(WasmoError::Raw("You should provide language, product, and product_template parameters, or use only the deprecated template parameter.".to_string()))
     };
+    
+    let language_used = product_template.clone()
+        .map(|product| OTOROSHI_WASM_TEMPLATES_ZIPNAME.get(product.as_str()).unwrap_or(&"FAILED").to_string())
+        .unwrap_or(language
+            .unwrap_or(template.map(|template| template.replace("izanami_", "").replace("otoroshi_", "")).unwrap_or("FAILED".to_string())));
 
-    let language_used = template.replace("izanami_", "").replace("otoroshi_", "");
-
+    if language_used == "FAILED" {
+        return Err(WasmoError::Raw("Invalid language".to_string()));
+    }
+    
+    let manifest_dir = std::env::temp_dir();
     let zip_path = Path::new(&manifest_dir).join(format!("{}.zip", &language_used));
 
     if std::path::Path::new(&zip_path).exists() {
@@ -326,10 +472,17 @@ fn initialize(template: String, name: String, path: Option<String>) -> WasmoResu
     };
 
     logger::indent_println("<yellow>Unzipping</> the template ...".to_string());
-    let zip_action = zip_extensions::read::zip_extract(
-        &PathBuf::from(zip_path),
-        &manifest_dir,
-    );
+
+    let zip_action = match zip_extensions::read::zip_extract(
+        &PathBuf::from(zip_path.clone()),
+        &PathBuf::from(manifest_dir.clone())
+    ) { 
+        Ok(()) => Ok(()),
+        Err(_) => zip_extensions::read::zip_extract(
+            &PathBuf::from(zip_path),
+            &PathBuf::from(manifest_dir.clone()).join(language_used.clone())
+        )
+    };
 
     match zip_action {
         Ok(()) => rename_plugin(language_used, name, path),
@@ -729,9 +882,12 @@ async fn main() {
         },
         Commands::Init {
             template,
+            language,
+            product,
+            product_template,
             name,
             path,
-        } => initialize(template, name, path.map(absolute_path)),
+        } => initialize(language, product, template, product_template,  name, path.map(absolute_path)),
         Commands::Build {
             server,
             path,

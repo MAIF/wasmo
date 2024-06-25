@@ -51,7 +51,7 @@ with wasm modules:
 | `wasmo config set`            | path &#124; server &#124; clientId &#124; clientSecret | Globally configure the CLI with the path where the configuration file will be stored and the server to reach during the build. These parameters are optional and can be passed when running the build command.  |
 | `wasmo config get`         |    | Get the configuration from the configured path file or from `$HOME/.wasmo` |
 | `wasmo config reset`        |     | Clean configuration and reset to default settings. The default file path configuration will be `$HOME/.wasmo`                                   ||
-| `wasmo init`             | template &#124; name &#124; path | Initialize a WASM plugin to the specific path. You can choose between many templates, javascript/typescript (js/ts), Open Policy Agent (opa), Rust or Golang (go). |
+| `wasmo init`             | language &#124; product &#124; product_template &#124; template &#124; name &#124; path | Initialize a WASM plugin to the specific path. You can choose between many templates, javascript/typescript (js/ts), Open Policy Agent (opa), Rust or Golang (go). |
 | `wasmo build`             | path &#124; host &#124; server &#124; clientId &#124; clientSecret | Build the plugin  by sending the contents to the remote or local Wasmo server. As soon as the build is complete, the WASM binary is donwloaded and saved in the plugin folder. |
 
 # Quick start
@@ -63,7 +63,38 @@ wasmo build --host=OneShotDocker --path=my-first-plugin
 
 Then open the content of your `my-first-plugin` folder. You should find the generated WASM binary named `my-first-plugin-1.0.0.wasm`.
 
-## Selecting a template
+## Specifying language, product and product_template to create a plugin 
+
+With the newer version, you should create a plugin by specifying the language to be used, the target product, and the template.
+
+```
+wasmo init --name=my-first-plugin --language=js --product=otoroshi --product_template=ACCESS_CONTROL
+```
+
+The product template parameter accepts multiple values: 
+  - REQUEST_TRANSFORMER: Transform the content of the request with a wasm plugin
+  - RESPONSE_TRANSFORMER: Transform the content of a response with a wasm plugin
+  - ACCESS_CONTROL: Delegate route access to a wasm plugin
+  - BACKEND: This plugin can be used to use a wasm plugin as backend
+  - ROUTE_MATCHER: This plugin can be used to use a wasm plugin as route matcher
+  - SINK: Handle unmatched requests with a wasm plugin
+  - PRE_ROUTE: This plugin can be used to use a wasm plugin as in pre-route phase
+
+You can also create a Izanami plugin
+
+```
+wasmo init --name=my-first-plugin --language=js --product=izanami
+```
+
+For the moment, Izanami doesn't provide any templates.
+
+If you want to start from scratch, without targeting any products
+
+```
+wasmo init --name=my-first-plugin --language=js
+```
+
+## Or selecting a template
 
 You can now optionally start a new plugin from a template by appending `--template=[template-name]` to the creation command.
 

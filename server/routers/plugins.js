@@ -116,7 +116,8 @@ router.post('/', async (req, res) => {
   const out = await Datastore.createEmptyPlugin(req.user.email, req.body.metadata || {
     name: req.body.plugin,
     type: req.body.type,
-    template: req.body.template || 'empty'
+    template: req.body.template || 'empty',
+    productTemplate: req.body.productTemplate
   });
 
   if (out.status !== 201 || !req.body.files) {

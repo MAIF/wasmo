@@ -39,7 +39,38 @@ wasmo build --host=OneShotDocker --path=my-first-plugin
 
 Then open the content of your `my-first-plugin` folder. You should find the generated WASM binary named `my-first-plugin-1.0.0.wasm`.
 
-## Selecting a template
+## Specifying language and product to create a plugin 
+
+With the newer version, you should create a plugin by specifying the language to be used, the target product, and the template.
+
+```
+wasmo init --name=my-first-plugin --language=js --product=otoroshi --product_template=ACCESS_CONTROL
+```
+
+The product template parameter accepts multiple values: 
+  - **REQUEST_TRANSFORMER**: Transform the content of the request with a wasm plugin
+  - **RESPONSE_TRANSFORMER**: Transform the content of a response with a wasm plugin
+  - **ACCESS_CONTROL**: Delegate route access to a wasm plugin
+  - **BACKEND**: This plugin can be used to use a wasm plugin as backend
+  - **ROUTE_MATCHER**: This plugin can be used to use a wasm plugin as route matcher
+  - **SINK**: Handle unmatched requests with a wasm plugin
+  - **PRE_ROUTE**: This plugin can be used to use a wasm plugin as in pre-route phase
+
+You can also create a Izanami plugin
+
+```
+wasmo init --name=my-first-plugin --language=js --product=izanami
+```
+
+For the moment, Izanami doesn't provide any templates.
+
+If you want to start from scratch, without targeting any products
+
+```
+wasmo init --name=my-first-plugin --language=js
+```
+
+## Or selecting a template
 
 You can now optionally start a new plugin from a template by appending `--template=[template-name]` to the creation command.
 

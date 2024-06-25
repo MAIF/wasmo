@@ -23,13 +23,14 @@ const rawFetch = (url, init = {}) => fetch(`/api${url}`, {
 
 const jsonFetch = (url, init) => f(url, init).then(r => r.json())
 
-export const createPlugin = (plugin, type, template) => {
+export const createPlugin = (plugin, type, template, productTemplate) => {
   return jsonFetch('/plugins', {
     method: 'POST',
     body: JSON.stringify({
       plugin,
       type,
-      template
+      template,
+      productTemplate
     })
   })
 }
@@ -53,7 +54,9 @@ export const getPlugin = plugin => rawFetch(`/plugins/${plugin}`)
 
 export const getPluginConfig = plugin => jsonFetch(`/plugins/${plugin}/configurations`)
 
-export const getPluginTemplate = (type, template) => f(`/templates?type=${type}&template=${template}`);
+export const getPluginTemplate = (type, template, productTemplate) => f(`/templates?type=${type}&template=${template}&productTemplate=${productTemplate}`);
+
+export const getPluginProductTemplate = (type, template, productTemplate) => f(`/products_templates?type=${type}&template=${template}&productTemplate=${productTemplate}`);
 
 const buildZip = plugin => {
   const jsZip = new JSZip()
