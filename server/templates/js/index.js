@@ -1,6 +1,6 @@
-function greet() {
+function execute() {
     const name = Host.inputString()
     Host.outputString(`Hello, ${name}`)
 }
 
-module.exports = { greet }
+module.exports = { execute }
