@@ -13,12 +13,12 @@ A Wasmo Builder instance running. If not, you should read the [Getting started](
 5. Click and edit the `index.js` file
 
 ```javascript
-function greet() {
+function execute() {
     const name = Host.inputString()
     Host.outputString(`Hello, ${name}`)
 }
 
-module.exports = {greet}
+module.exports = {execute}
 ```
 
 Click the `hammer` icon at the top right of the screen to start the build process.
@@ -39,7 +39,7 @@ go install github.com/extism/cli/extism@latest
 Once downloaded, you can run the command by passing the function to call, the parameter to apply and the WASM file to execute.
 
 ```
-extism call <your-plugin-file>.wasm greet \
+extism call <your-plugin-file>.wasm execute \
     --input "Benjamin" \
     --wasi
 ```

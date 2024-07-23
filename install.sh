@@ -49,6 +49,8 @@ if ! which "wasm-merge" > /dev/null; then
   mv binaryen/bin/wasm-opt /usr/local/binaryen/wasm-opt
   ln -s /usr/local/binaryen/wasm-opt /usr/local/bin/wasm-opt
 
+  mv binaryen/lib/libbinaryen.dylib /usr/local/binaryen/libbinaryen.dylib
+  ln -s /usr/local/binaryen/libbinaryen.dylib /usr/local/lib/libbinaryen.dylib
 else
   echo "wasm-merge already installed"
 fi
