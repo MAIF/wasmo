@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 WORKDIR /code
 
@@ -11,11 +11,11 @@ ARG TARGETPLATFORM
 
 # install go 1.21
 RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
-        wget https://go.dev/dl/go1.21.6.linux-arm64.tar.gz; \
-        tar -xvf go1.21.6.linux-arm64.tar.gz -C /usr/local; \
+        wget https://go.dev/dl/go1.24.5.linux-arm64.tar.gz; \
+        tar -xvf go1.24.5.linux-arm64.tar.gz -C /usr/local; \
     else \
-        wget https://go.dev/dl/go1.21.6.linux-amd64.tar.gz; \
-        tar -xvf go1.21.6.linux-amd64.tar.gz -C /usr/local; \
+        wget https://go.dev/dl/go1.24.5.linux-amd64.tar.gz; \
+        tar -xvf go1.24.5.linux-amd64.tar.gz -C /usr/local; \
     fi
 
 ENV PATH="/usr/local/go/bin:${PATH}"
@@ -30,7 +30,10 @@ RUN apt-get update -y
 RUN apt-get install -y nodejs 
 
 # RUN python3.9 -m pip install --upgrade pip
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3 get-pip.py
+# RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3 get-pip.py
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
+    python3 get-pip.py --break-system-packages && \
+    rm get-pip.py
 RUN echo 'export PATH=~/.local/bin/:$PATH' >> ~/.bashrc
 
 # Get rust
@@ -42,12 +45,12 @@ RUN rustup target add wasm32-unknown-unknown
 
 # RUN apt-get install binaryen
 RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
-        wget https://github.com/tinygo-org/tinygo/releases/download/v0.30.0/tinygo_0.30.0_arm64.deb; \
-        dpkg -i tinygo_0.30.0_arm64.deb; \
+        wget https://github.com/tinygo-org/tinygo/releases/download/v0.38.0/tinygo_0.38.0_arm64.deb; \
+        dpkg -i tinygo_0.38.0_arm64.deb; \
         # curl -L -O "https://github.com/extism/js-pdk/releases/download/v1.0.0-rc6/extism-js-aarch64-linux-v1.0.0-rc6.gz"; \
     else \
-        wget https://github.com/tinygo-org/tinygo/releases/download/v0.30.0/tinygo_0.30.0_amd64.deb; \
-        dpkg -i tinygo_0.30.0_amd64.deb; \
+        wget https://github.com/tinygo-org/tinygo/releases/download/v0.38.0/tinygo_0.38.0_amd64.deb; \
+        dpkg -i tinygo_0.38.0_amd64.deb; \
         # curl -L -O "https://github.com/extism/js-pdk/releases/download/v1.0.0-rc6/extism-js-x86_64-linux-v1.0.0-rc6.gz"; \
     fi
 
@@ -61,9 +64,9 @@ RUN sh install.sh
 RUN curl https://get.wasmer.io -sSfL | sh
 
 RUN if [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
-curl -L -o opa https://openpolicyagent.org/downloads/v0.61.0/opa_linux_ard64_static; \
+curl -L -o opa https://github.com/open-policy-agent/opa/releases/download/v1.6.0/opa_linux_arm64_static; \
 else \
-curl -L -o opa https://openpolicyagent.org/downloads/v0.61.0/opa_linux_amd64_static; \
+curl -L -o opa https://github.com/open-policy-agent/opa/releases/download/v1.6.0/opa_linux_amd64_static; \
 fi
 RUN chmod 755 ./opa
 RUN mv opa /usr/local/bin
