@@ -52,7 +52,7 @@ with wasm modules:
 | `wasmo config get`         |    | Get the configuration from the configured path file or from `$HOME/.wasmo` |
 | `wasmo config reset`        |     | Clean configuration and reset to default settings. The default file path configuration will be `$HOME/.wasmo`                                   ||
 | `wasmo init`             | language &#124; product &#124; product_template &#124; template &#124; name &#124; path | Initialize a WASM plugin to the specific path. You can choose between many templates, javascript/typescript (js/ts), Open Policy Agent (opa), Rust or Golang (go). |
-| `wasmo build`             | path &#124; host &#124; server &#124; clientId &#124; clientSecret | Build the plugin  by sending the contents to the remote or local Wasmo server. As soon as the build is complete, the WASM binary is donwloaded and saved in the plugin folder. |
+| `wasmo build`             | path &#124; host &#124; server &#124; clientId &#124; clientSecret &#124; docker_host | Build the plugin  by sending the contents to the remote or local Wasmo server. As soon as the build is complete, the WASM binary is donwloaded and saved in the plugin folder. |
 
 # Quick start
 

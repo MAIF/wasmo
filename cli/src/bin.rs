@@ -269,6 +269,15 @@ enum Commands {
             required = false
         )]
         host: String,
+        /// docker_host
+        #[arg(
+            value_name = "DOCKER_HOST", 
+            long = "docker_host",
+            default_value = "localhost",
+            require_equals = true,
+            required = false
+        )]
+        docker_host: String,
         /// client id
         #[arg(
             value_name = "CLIENT_ID", 
@@ -568,7 +577,7 @@ fn read_configuration() -> WasmoResult<HashMap<String, String>> {
     Ok(envs)
 }
 
-async fn build(path: Option<String>, server: Option<String>, host: Host, client_id: Option<String>, client_secret: Option<String>) -> WasmoResult<()> {
+async fn build(path: Option<String>, server: Option<String>, host: Host, docker_host: String, client_id: Option<String>, client_secret: Option<String>) -> WasmoResult<()> {
     let mut configuration = read_configuration()?;
 
     let complete_path = match path {
@@ -597,7 +606,7 @@ async fn build(path: Option<String>, server: Option<String>, host: Host, client_
     if host != Host::Remote  {
         container = Some(docker::docker_create(&host).await?);
 
-        configuration.insert(WASMO_SERVER.to_owned(), format!("http://localhost:{}", &container.as_ref().unwrap().port).to_string());
+        configuration.insert(WASMO_SERVER.to_owned(), format!("http://{}:{}", &docker_host, &container.as_ref().unwrap().port).to_string());
     }
 
     if !configuration.contains_key(WASMO_SERVER) || configuration.get(WASMO_SERVER).unwrap().is_empty() {
@@ -892,10 +901,16 @@ async fn main() {
             server,
             path,
             host,
+            docker_host,
             client_id,
             client_secret
         } => {
-            build(path.map(absolute_path), server, Host::from_str(&host).unwrap(), client_id, client_secret).await
+            build(path.map(absolute_path), 
+            server, 
+            Host::from_str(&host).unwrap(), 
+            docker_host,
+            client_id,
+             client_secret).await
         },
         Commands::Config { command } => match command {
             ConfigCommands::Set {

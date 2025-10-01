@@ -170,5 +170,5 @@ Promise.all([Datastore.initialize(), getAppVersion()])
 
     WebSocket.createLogsWebSocket(server);
 
-    server.listen(ENV.PORT, () => logger.info(`Wasmo ${version}, listening on ${ENV.PORT}`));
+    server.listen(ENV.PORT, '0.0.0.0', () => logger.info(`Wasmo ${version}, listening on ${ENV.PORT}`));
   });
